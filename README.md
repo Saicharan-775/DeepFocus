@@ -16,15 +16,19 @@ The extension injects a real-time tracking widget into the LeetCode IDE. It moni
 
 ### 2. Anti-Distraction Guard
 Stay in the zone! If you attempt to leave the problem or switch tabs, DeepFocus triggers an immediate warning and penalizes your focus score.
-![Focus Warning](screenshots/warning.png)
+![Focus Warning](screenshots/blocked.png)
 
 ### 3. Solution & Editorial Locking
 No more "peeking" at the answer. DeepFocus hard-blocks the Solutions and Editorial tabs during your session, forcing you to think critically and build true problem-solving muscle.
-![Solutions Blocked](screenshots/blocked.png)
+![Solutions Blocked](screenshots/warning.png)
 
-### 4. Enterprise-Grade Sync
-Once you submit or finish, all session data (Score, Duration, Difficulty) is instantly synced to your synchronized **Revision Dashboard** using Supabase Edge Functions with secure RLS (Row-Level Security).
+### 4. Real-Time Sync
+Once you submit or finish, all session data is instantly synced to your database. You'll receive a confirmation toast letting you know your revision sheet has been updated.
 ![Revision Sheet Updated](screenshots/success.png)
+
+### 5. High-Performance Dashboard
+Track your consistency, manage your revision problems, and analyze your focus trends through a centralized React dashboard powered by Supabase.
+![Revision Sheet Dashboard](screenshots/revisionsheet.png)
 
 ---
 
@@ -70,8 +74,8 @@ npm run dev
 
 DeepFocus is built with production security standards:
 - **Zero Exposed Secrets**: Only public `ANON_KEY` is used on the client; all sensitive writes are handled by `SECURITY DEFINER` functions or Edge Functions.
-- **Hardened RLS**: Every single table is protected by Row-Level Security, ensuring you only ever interact with *your* data.
-- **Secure Tokens**: Communication between the Extension and Supabase uses short-lived, hashed connection tokens.
+- **Hardened RLS**: Every single table is protected by Row-Level Security (RLS), ensuring that your focus data is yours and yours alone.
+- **Data Integrity**: Database-level constraints ensure that focus scores and session metrics remain valid even if API requests are tampered with.
 
 ---
 
