@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --accent: 99, 102, 241;
+    --bg-dark: 2, 2, 5;
+    --card-surface: 255, 255, 255, 0.02;
+  }
+
+  html {
+    font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+    background-color: rgb(var(--bg-dark));
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    margin: 0;
+    color: #e2e8f0;
+    min-width: 320px;
+    min-height: 100vh;
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  /* Senior Dev glassmorphism engine */
+  .glass-card {
+    @apply bg-white/[0.015] backdrop-blur-[60px] rounded-[48px] border border-white/[0.03] transition-all duration-500;
+    box-shadow: 
+      0 20px 80px -20px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card:hover {
+    @apply border-white/[0.08] bg-white/[0.03];
+    box-shadow: 
+      0 30px 100px -20px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .stat-glow {
+    @apply absolute -z-10 blur-[80px] rounded-full;
+  }
+}
+
+/* Custom, ultra-minimal scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.03);
+  @apply rounded-full transition-colors;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Text selection */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: white;
+}

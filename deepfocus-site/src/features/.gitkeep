@@ -1,0 +1,8 @@
+/**
+ * features/ — Feature-scoped modules for DeepFocus
+ *
+ * Each subdirectory should represent a self-contained feature, e.g.:
+ *   features/revision/   → components, hooks, and services for the revision sheet
+ *   features/auth/       → auth UI and helpers
+ *   features/extension/  → extension connection logic
+ */

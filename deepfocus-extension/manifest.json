@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "DeepFocus",
+  "version": "1.0.0",
+  "description": "A focus environment for LeetCode to prevent cheating and maintain discipline via timer and score.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "*://leetcode.com/*",
+    "*://*.leetcode.com/*",
+    "*://*.supabase.co/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://leetcode.com/*", 
+        "*://*.leetcode.com/*",
+        "http://localhost/*"
+      ],
+      "css": ["styles/widget.css"],
+      "js": ["config.js", "utils/soundManager.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/blocked-overlay.html",
+        "content/blocked-overlay.js",
+        "utils/pageInterceptor.js",
+        "assets/icons/*",
+        "sounds/*"
+      ],
+      "matches": ["*://leetcode.com/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}

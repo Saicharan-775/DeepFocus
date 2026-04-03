@@ -1,0 +1,47 @@
+# ===================================================
+# DeepFocus — Root .gitignore
+# ===================================================
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Vite cache
+.vite/
+**/vite.config.js.timestamp-*
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# Supabase local dev
+supabase/.temp/
+supabase/functions/**/.deps/
+
+# Push error logs
+push_error.log
+
+# Development docs/plans/temp (not for production)
+DEEPFOCUS_TECHNICAL_DOCS.md
+DEEPFOCUS_TECHNICAL_STORY.md
+deepfocus_landing_page_prompt.txt
+**/TODO.md
+**/implementation_plan.md
+build_icons.py
+large_files.json
+

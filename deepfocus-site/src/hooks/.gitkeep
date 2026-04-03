@@ -1,0 +1,8 @@
+/**
+ * hooks/ — Custom React hooks for DeepFocus
+ *
+ * Place reusable stateful logic here. For example:
+ *   - useSession.js   → wraps supabase.auth.getSession + onAuthStateChange
+ *   - useProblems.js  → fetches and manages revision problems state
+ *   - useToast.js     → shared toast notification state
+ */

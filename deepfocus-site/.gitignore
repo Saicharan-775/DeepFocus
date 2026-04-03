@@ -1,0 +1,22 @@
+# deepfocus-site .gitignore
+# (Root .gitignore already covers most cases — this adds Vite-specific extras)
+
+# Vite local env / override files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+dist/
+
+# Vite cache, timestamp files
+.vite/
+*.timestamp-*.mjs
+
+# Node
+node_modules/
+
+# Editor
+.DS_Store

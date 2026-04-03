@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      width: 280px;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+    }
+    
+    .status-active { color: #10b981; }
+    .status-inactive { color: #6b7280; }
+    
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .status-inactive .status-dot {
+      background: #6b7280;
+      animation: none;
+    }
+    
+    #focus-status {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    #session-preview {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    
+    .preview-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    .preview-label { color: #9ca3af; }
+    .preview-value { font-family: 'SF Mono', monospace; font-weight: 600; }
+    
+    #session-preview.hidden { display: none; }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 10px;
+    }
+    
+    #start {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    
+    #start:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+    }
+    
+    #stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    
+    #stop:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+    }
+    
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <div class="status-dot" id="status-dot"></div>
+    DeepFocus
+  </h1>
+  
+  <div id="focus-status">Loading...</div>
+  
+  <div id="session-preview" class="hidden">
+    <div class="preview-row">
+      <span class="preview-label">Time Left</span>
+      <span class="preview-value" id="preview-time">--:--</span>
+    </div>
+    <div class="preview-row">
+      <span class="preview-label">Tab Switches</span>
+      <span class="preview-value" id="preview-switches">0</span>
+    </div>
+    <div class="preview-row">
+      <span class="preview-label">Score</span>
+      <span class="preview-value" id="preview-score">100</span>
+    </div>
+  </div>
+  
+  <!-- Connection Section -->
+  <div id="connection-section" style="margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
+    <div style="font-size: 13px; color: #9ca3af; margin-bottom: 8px; font-weight: 500;">Connection Token</div>
+    <div style="display: flex; gap: 8px;">
+      <input type="password" id="token-input" placeholder="Paste dfx_ token here" style="flex: 1; min-width: 0; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: #262626; color: white; font-family: monospace; font-size: 12px;" />
+      <button id="save-token-btn" style="width: auto; padding: 8px 12px; margin: 0; font-size: 12px; background: #3b82f6; border-radius: 6px;">Connect</button>
+    </div>
+    <div id="connection-status" style="font-size: 11px; margin-top: 8px; color: #10b981; display: none;">✓ Connected securely</div>
+  </div>
+
+  <button id="start">🚀 Start Focus</button>
+  <button id="stop" style="display: none;">⏹️ Stop Focus</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
