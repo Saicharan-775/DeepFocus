@@ -1,94 +1,84 @@
 # DeepFocus 🚀
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/dee-focus?color=brightgreen&logo=chrome)](https://chrome.google.com/webstore/detail/deepfocus/...) [![GitHub stars](https://img.shields.io/github/stars/yourusername/focus-mode-extension?style=social)](https://github.com/yourusername/focus-mode-extension)
+[![GitHub stars](https://img.shields.io/github/stars/Saicharan-775/DeepFocus?style=social)](https://github.com/Saicharan-775/DeepFocus)
+[![Tech Stack](https://img.shields.io/badge/Tech-React%20%2B%20Supabase-blue)](https://supabase.com)
+[![Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chrome.google.com/webstore)
 
-**DeepFocus** is a Chrome extension + dashboard that creates a distraction-free LeetCode environment. Block solutions/editorials during timed focus sessions, track your discipline, and build real coding muscle.
-
-## ✨ Features
-
-- **1-click Focus Sessions**: Auto-detects problem difficulty and sets optimal timer (Easy:10m, Medium:25m, Hard:40m)
-- **Tab Switch Penalties**: Score drops 15pts per switch. Stay on-task!
-- **Solution Blocking**: Hard blocks solutions/editorials during sessions
-- **Copy/Paste Guard**: Prevents external code pasting (allows internal copy-paste)
-- **Auto-Sync Dashboard**: Tracks sessions → revision list for spaced repetition
-- **Sound Feedback**: Success/fail sounds on submissions
-- **Self-Healing UI**: Widget persists through LeetCode SPA changes
-
-## 🛠 Tech Stack
-
-```
-Frontend: React 18 + Vite + TailwindCSS + Framer Motion
-Backend: Supabase (Postgres + Edge Functions + RLS)
-Extension: Chrome MV3 + Service Worker
-Deployment: Vercel/Netlify (site), Chrome Web Store (extension)
-```
-
-## 🚀 Quick Start (Local Dev)
-
-### 1. Dashboard (localhost:5173)
-```bash
-cd deepfocus-site
-npm install
-cp .env.example .env  # Add your Supabase keys
-npm run dev
-```
-
-### 2. Extension
-1. `chrome://extensions/` → **Developer mode** → **Load unpacked** → `deepfocus-extension/`
-2. **Pin** the extension to toolbar
-3. Generate **Connection Token** from dashboard → Paste in popup
-
-### 3. Test
-1. Open LeetCode problem
-2. Click extension icon → **Start Focus**
-3. **Solutions** tab auto-blocks
-4. Submit → Auto-syncs to dashboard
-
-## 📦 Production Deployment
-
-### Dashboard
-```
-npm run build  # vite build
-# Deploy dist/ to Vercel/Netlify
-```
-
-### Extension
-1. Zip `deepfocus-extension/`
-2. Chrome Web Store Developer Dashboard → New Item
-
-### Supabase (Production Ready)
-```
-- Migrations deployed
-- Edge Functions: focus-event (token-validated)
-- RLS: Hardened (user_id + token checks)
-```
-
-## 🔒 Security
-
-- **Anon keys only** (publishable, RLS enforced)
-- **Connection tokens** (hashed, short-lived)
-- **No service_role keys** exposed
-- **Queue-based sync** (offline-tolerant)
-
-## 📊 Dashboard Features
-
-- **Revision Sheet**: Spaced repetition from failed sessions
-- **Streak Tracking**: Daily focus streaks
-- **Insights**: Score trends, weak areas
-- **Library**: Curated patterns/resources
-
-## 🤝 Contributing
-
-1. Fork → Clone → Dev setup
-2. `git checkout -b feature/xyz`
-3. Changes → `npm test` (add tests!)
-4. PR with changelog
-
-## 📄 License
-
-MIT © 2024
+**DeepFocus** is a high-performance Browser Extension + Dashboard suite designed to turn LeetCode into a distraction-free training ground. It enforces discipline by tracking focus scores, penalizing tab switches, and blocking access to solutions during active sessions.
 
 ---
 
-**Made with ❤️ for coders who want to actually learn, not just pass.**
+## 📸 Features in Action
 
+### 1. Smart Focus Widget
+The extension injects a real-time tracking widget into the LeetCode IDE. It monitors your **Session Time**, **Tab Switches**, and calculates a dynamic **Focus Score** based on your behavior.
+![DeepFocus Widget](screenshots/widget.png)
+
+### 2. Anti-Distraction Guard
+Stay in the zone! If you attempt to leave the problem or switch tabs, DeepFocus triggers an immediate warning and penalizes your focus score.
+![Focus Warning](screenshots/warning.png)
+
+### 3. Solution & Editorial Locking
+No more "peeking" at the answer. DeepFocus hard-blocks the Solutions and Editorial tabs during your session, forcing you to think critically and build true problem-solving muscle.
+![Solutions Blocked](screenshots/blocked.png)
+
+### 4. Enterprise-Grade Sync
+Once you submit or finish, all session data (Score, Duration, Difficulty) is instantly synced to your synchronized **Revision Dashboard** using Supabase Edge Functions with secure RLS (Row-Level Security).
+![Revision Sheet Updated](screenshots/success.png)
+
+---
+
+## ✨ Key Features
+
+- **🎯 Difficulty-Aware Timers**: Auto-detects LeetCode difficulty (Easy: 10m, Medium: 25m, Hard: 40m).
+- **📉 Discipline Scoring**: Real-time Focus Score drops for every distraction.
+- **🚫 Solution Hard-Blocking**: Editorial/Solutions tabs are completely disabled during sessions.
+- **🛡️ Copy/Paste Guard**: Prevents external code pasting to ensure you're actually writing the logic.
+- **🔄 Spaced Repetition**: Failed or low-score sessions are automatically added to your "Revision Sheet."
+- **📊 Interactive Dashboard**: Full React/Vite dashboard to track your consistency and progress over months.
+
+---
+
+## 🛠 Tech Stack
+
+- **Extension**: Chrome Extension MV3, Vanilla JavaScript, CSS Modules.
+- **Dashboard**: React 18, Vite, TailwindCSS, Framer Motion.
+- **Backend**: Supabase (PostgreSQL, Edge Functions, Row-Level Security).
+- **Security**: Token-based authentication, Hashed session validation, Hardened RLS.
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. The Dashboard
+```bash
+cd deepfocus-site
+npm install
+cp .env.example .env  # Add your Supabase project keys
+npm run dev
+```
+
+### 2. The Extension
+1. Open `chrome://extensions/`
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select the `deepfocus-extension` folder.
+4. Open your dashboard and copy your **Unique Connection Token** into the extension popup.
+
+---
+
+## 🔒 Security First
+
+DeepFocus is built with production security standards:
+- **Zero Exposed Secrets**: Only public `ANON_KEY` is used on the client; all sensitive writes are handled by `SECURITY DEFINER` functions or Edge Functions.
+- **Hardened RLS**: Every single table is protected by Row-Level Security, ensuring you only ever interact with *your* data.
+- **Secure Tokens**: Communication between the Extension and Supabase uses short-lived, hashed connection tokens.
+
+---
+
+## 📄 License
+
+MIT © 2024 Saicharan-775
+
+---
+
+**Built to help developers build real skill, not just green squares on GitHub.**
