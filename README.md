@@ -85,4 +85,4 @@ MIT © 2024 Saicharan-775
 
 ---
 
-**Built to help developers build real skill, not just green squares on GitHub.**
+**Built to help Coders build real problem solving skill, not just green squares on Leetcode.**
