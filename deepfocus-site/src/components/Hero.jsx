@@ -127,9 +127,9 @@ export default function Hero() {
           >
 
             {/* Typography - High Contrast, Editorial Aesthetic with Mindblowing Reveal */}
-            <div className="w-full flex flex-col items-center justify-center text-center mb-8 px-4">
-              {/* Row 1: Build real intuition. */}
-              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-4">
+            <div className="w-full flex flex-col items-center justify-center text-center mb-8 px-4 select-none">
+              {/* Line 1: Build real intuition. */}
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-6">
                 {"Build real intuition.".split(" ").map((word, wIdx, arr) => (
                   <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.25em]">
                     <motion.span
@@ -150,26 +150,51 @@ export default function Hero() {
                 ))}
               </h1>
 
-              {/* Row 2: Stop relying on the solutions tab. */}
-              <h2 className="w-full flex flex-wrap justify-center mt-2 pb-4">
-                {"Stop relying on the solutions tab.".split(" ").map((word, i, arr) => (
-                  <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
-                    <motion.span
-                      variants={{
-                        hidden: { opacity: 0, y: "100%", skewY: 2 },
-                        visible: { 
-                          opacity: 1, 
-                          y: 0, 
-                          skewY: 0,
-                          transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
-                        }
-                      }}
-                      className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal animate-shimmer bg-[length:200%_auto]"
-                    >
-                      {word}{i !== arr.length - 1 && "\u00A0"}
-                    </motion.span>
-                  </span>
-                ))}
+              {/* Line 2 & 3: Stop relying on the solutions tab. */}
+              <h2 className="w-full flex flex-col items-center justify-center mt-2 pb-4">
+                {/* Line 2: Stop relying on the */}
+                <div className="flex flex-wrap justify-center mb-2">
+                  {"Stop relying on the".split(" ").map((word, i, arr) => (
+                    <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
+                      <motion.span
+                        variants={{
+                          hidden: { opacity: 0, y: "100%", skewY: 2 },
+                          visible: { 
+                            opacity: 1, 
+                            y: 0, 
+                            skewY: 0,
+                            transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
+                          }
+                        }}
+                        className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-300 via-white to-zinc-300 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal leading-tight"
+                      >
+                        {word}{i !== arr.length - 1 && "\u00A0"}
+                      </motion.span>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Line 3: solutions tab. */}
+                <div className="flex flex-wrap justify-center">
+                  {"solutions tab.".split(" ").map((word, i, arr) => (
+                    <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
+                      <motion.span
+                        variants={{
+                          hidden: { opacity: 0, y: "100%", skewY: 2 },
+                          visible: { 
+                            opacity: 1, 
+                            y: 0, 
+                            skewY: 0,
+                            transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
+                          }
+                        }}
+                        className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-300 via-white to-zinc-300 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal leading-tight"
+                      >
+                        {word}{i !== arr.length - 1 && "\u00A0"}
+                      </motion.span>
+                    </span>
+                  ))}
+                </div>
               </h2>
             </div>
 
