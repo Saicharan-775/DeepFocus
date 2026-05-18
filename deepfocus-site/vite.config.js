@@ -13,7 +13,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            const isCoreReact = id.match(/[\\/]node_modules[\\/](react|react-dom|react-router-dom|scheduler)[\\/]/);
+            if (isCoreReact) {
               return 'vendor-react';
             }
             if (id.includes('framer-motion')) {
