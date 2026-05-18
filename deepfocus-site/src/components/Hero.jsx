@@ -127,9 +127,9 @@ export default function Hero() {
           >
 
             {/* Typography - High Contrast, Editorial Aesthetic with Mindblowing Reveal */}
-            <div className="w-full flex flex-col items-center justify-center text-center mb-8 px-4 select-none">
+            <div className="w-full flex flex-col items-center justify-center text-center mb-14 px-4 select-none">
               {/* Line 1: Build real intuition. */}
-              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-6">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-1">
                 {"Build real intuition.".split(" ").map((word, wIdx, arr) => (
                   <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.25em]">
                     <motion.span
@@ -151,9 +151,9 @@ export default function Hero() {
               </h1>
 
               {/* Line 2 & 3: Stop relying on the solutions tab. */}
-              <h2 className="w-full flex flex-col items-center justify-center mt-2 pb-4">
+              <h2 className="w-full flex flex-col items-center justify-center mt-0 pb-1">
                 {/* Line 2: Stop relying on the */}
-                <div className="flex flex-wrap justify-center mb-2">
+                <div className="flex flex-wrap justify-center mb-0.5">
                   {"Stop relying on the".split(" ").map((word, i, arr) => (
                     <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
                       <motion.span
