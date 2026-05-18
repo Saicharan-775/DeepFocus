@@ -72,7 +72,7 @@ export default function Hero() {
 
       {/* Floating Mockups (Desktop) - Architectural & Clean with Mouse Tilt */}
       <motion.div
-        className="absolute left-[-15%] xl:left-[-5%] top-[25%] w-[400px] xl:w-[480px] opacity-70 hidden lg:block z-0"
+        className="absolute left-[-22%] xl:left-[-15%] 2xl:left-[-5%] top-[25%] w-[320px] xl:w-[400px] 2xl:w-[480px] opacity-60 hover:opacity-90 transition-opacity duration-300 hidden lg:block z-0 pointer-events-none"
         style={{ 
           rotateX, 
           rotateY,
@@ -89,7 +89,7 @@ export default function Hero() {
       </motion.div>
 
       <motion.div
-        className="absolute right-[-15%] xl:right-[-5%] top-[40%] w-[450px] xl:w-[520px] opacity-70 hidden lg:block z-0"
+        className="absolute right-[-22%] xl:right-[-15%] 2xl:right-[-5%] top-[40%] w-[370px] xl:w-[440px] 2xl:w-[520px] opacity-60 hover:opacity-90 transition-opacity duration-300 hidden lg:block z-0 pointer-events-none"
         style={{ 
           rotateX: useTransform(smoothY, [-500, 500], [-8, 8]), 
           rotateY: useTransform(smoothX, [-500, 500], [8, -8]),
@@ -105,7 +105,7 @@ export default function Hero() {
         </motion.div>
       </motion.div>
 
-      <div className="max-w-4xl mx-auto z-10 relative mt-12 md:mt-0">
+      <div className="max-w-4xl mx-auto z-20 relative mt-12 md:mt-0">
         <motion.div 
           id="hero-content"
           initial="hidden" 
