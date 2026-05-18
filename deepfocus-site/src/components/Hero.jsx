@@ -73,12 +73,13 @@ export default function Hero() {
 
         {/* Floating Mockup (Left) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute left-[-160px] xl:left-[-100px] 2xl:left-[-40px] top-[15%] w-[260px] xl:w-[320px] 2xl:w-[440px] opacity-60 pointer-events-none hidden xl:block z-0"
+          className="absolute left-[-160px] xl:left-[-100px] 2xl:left-[-40px] top-[15%] w-[260px] xl:w-[320px] 2xl:w-[440px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
           style={{ 
             rotateX, 
             rotateY,
             perspective: 1200,
-            transformStyle: "preserve-3d"
+            transformStyle: "preserve-3d",
+            willChange: "transform"
           }}
         >
           <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}>
@@ -91,12 +92,13 @@ export default function Hero() {
 
         {/* Floating Mockup (Right) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute right-[-160px] xl:right-[-100px] 2xl:right-[-40px] top-[30%] w-[300px] xl:w-[340px] 2xl:w-[480px] opacity-60 pointer-events-none hidden xl:block z-0"
+          className="absolute right-[-160px] xl:right-[-100px] 2xl:right-[-40px] top-[30%] w-[300px] xl:w-[340px] 2xl:w-[480px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
           style={{ 
             rotateX: useTransform(smoothY, [-500, 500], [-8, 8]), 
             rotateY: useTransform(smoothX, [-500, 500], [8, -8]),
             perspective: 1200,
-            transformStyle: "preserve-3d"
+            transformStyle: "preserve-3d",
+            willChange: "transform"
           }}
         >
           <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}>
@@ -130,24 +132,20 @@ export default function Hero() {
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-4">
                 {"Build real intuition.".split(" ").map((word, wIdx) => (
                   <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.2em]">
-                    {word.split("").map((char, cIdx) => (
-                      <motion.span
-                        key={cIdx}
-                        className="inline-block origin-bottom text-white"
-                        variants={{
-                          hidden: { y: "120%", opacity: 0, skewY: 10, scale: 0.9 },
-                          visible: { 
-                            y: 0, 
-                            opacity: 1, 
-                            skewY: 0,
-                            scale: 1,
-                            transition: { duration: 1.2, ease: [0.19, 1.0, 0.22, 1.0] } 
-                          }
-                        }}
-                      >
-                        {char}
-                      </motion.span>
-                    ))}
+                    <motion.span
+                      className="inline-block origin-bottom text-white"
+                      variants={{
+                        hidden: { y: "120%", opacity: 0, skewY: 4 },
+                        visible: { 
+                          y: 0, 
+                          opacity: 1, 
+                          skewY: 0,
+                          transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
+                        }
+                      }}
+                    >
+                      {word}
+                    </motion.span>
                   </span>
                 ))}
               </h1>
@@ -155,22 +153,22 @@ export default function Hero() {
               {/* Row 2: Stop relying on the solutions tab. */}
               <h2 className="w-full flex flex-wrap justify-center mt-2 pb-4">
                 {"Stop relying on the solutions tab.".split(" ").map((word, i, arr) => (
-                  <motion.span
-                    key={i}
-                    variants={{
-                      hidden: { opacity: 0, filter: "blur(16px)", y: 30, scale: 0.9 },
-                      visible: { 
-                        opacity: 1, 
-                        filter: "blur(0px)", 
-                        y: 0, 
-                        scale: 1,
-                        transition: { duration: 1.4, ease: [0.16, 1, 0.3, 1] } 
-                      }
-                    }}
-                    className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal animate-shimmer bg-[length:200%_auto] mr-[0.2em]"
-                  >
-                    {word}
-                  </motion.span>
+                  <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.2em]">
+                    <motion.span
+                      variants={{
+                        hidden: { opacity: 0, y: "100%", skewY: 2 },
+                        visible: { 
+                          opacity: 1, 
+                          y: 0, 
+                          skewY: 0,
+                          transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
+                        }
+                      }}
+                      className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal animate-shimmer bg-[length:200%_auto]"
+                    >
+                      {word}
+                    </motion.span>
+                  </span>
                 ))}
               </h2>
             </div>
