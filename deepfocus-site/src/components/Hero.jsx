@@ -69,11 +69,11 @@ export default function Hero() {
       <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_20%,transparent_100%)]"></div>
 
       {/* Content Wrapper with Fixed Max Width to prevent responsive shifting across browsers */}
-      <div className="relative w-full max-w-[1440px] mx-auto flex items-center justify-center min-h-[600px] z-10">
+      <div className="relative w-full max-w-[1600px] mx-auto flex items-center justify-center min-h-[600px] z-10">
 
         {/* Floating Mockup (Left) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute left-[-100px] xl:left-[-80px] 2xl:left-[10px] top-[15%] w-[260px] xl:w-[320px] 2xl:w-[440px] opacity-60 pointer-events-none hidden xl:block z-0"
+          className="absolute left-[-160px] xl:left-[-100px] 2xl:left-[-40px] top-[15%] w-[260px] xl:w-[320px] 2xl:w-[440px] opacity-60 pointer-events-none hidden xl:block z-0"
           style={{ 
             rotateX, 
             rotateY,
@@ -91,7 +91,7 @@ export default function Hero() {
 
         {/* Floating Mockup (Right) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute right-[-100px] xl:right-[-90px] 2xl:right-[10px] top-[30%] w-[300px] xl:w-[340px] 2xl:w-[480px] opacity-60 pointer-events-none hidden xl:block z-0"
+          className="absolute right-[-160px] xl:right-[-100px] 2xl:right-[-40px] top-[30%] w-[300px] xl:w-[340px] 2xl:w-[480px] opacity-60 pointer-events-none hidden xl:block z-0"
           style={{ 
             rotateX: useTransform(smoothY, [-500, 500], [-8, 8]), 
             rotateY: useTransform(smoothX, [-500, 500], [8, -8]),
@@ -108,7 +108,7 @@ export default function Hero() {
         </motion.div>
 
         {/* Center Content - High Contrast, Centered text guaranteed to render above side panels */}
-        <div className="max-w-3xl mx-auto z-20 relative px-4 flex flex-col items-center text-center mt-12 md:mt-0">
+        <div className="max-w-4xl mx-auto z-20 relative px-4 flex flex-col items-center text-center mt-12 md:mt-0">
           <motion.div 
             id="hero-content"
             initial="hidden" 
@@ -125,16 +125,11 @@ export default function Hero() {
           >
 
             {/* Typography - High Contrast, Editorial Aesthetic with Mindblowing Reveal */}
-            <div className="overflow-hidden mb-6 flex flex-col items-center">
-              <motion.h1 
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: { opacity: 1, transition: { staggerChildren: 0.03 } }
-                }}
-                className="text-5xl md:text-[88px] font-bold tracking-tight text-white leading-[1.02] flex flex-wrap justify-center text-center"
-              >
+            <div className="w-full flex flex-col items-center justify-center text-center mb-8 px-4">
+              {/* Row 1: Build real intuition. */}
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-4">
                 {"Build real intuition.".split(" ").map((word, wIdx) => (
-                  <span key={wIdx} className="inline-flex overflow-hidden pb-4 mr-[0.25em]">
+                  <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.2em]">
                     {word.split("").map((char, cIdx) => (
                       <motion.span
                         key={cIdx}
@@ -155,37 +150,29 @@ export default function Hero() {
                     ))}
                   </span>
                 ))}
-                
-                <motion.div 
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: { 
-                      opacity: 1, 
-                      transition: { staggerChildren: 0.04, delayChildren: 0.6 } 
-                    }
-                  }}
-                  className="w-full mt-2"
-                >
-                  {"Stop relying on the solutions tab.".split(" ").map((word, i, arr) => (
-                    <motion.span
-                      key={i}
-                      variants={{
-                        hidden: { opacity: 0, filter: "blur(16px)", y: 30, scale: 0.9 },
-                        visible: { 
-                          opacity: 1, 
-                          filter: "blur(0px)", 
-                          y: 0, 
-                          scale: 1,
-                          transition: { duration: 1.4, ease: [0.16, 1, 0.3, 1] } 
-                        }
-                      }}
-                      className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent text-4xl md:text-[76px] tracking-normal animate-shimmer bg-[length:200%_auto]"
-                    >
-                      {word}{i !== arr.length - 1 && "\u00A0"}
-                    </motion.span>
-                  ))}
-                </motion.div>
-              </motion.h1>
+              </h1>
+
+              {/* Row 2: Stop relying on the solutions tab. */}
+              <h2 className="w-full flex flex-wrap justify-center mt-2 pb-4">
+                {"Stop relying on the solutions tab.".split(" ").map((word, i, arr) => (
+                  <motion.span
+                    key={i}
+                    variants={{
+                      hidden: { opacity: 0, filter: "blur(16px)", y: 30, scale: 0.9 },
+                      visible: { 
+                        opacity: 1, 
+                        filter: "blur(0px)", 
+                        y: 0, 
+                        scale: 1,
+                        transition: { duration: 1.4, ease: [0.16, 1, 0.3, 1] } 
+                      }
+                    }}
+                    className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal animate-shimmer bg-[length:200%_auto] mr-[0.2em]"
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </h2>
             </div>
 
             {/* Subheadline - Premium Blur Reveal */}
