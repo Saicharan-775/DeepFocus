@@ -25,7 +25,7 @@ chrome.runtime.onInstalled.addListener(() => {
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['config.js', 'utils/soundManager.js', 'content.js']
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }
   });
@@ -41,7 +41,7 @@ async function getFocusState() {
 async function updateFocusState(newState) {
   await chrome.storage.local.set({ focusState: newState });
   // Notify interested parts
-  chrome.runtime.sendMessage({ type: 'FOCUS_STATE_UPDATED', state: newState }).catch(() => {});
+  chrome.runtime.sendMessage({ type: 'FOCUS_STATE_UPDATED', state: newState }).catch(() => { });
 }
 
 // Listen for messages from popup or content scripts
@@ -55,11 +55,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       score: 100,
       focusTabId: message.payload.tabId,
       title: message.payload.title,
-      difficulty: message.payload.difficulty
+      difficulty: message.payload.difficulty,
+      link: message.payload.link
     };
     updateFocusState(newState).then(() => {
       sendResponse({ success: true, state: newState });
-      chrome.tabs.sendMessage(newState.focusTabId, { type: 'FOCUS_STARTED', state: newState }).catch(() => {});
+      chrome.tabs.sendMessage(newState.focusTabId, { type: 'FOCUS_STARTED', state: newState }).catch(() => { });
     });
     return true;
   }
@@ -83,7 +84,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'SYNC_EVENT') {
     const { problem, token } = message;
-    
+
     // Call the database RPC directly (Faster/More Reliable than Edge Functions)
     fetch(`${DEEPFOCUS_CONFIG.SUPABASE_URL}/rest/v1/rpc/sync_focus_event`, {
       method: 'POST',
@@ -103,22 +104,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         p_duration: problem.focus_duration || 0
       })
     })
-    .then(async (response) => {
-      const data = await response.json();
-      if (response.ok && data.success) {
-        sendResponse({ success: true });
-      } else {
-        sendResponse({ 
-          success: false, 
-          status: response.status, 
-          error: data.error || "Database Sync Failed" 
-        });
-      }
-    })
-    .catch((err) => {
-      sendResponse({ success: false, error: err.message });
-    });
-    return true; 
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.ok && data.success) {
+          sendResponse({ success: true });
+        } else {
+          sendResponse({
+            success: false,
+            status: response.status,
+            error: data.error || "Database Sync Failed"
+          });
+        }
+      })
+      .catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  }
+
+  if (message.type === 'INTERNAL_COPY') {
+    chrome.storage.local.set({ lastInternalCopy: message.text });
+    return true;
   }
 });
 
@@ -126,18 +132,18 @@ async function handleStopFocus() {
   const state = await getFocusState();
   if (state.focusActive && state.focusTabId) {
     // 1. Trigger final sync to dashboard first
-    chrome.tabs.sendMessage(state.focusTabId, { 
-      type: 'SYNC_AND_STOP', 
+    chrome.tabs.sendMessage(state.focusTabId, {
+      type: 'SYNC_AND_STOP',
       status: 'Give Up', // Default for a manual stop
-      score: state.score, 
-      switches: state.tabSwitches 
-    }).catch(() => {});
+      score: state.score,
+      switches: state.tabSwitches
+    }).catch(() => { });
 
     // 2. Save local history & analytics
     await recordSessionAnalytics(state);
-    
+
     // 3. Tell content script to clean up UI
-    chrome.tabs.sendMessage(state.focusTabId, { type: 'FOCUS_STOPPED' }).catch(() => {});
+    chrome.tabs.sendMessage(state.focusTabId, { type: 'FOCUS_STOPPED' }).catch(() => { });
   }
   await updateFocusState(defaultState);
 }
@@ -145,7 +151,7 @@ async function handleStopFocus() {
 // Analytics and History Logic
 async function recordSessionAnalytics(state) {
   if (!state.sessionStartAt) return;
-  
+
   // Calculate elapsed minutes (can be 0 if testing under 1min)
   let elapsedMinutes = Math.floor((Date.now() - state.sessionStartAt) / 60000);
   if (elapsedMinutes < 1) elapsedMinutes = 1; // Default to 1m for testing under a minute
@@ -157,10 +163,11 @@ async function recordSessionAnalytics(state) {
   // Update History
   const sessionRecord = {
     id: Date.now(),
-    title: state.title || "LeetCode Problem",
+    title: state.title || "Previously Solved Problem",
     difficulty: state.difficulty || "Medium",
     durationMins: elapsedMinutes,
-    score: state.score
+    score: state.score,
+    mistakes: state.tabSwitches || 0
   };
   history.unshift(sessionRecord);
   if (history.length > 5) history.pop(); // Keep last 5
@@ -172,11 +179,11 @@ async function recordSessionAnalytics(state) {
   // Update Streak
   const today = new Date().toDateString();
   let currentStreak = analytics.streak;
-  
+
   if (analytics.lastFocusDay) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (analytics.lastFocusDay === yesterday.toDateString()) {
       currentStreak += 1;
     } else if (analytics.lastFocusDay !== today) {
@@ -212,14 +219,14 @@ async function handleTabOrWindowChange(activeInfo) {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, async (tabs) => {
     if (!tabs || tabs.length === 0) return;
     const currentActiveTab = tabs[0];
-    
+
     if (currentActiveTab.id !== state.focusTabId) {
       // 1. FORCE SNAP-BACK: Jump back to target tab AND its window
-      chrome.tabs.update(state.focusTabId, { active: true }).catch(() => {});
+      chrome.tabs.update(state.focusTabId, { active: true }).catch(() => { });
       chrome.tabs.get(state.focusTabId, (tab) => {
-        if (tab && tab.windowId) chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+        if (tab && tab.windowId) chrome.windows.update(tab.windowId, { focused: true }).catch(() => { });
       });
-      
+
       processSwitch(state, now);
     }
   });
@@ -236,16 +243,16 @@ async function processSwitch(state, now) {
     score: newScore,
     lastSwitchTime: now
   };
-  
+
   await updateFocusState(newState);
-  chrome.tabs.sendMessage(state.focusTabId, { type: 'TAB_SWITCH_WARNING', state: newState }).catch(() => {});
+  chrome.tabs.sendMessage(state.focusTabId, { type: 'TAB_SWITCH_WARNING', state: newState }).catch(() => { });
 }
 
 // Monitor URL changes for /solution or /editorial (SPA navigation)
 chrome.webNavigation.onHistoryStateUpdated.addListener(async (details) => {
   const state = await getFocusState();
   if (state.focusActive && state.focusTabId === details.tabId) {
-    chrome.tabs.sendMessage(details.tabId, { type: 'URL_CHANGED', url: details.url }).catch(() => {});
+    chrome.tabs.sendMessage(details.tabId, { type: 'URL_CHANGED', url: details.url }).catch(() => { });
   }
 }, { url: [{ hostContains: 'leetcode.com' }] });
 
@@ -267,9 +274,9 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
           body: JSON.stringify({
             p_raw_token: token,
             p_title: state.title || "Unknown Problem",
-            p_link: `https://leetcode.com/problems/${state.title?.toLowerCase().replace(/ /g, '-')}`,
+            p_link: state.link || `https://leetcode.com/problems/${state.title?.toLowerCase().replace(/ /g, '-')}`,
             p_difficulty: state.difficulty || "Medium",
-            p_status: (state.tabSwitches >= 10) ? "Cheated" : (state.tabSwitches >= 4 ? "Low Focus" : (state.tabSwitches >= 1 ? "Focus Kept" : "Unexpected Exit")),
+            p_status: (state.tabSwitches > 8) ? "Cheated" : "Give Up",
             p_score: state.score,
             p_switches: state.tabSwitches,
             p_duration: 0

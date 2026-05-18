@@ -113,6 +113,44 @@
       opacity: 0.7;
       pointer-events: none;
     }
+    
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ef4444;
+      transition: .3s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #8b5cf6;
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
   </style>
 </head>
 <body>
@@ -136,6 +174,14 @@
       <span class="preview-label">Score</span>
       <span class="preview-value" id="preview-score">100</span>
     </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 4px;">
+    <span style="font-size: 13px; font-weight: 500; color: #d1d5db;">Roast Mode</span>
+    <label class="switch" title="Toggle between funny roasts and serious warnings">
+      <input type="checkbox" id="roast-toggle" checked>
+      <span class="slider"></span>
+    </label>
   </div>
   
   <!-- Connection Section -->

@@ -55,7 +55,7 @@ export async function addRevisionProblem(problem) {
   if (error) {
     // 23505 = PostgreSQL unique violation — problem already exists, silently ignore
     if (error.code === '23505') {
-      console.log('[revisionService] Problem already exists. Ignored.');
+      // Silently ignore unique violation
     } else {
       console.error('[revisionService] Error adding revision problem:', error.message);
     }

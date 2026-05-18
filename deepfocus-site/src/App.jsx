@@ -1,14 +1,23 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-import MainLayout from "./layouts/MainLayout";
-
-import LandingPage from "./pages/LandingPage";
-import Revision from "./pages/Revision.jsx";
-import TodaysRevision from "./pages/TodaysRevision.jsx";
-import Guide from "./pages/Guide";
-import Insights from "./pages/Insights.jsx";
-import Library from "./pages/Library.jsx";
+const MainLayout = lazy(() => import("./layouts/MainLayout"));
+const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AiPlanner = lazy(() => import("./pages/AiPlanner"));
+const AiTutor = lazy(() => import("./pages/AiTutor"));
+const Revision = lazy(() => import("./pages/Revision.jsx"));
+const Sheet = lazy(() => import("./pages/Sheet.jsx"));
+const TodaysRevision = lazy(() => import("./pages/TodaysRevision.jsx"));
+const Settings = lazy(() => import("./pages/Settings.jsx"));
+const Guide = lazy(() => import("./pages/Guide"));
+const Insights = lazy(() => import("./pages/Insights.jsx"));
+const Library = lazy(() => import("./pages/Library.jsx"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword.jsx"));
+const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
+import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
 
 function App() {
@@ -18,22 +27,38 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
+    <ErrorBoundary>
+      <Router>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div></div>}>
+          <Routes>
 
-        {/* Marketing pages */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<LandingPage />} />
-          <Route path="guide" element={<Guide />} />
-        </Route>
+            {/* Marketing pages */}
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<LandingPage />} />
+              <Route path="guide" element={<Guide />} />
+            </Route>
 
-        {/* Dashboard page */}
-        <Route path="/revision" element={<Revision />} />
-        <Route path="/today" element={<TodaysRevision />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/insights" element={<Insights />} />
-      </Routes>
-    </Router>
+            {/* Dashboard Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/revision" element={<Revision />} />
+                <Route path="/sheet" element={<Sheet />} />
+                <Route path="/today" element={<TodaysRevision />} />
+                <Route path="/planner" element={<AiPlanner />} />
+                <Route path="/tutor" element={<AiTutor />} />
+                <Route path="/insights" element={<Insights />} />
+                <Route path="/library" element={<Library />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Route>
+            {/* Auth routes */}
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
+          </Routes>
+        </Suspense>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

@@ -27,7 +27,8 @@
       ],
       "css": ["styles/widget.css"],
       "js": ["config.js", "utils/soundManager.js", "content.js"],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [
@@ -39,7 +40,11 @@
         "assets/icons/*",
         "sounds/*"
       ],
-      "matches": ["*://leetcode.com/*"]
+      "matches": [
+        "*://leetcode.com/*",
+        "*://*.leetcode.com/*",
+        "http://localhost/*"
+      ]
     }
   ],
   "action": {

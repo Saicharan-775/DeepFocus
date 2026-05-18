@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title>DeepFocus</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
     :root {
       --bg: #09090b;
       --card-bg: #121214;
@@ -15,14 +13,15 @@
       --accent: #818cf8; /* indigo 400 */
       --green-bg: rgba(16, 185, 129, 0.15);
       --green-text: #34d399;
-      --font-ui: 'Inter', sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     }
 
     body {
       margin: 0;
       padding: 24px 20px;
       width: 360px;
+      min-height: 550px;
       background: var(--bg);
       color: var(--text-main);
       font-family: var(--font-ui);
@@ -81,35 +80,7 @@
       box-shadow: none;
     }
 
-    /* TOGGLE */
-    .mode-toggle {
-      display: flex;
-      background: #18181b;
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 24px;
-      border: 1px solid var(--border);
-    }
-    .toggle-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .toggle-btn.active {
-      background: #27272a;
-      color: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    .toggle-btn svg { width: 16px; height: 16px; }
+
 
     /* MAIN CARD */
     .timer-card {
@@ -404,17 +375,7 @@
     </div>
   </div>
 
-  <!-- TOGGLE -->
-  <div class="mode-toggle">
-    <div class="toggle-btn active" id="btn-serious">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
-      Serious
-    </div>
-    <div class="toggle-btn" id="btn-roast">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/></svg>
-      Roast
-    </div>
-  </div>
+
 
   <!-- MAIN CARD -->
   <div class="timer-card">
@@ -502,6 +463,7 @@
   </div>
 
   <!-- HISTORY -->
+  <div class="section-title">PREVIOUSLY SOLVED PROBLEMS</div>
   <div class="history-list">
     <div class="h-item">
       <div class="h-icon">
@@ -509,10 +471,10 @@
       </div>
       <div class="h-info">
         <h4 class="h-title">Two Sum</h4>
-        <p class="h-sub">LeetCode • Easy</p>
+        <p class="h-sub">Previously Solved • Easy</p>
       </div>
       <div class="h-stats">
-        <div class="h-time">15m</div>
+        <div class="h-time">15m • 0 mistakes</div>
         <div class="h-score">98 score</div>
       </div>
     </div>
@@ -523,10 +485,10 @@
       </div>
       <div class="h-info">
         <h4 class="h-title">Valid Parentheses</h4>
-        <p class="h-sub">LeetCode • Medium</p>
+        <p class="h-sub">Previously Solved • Medium</p>
       </div>
       <div class="h-stats">
-        <div class="h-time">32m</div>
+        <div class="h-time">32m • 2 mistakes</div>
         <div class="h-score" style="color: #94a3b8;">85 score</div>
       </div>
     </div>

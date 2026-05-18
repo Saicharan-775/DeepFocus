@@ -1,0 +1,26 @@
+{
+  "patterns": [
+    "Hashing",
+    "Two Pointers",
+    "Sliding Window",
+    "Prefix Sum",
+    "Binary Search",
+    "Linked List",
+    "Stack",
+    "Monotonic Stack",
+    "Trees",
+    "Graphs",
+    "Heap",
+    "Dynamic Programming",
+    "Greedy",
+    "Backtracking",
+    "Bit Manipulation",
+    "Trie",
+    "Union Find",
+    "Topological Sort",
+    "Segment Tree",
+    "Sweep Line",
+    "Intervals",
+    "Math & Geometry"
+  ]
+}

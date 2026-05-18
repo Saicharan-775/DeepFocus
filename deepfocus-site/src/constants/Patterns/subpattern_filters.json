@@ -1,0 +1,157 @@
+{
+  "Two Pointers": [
+    "Cyclic Sort",
+    "Expand from Center",
+    "Fast & Slow (Tortoise & Hare)",
+    "Fixed Gap",
+    "In-place Modification",
+    "Opposite Ends",
+    "Process from End",
+    "Reverse String",
+    "String Backspace/Comparison"
+  ],
+  "Sliding Window": [
+    "Data Structure Design",
+    "Fixed Size Window",
+    "Frequency Map Window",
+    "Monotonic Queue (Min/Max Window)",
+    "Variable Size Window"
+  ],
+  "Trees": [
+    "1D Fibonacci/Staircase",
+    "Inorder (DFS)",
+    "Level Order (BFS)",
+    "Lowest Common Ancestor (LCA)",
+    "Postorder (DFS)",
+    "Preorder (DFS)",
+    "Tree Serialization"
+  ],
+  "Graphs": [
+    "BFS Island/Component Counting",
+    "Bidirectional BFS",
+    "Bridges & Articulation Points",
+    "Connected Components",
+    "DFS Island/Component Counting",
+    "Directed Cycle Detection",
+    "Graph Cloning",
+    "Kahn's Topological Sort",
+    "Merge Components",
+    "Minimum Spanning Tree (MST)",
+    "Path Finding",
+    "Shortest Path (Bellman-Ford)",
+    "Shortest Path (Dijkstra)",
+    "Strongly Connected Components (SCC)",
+    "Undirected Cycle Detection",
+    "Union Find / Disjoint Set"
+  ],
+  "Dynamic Programming": [
+    "0/1 Knapsack",
+    "1D Fibonacci/Staircase",
+    "2D Grid Paths",
+    "Catalan Numbers / Math",
+    "Interval Merging DP",
+    "Kadane\u2019s (Subarray Sum)",
+    "Longest Common Subsequence (LCS)",
+    "Longest Increasing Subsequence (LIS)",
+    "Stock Trading State Machine",
+    "String Edit Distance",
+    "String Partitioning (Word Break)",
+    "Unbounded Knapsack"
+  ],
+  "Heap": [
+    "Data Structure Design",
+    "Greedy Scheduling (Min Cost)",
+    "K-Way Merge",
+    "Maximum Overlap/Meetings",
+    "Median of Two Arrays",
+    "Task Scheduling",
+    "Top K Elements",
+    "Two Heaps (Median)"
+  ],
+  "Backtracking": [
+    "2D Grid Path Finding",
+    "Combinations / Subsets",
+    "Combinatorics Generation",
+    "Constraint Satisfaction (N-Queens)",
+    "Partitioning",
+    "Permutations",
+    "Subsets (Include/Exclude)",
+    "Word Search in Trie"
+  ],
+  "Greedy": [
+    "Circular Circuit / Gas Station",
+    "Interval Overlaps",
+    "Interval Scheduling",
+    "Jump Game / Reachability",
+    "Sort & Greed",
+    "Task Scheduling"
+  ],
+  "Binary Search": [
+    "Binary Search on Answer",
+    "First / Last Occurrence",
+    "Median of Two Arrays",
+    "Rotated Array Search",
+    "Standard Binary Search"
+  ],
+  "Stack": [
+    "Data Structure Design",
+    "Histogram Largest Area",
+    "Math Expression Evaluation",
+    "Min/Max Stack Design",
+    "Monotonic Ascending/Descending",
+    "Next Greater Distance",
+    "Next Greater Element",
+    "Next Smaller Element",
+    "Parentheses Matching",
+    "Simulation / Parsing"
+  ],
+  "Bit Manipulation": [
+    "Bitmask DP",
+    "Cyclic Sort",
+    "Hamming Weight (Count Set Bits)",
+    "Power of Two/Four Check",
+    "XOR Single/Missing Number"
+  ],
+  "Linked List": [
+    "Cycle / Intersection Detection",
+    "Digit Addition",
+    "In-place Reversal",
+    "List Partitioning"
+  ],
+  "Arrays & Matrices": [
+    "Cyclic Sort",
+    "Digit Manipulation",
+    "In-place State Marking",
+    "Matrix Rotation / Transpose",
+    "Prefix & Suffix Arrays",
+    "Process from End",
+    "Simulation",
+    "Spiral / Diagonal Traversal"
+  ],
+  "Strings": [
+    "Anagrams / Frequencies",
+    "Palindrome Validation",
+    "Parsing/Formatting",
+    "Pattern Matching (KMP)",
+    "Repeated Substring",
+    "Simulation",
+    "Symbol Conversion"
+  ],
+  "Design": [
+    "Data Structure Design",
+    "Prefix / Wildcard Search",
+    "Trie Implementation"
+  ],
+  "Union Find": [
+    "Cycle Detection"
+  ],
+  "Trie": [
+    "Prefix Search"
+  ],
+  "Segment Tree": [
+    "Point Update & Range Query"
+  ],
+  "Sweep Line": [
+    "Interval Sweeping"
+  ]
+}

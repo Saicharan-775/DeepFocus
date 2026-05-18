@@ -58,12 +58,43 @@ const lightningIcon = `<svg fill="currentColor" viewBox="0 0 20 20"><path fill-r
 const minusIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>`;
 const plusIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>`;
 
+function syncStateToPage() {
+  window.postMessage({
+    type: '__DEEPFOCUS_STATE_UPDATE__',
+    focusActive: focusState.focusActive
+  }, '*');
+}
+
+// Initial sync
+chrome.storage.local.get(['focusState'], (res) => {
+  if (res.focusState) {
+    focusState = res.focusState;
+    initFocusEnvironment();
+    syncStateToPage();
+  }
+});
 
 // Listen for messages from background & popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'FOCUS_STARTED') {
+    focusState = message.state;
+    initFocusEnvironment();
+    syncStateToPage();
+  }
+  if (message.type === 'FOCUS_STOPPED') {
+    focusState = { focusActive: false };
+    cleanupFocusEnvironment();
+    syncStateToPage();
+  }
+  if (message.type === 'TAB_SWITCH_WARNING') {
+    focusState = message.state;
+    updateWidgetUI();
+    showWarningModal();
+    syncStateToPage();
+  }
   if (message.type === 'GET_DIFFICULTY') {
     let diff = 'Medium'; // default
-    let titleStr = "LeetCode Problem";
+    let titleStr = "Previously Solved Problem";
 
     try {
       // 1. IMPROVED TITLE DETECTION
@@ -73,19 +104,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         document.querySelector('h4.text-title-large');
 
       if (titleEl && titleEl.textContent) {
-        titleStr = titleEl.textContent.trim();
+        titleStr = titleEl.textContent.replace(/^\d+\.\s*/, '').trim();
       } else if (document.title) {
         // Fallback to document title: "1. Two Sum - LeetCode" -> "Two Sum"
         titleStr = document.title.split('-')[0].replace(/^\d+\.\s*/, '').trim();
       }
 
-      if (!titleStr || titleStr.toLowerCase().includes("leetcode")) {
+      if (!titleStr || titleStr.toLowerCase().includes("leetcode") || titleStr === "Previously Solved Problem" || titleStr === "LeetCode Problem") {
         // Last resort: extract from URL
         const urlMatch = window.location.href.match(/\/problems\/([^\/]+)/);
         if (urlMatch) {
           titleStr = urlMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
       }
+
+      // Explicitly get link
+      const fullUrl = window.location.href.split('?')[0].split('#')[0];
+      const linkMatch = fullUrl.match(/https?:\/\/leetcode\.com\/problems\/[^\/]+\//);
+      const link = linkMatch ? linkMatch[0] : fullUrl;
 
       // 2. IMPROVED DIFFICULTY DETECTION
       if (document.body) {
@@ -116,16 +152,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     difficulty = diff;
-    sendResponse({ difficulty: diff, title: titleStr });
+    sendResponse({ difficulty: diff, title: titleStr, link: link });
     return;
   }
 
   if (message.type === 'FOCUS_STARTED') {
     focusState = message.state;
     isCurrentlyBlocked = false;
-    
+
     initFocusEnvironment();
-    
+
     if (document.body) {
       injectWidget();
       updateWidgetUI();
@@ -190,8 +226,8 @@ function syncWithWebsite(status, score, switches) {
   if (!window.location.href.includes('/problems/')) return;
 
   const details = getProblemDetails();
-  const elapsedSecs = focusState.sessionStartAt 
-    ? Math.floor((Date.now() - focusState.sessionStartAt) / 1000) 
+  const elapsedSecs = focusState.sessionStartAt
+    ? Math.floor((Date.now() - focusState.sessionStartAt) / 1000)
     : 0;
 
   const problemObject = {
@@ -251,16 +287,16 @@ async function processEventQueue() {
     const uniqueMap = new Map();
     queue.forEach(item => uniqueMap.set(item.link, item));
     const dedupedQueue = Array.from(uniqueMap.values());
-    
+
     if (dedupedQueue.length !== queue.length) {
       // Queue pruned to prevent spam
     }
 
     // 2. PROCESS ONE-BY-ONE SAFELY
     let remainingQueue = [...dedupedQueue];
-    
+
     for (const problem of dedupedQueue) {
-      
+
       try {
         const response = await new Promise((resolve) => {
           chrome.runtime.sendMessage({ type: 'SYNC_EVENT', problem, token }, resolve);
@@ -268,21 +304,21 @@ async function processEventQueue() {
 
         if (response && response.success) {
           remainingQueue = remainingQueue.filter(q => q.link !== problem.link);
-          
+
           // Save progress IMMEDIATELY after each success
           await chrome.storage.local.set({ deepfocus_pending_events: remainingQueue });
-          
+
           if (remainingQueue.length === 0) showToast("🚀 Revision Sheet Updated!");
         } else {
           console.error("❌ Sync failure. Stopping for now.");
-          break; 
+          break;
         }
 
         // Small pulse between requests
         await new Promise(r => setTimeout(r, 1000));
       } catch (error) {
         console.error("🌐 Messaging Failure:", error);
-        break; 
+        break;
       }
     }
 
@@ -362,7 +398,8 @@ function initFocusEnvironment(initialCollapsed = false, initialPos = null) {
     injectWidget(initialCollapsed, initialPos);
     setupPersistObserver(initialCollapsed, initialPos);
     setupAcceptedDetection();
-    setupMouseLeaveWarning(); 
+    setupMouseLeaveWarning();
+    setupCopyPasteRestriction();
   };
 
   if (document.body) {
@@ -390,7 +427,7 @@ function cleanupFocusEnvironment() {
   if (window._dfOrigReplaceState) history.replaceState = window._dfOrigReplaceState;
   const existingToast = document.querySelector('.df-toast');
   if (existingToast) existingToast.remove();
-  
+
   hideBlockOverlay();
   isCurrentlyBlocked = false;
   if (blockingObserver) blockingObserver.disconnect();
@@ -510,7 +547,7 @@ function hideBlockOverlay() {
 // URL Blocking overlay
 function blockSolutionsIfNeeded() {
   if (!focusState.focusActive) return;
-  
+
   const isBlocked = BLOCKED_PATTERN.test(window.location.href);
 
   if (isBlocked) {
@@ -526,7 +563,7 @@ function blockSolutionsIfNeeded() {
           }
         });
       }
-      
+
       if (document.body) {
         blockingObserver.observe(document.body, { childList: true, subtree: true });
       }
@@ -756,9 +793,7 @@ function showExtendPrompt() {
 
   document.getElementById('df-btn-finish-session').onclick = () => {
     overlay.remove();
-    // Naturally finished sessions get 'Focus Kept'
-    syncWithWebsite("Focus Kept", focusState.score || 0, focusState.tabSwitches || 0);
-    stopFocusRequest(true); // pass skipSync=true since we just did it
+    stopFocusRequest(false, "Focus Kept");
   };
 }
 
@@ -843,79 +878,83 @@ let lastLocalCopy = null;
 function handleClipboardEvent(e) {
   if (!focusState.focusActive) return;
   const target = e.target;
+
+  // Broader editor detection
   const isEditor = target.closest('.monaco-editor') ||
     target.closest('.react-codemirror2') ||
+    target.closest('[data-track-load="editor_content"]') ||
+    target.closest('.editor-scrollable') ||
     target.classList.contains('inputarea') ||
-    target.closest('.editor-scrollable'); // Extra safety for LeetCode editor variations
+    target.closest('.cm-editor') ||
+    target.closest('.CodeMirror') ||
+    (target.tagName === 'TEXTAREA' && (target.closest('.editor-container') || target.closest('.editor-scrollable')));
 
-  const isDescription = target.closest('[data-track-load="description_content"]') ||
-    target.closest('.question-content') ||
-    target.closest('.elf-description');
-
-  // Handle Copy: record what was copied locally ONLY if it's from the editor or description
-  if (e.type === 'copy') {
-    if (isEditor || isDescription) {
-      const selection = window.getSelection().toString();
-      if (selection) {
-        lastLocalCopy = selection;
-      }
-    } else {
-      // If user copies something else (external site, etc.), invalidate local copy
-      lastLocalCopy = null;
+  // Handle Copy: record what was copied locally
+  if (e.type === 'copy' || e.type === 'cut') {
+    let selection = window.getSelection().toString();
+    if (selection) {
+      lastLocalCopy = selection;
+      chrome.runtime.sendMessage({ type: 'INTERNAL_COPY', text: selection });
+      window.postMessage({ type: '__DEEPFOCUS_INTERNAL_COPY__', text: selection }, '*');
     }
     return;
   }
 
-  // Handle Paste: validate against local copy
-  if (e.type === 'paste' && isEditor) {
+  // Handle Paste
+  if (e.type === 'paste') {
     const clipboardData = (e.clipboardData || window.clipboardData).getData('text');
-
-    // Normalize logic: ignore external/internal differences in line endings or trailing spaces
     const normalize = (str) => (str || '').replace(/\r\n/g, '\n').trim();
-
     const normClipboard = normalize(clipboardData);
-    const normLocal = normalize(lastLocalCopy);
+    const isInternalFlag = e.clipboardData?.getData('text/deepfocus-internal') === 'true';
 
-    // Allow if it matches exactly what we just copied within this session
-    if (lastLocalCopy && normClipboard === normLocal && normClipboard.length > 0) {
-      // Allow the native paste to happen silently
-      return;
-    } else {
-      // External content or no local copy recorded
-      e.preventDefault();
-      e.stopPropagation();
-      showCheekyPasteToast();
-      return;
+    const normLocalSync = normalize(lastLocalCopy);
+    const isInternalSync = isInternalFlag || (lastLocalCopy && normClipboard === normLocalSync && normClipboard.length > 0);
+
+    // Only allow pasting if it's strictly internal code being pasted into the editor
+    if (isEditor && isInternalSync) {
+      return; // Allow
     }
-  }
 
-  // Block copy/paste in non-editable areas as well
-  const isEditable = target.tagName === 'TEXTAREA' ||
-    target.tagName === 'INPUT' ||
-    target.isContentEditable ||
-    isEditor;
-
-  if (!isEditable) {
-    if (e.type === 'paste') {
-      e.preventDefault();
-      e.stopPropagation();
-      showToast("Pasting is not allowed here!");
-    }
+    // Otherwise block (external code, text anywhere, or internal text outside editor)
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    showCheekyPasteToast();
+    return false;
   }
 }
 
-const cheekyLines = [
+// Block Ctrl+V / Cmd+V directly as well for extra protection
+document.addEventListener('keydown', (e) => {
+  if (!focusState.focusActive) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+    const target = e.target;
+    const isEditor = target.closest('.monaco-editor') || target.classList.contains('inputarea') || target.closest('.cm-editor');
+
+    if (isEditor) {
+      // We can't see clipboard data here easily without async, 
+      // so we let the 'paste' event handler deal with it.
+      // But we log it.
+      // But we log it.
+    }
+  }
+}, true);
+
+const roastLines = [
+  "Even my grandma types faster than you copy. Get to work!",
   "Brain.exe has left the chat? Try typing it.",
-  "Code is like love; you shouldn't just copy it.",
-  "Nice try, Ctrl+V artist!",
-  "The keys are right there. Use them.",
+  "The keys are right there. Use them, lazy bones.",
+  "Nice try, Ctrl+V artist! Practice makes perfect.",
   "Pasting code? That's not very DeepFocus of you.",
   "Your keyboard is feeling neglected. Type it out!",
-  "Don't cheat your own growth. Build it manually."
+  "Copy-pasting won't fix your skill issue, buddy.",
+  "ChatGPT did the work, now you want the credit? Type it.",
+  "Ctrl+C, Ctrl+V... Do you even know what a semicolon is?",
+  "Is this code even yours? Doubt it. Type it or lose it.",
 ];
 
 function showCheekyPasteToast() {
-  const line = cheekyLines[Math.floor(Math.random() * cheekyLines.length)];
+  const line = roastLines[Math.floor(Math.random() * roastLines.length)];
   showToast(line);
 }
 
@@ -1004,7 +1043,7 @@ function setupAcceptedDetection() {
   try {
     const interceptScript = document.createElement('script');
     interceptScript.src = chrome.runtime.getURL('utils/pageInterceptor.js');
-    interceptScript.onload = function() {
+    interceptScript.onload = function () {
       this.remove();
     };
     (document.head || document.documentElement).appendChild(interceptScript);
@@ -1016,14 +1055,20 @@ function setupAcceptedDetection() {
   window.addEventListener('message', (event) => {
     if (event.data?.type !== '__DEEPFOCUS_SUBMISSION_RESULT__') return;
     if (!waitingForSubmit) return;
-    
+
     const msg = event.data.status_msg || '';
     const state = event.data.state || '';
-    
+
     // Ignore intermediate states
     if (state === 'PENDING' || state === 'STARTED') return;
-    
+
     xhrResultReceived = msg;
+  });
+
+  // Listen for internal copies from pageInterceptor
+  window.addEventListener('message', (event) => {
+    if (event.data?.type !== '__DEEPFOCUS_INTERNAL_COPY__') return;
+    lastLocalCopy = event.data.text;
   });
 
   // ========== STRATEGY 2: Submit Button Click Detection ==========
@@ -1032,13 +1077,13 @@ function setupAcceptedDetection() {
     const btn = e.target.closest('button');
     if (!btn) return;
     const text = (btn.innerText || btn.textContent || '').trim().toLowerCase();
-    const isSubmit = text === 'submit' || 
-                   btn.getAttribute('data-e2e-locator') === 'console-submit-button' ||
-                   btn.getAttribute('data-cy') === 'submit-code-btn';
+    const isSubmit = text === 'submit' ||
+      btn.getAttribute('data-e2e-locator') === 'console-submit-button' ||
+      btn.getAttribute('data-cy') === 'submit-code-btn';
 
     if (isSubmit) {
       waitingForSubmit = true;
-      isJudging = false; 
+      isJudging = false;
       lastSeenResult = null;
       xhrResultReceived = null;
       window._dfClickTime = Date.now();
@@ -1059,7 +1104,7 @@ function setupAcceptedDetection() {
       const finishDetection = () => {
         // Reset state flags ONLY — do NOT clear the interval.
         // The interval must keep running to detect future submissions.
-        waitingForSubmit = false; 
+        waitingForSubmit = false;
         isJudging = false;
         xhrResultReceived = null;
         lastSeenResult = null;
@@ -1068,11 +1113,11 @@ function setupAcceptedDetection() {
       // ---- CHECK 1: Network intercepted result (most reliable) ----
       if (xhrResultReceived) {
         const msg = xhrResultReceived.toLowerCase();
-        
+
         if (msg === 'accepted') {
           if (window.DeepFocusSound) window.DeepFocusSound.playSound('success');
           finishDetection();
-          stopFocusRequest();
+          stopFocusRequest(false, "Focus Kept");
           return;
         } else {
           // Any non-Accepted final result = failure
@@ -1084,13 +1129,13 @@ function setupAcceptedDetection() {
       }
 
       // ---- CHECK 2: DOM-based detection (fallback) ----
-      const resultEl = document.querySelector('[data-e2e-locator="submission-result"]') || 
-                       document.querySelector('.submission-result') ||
-                       document.querySelector('[class*="result-status"]') ||
-                       document.querySelector('[class*="status-column"]');
+      const resultEl = document.querySelector('[data-e2e-locator="submission-result"]') ||
+        document.querySelector('.submission-result') ||
+        document.querySelector('[class*="result-status"]') ||
+        document.querySelector('[class*="status-column"]');
 
       const checkText = (el) => {
-        try { return el ? (el.textContent || el.innerText || '').trim().toLowerCase() : ''; } 
+        try { return el ? (el.textContent || el.innerText || '').trim().toLowerCase() : ''; }
         catch (err) { return ''; }
       };
 
@@ -1113,7 +1158,7 @@ function setupAcceptedDetection() {
           if (lowerRes.includes('accepted')) {
             if (window.DeepFocusSound) window.DeepFocusSound.playSound('success');
             finishDetection();
-            stopFocusRequest();
+            stopFocusRequest(false, "Focus Kept");
             return;
           }
 
@@ -1127,7 +1172,7 @@ function setupAcceptedDetection() {
         const errorEls = document.querySelectorAll(
           '[class*="text-red-"], [class*="text-pink-"], [class*="error"], [data-cy*="error"]'
         );
-        
+
         for (const el of errorEls) {
           const txt = checkText(el);
           if (txt && (
@@ -1160,7 +1205,12 @@ function setupAcceptedDetection() {
 function stopFocusRequest(skipSync = false, customStatus = null) {
   // If stopping naturally or via button, sync as Give Up (unless overridden by switches or customStatus)
   if (focusState.focusActive && !skipSync) {
-    let finalStatus = (focusState.tabSwitches >= 10) ? "Cheated" : (focusState.tabSwitches >= 4 ? "Low Focus" : (focusState.tabSwitches >= 1 ? "Focus Kept" : (customStatus || "Give Up")));
+    let finalStatus = "Give Up";
+    if (focusState.tabSwitches > 8) {
+      finalStatus = "Cheated";
+    } else if (customStatus) {
+      finalStatus = customStatus;
+    }
     syncWithWebsite(finalStatus, focusState.score || 0, focusState.tabSwitches || 0);
   }
 

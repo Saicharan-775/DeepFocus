@@ -1,0 +1,23 @@
+{
+  "patterns": [
+    "Arrays & Matrices",
+    "Backtracking",
+    "Binary Search",
+    "Bit Manipulation",
+    "Design",
+    "Dynamic Programming",
+    "Graphs",
+    "Greedy",
+    "Heap",
+    "Linked List",
+    "Segment Tree",
+    "Sliding Window",
+    "Stack",
+    "Strings",
+    "Sweep Line",
+    "Trees",
+    "Trie",
+    "Two Pointers",
+    "Union Find"
+  ]
+}

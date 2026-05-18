@@ -1,0 +1,130 @@
+{
+  "Hashing": [
+    "Frequency Map",
+    "Matrix Hashing",
+    "String Hashing",
+    "Anagrams"
+  ],
+  "Two Pointers": [
+    "Fast & Slow",
+    "Opposite Direction",
+    "Fixed Gap",
+    "In-place Manipulation"
+  ],
+  "Sliding Window": [
+    "Fixed Size",
+    "Variable Size",
+    "Shrinkable",
+    "Count Mappings"
+  ],
+  "Binary Search": [
+    "Search Space",
+    "Rotated Array",
+    "Matrix Search",
+    "Lower/Upper Bound"
+  ],
+  "Linked List": [
+    "Reversal",
+    "Cycle Detection",
+    "Merge",
+    "Dummy Node",
+    "In-place Manipulation"
+  ],
+  "Stack": [
+    "String Parsing",
+    "Valid Parentheses",
+    "Calculator"
+  ],
+  "Monotonic Stack": [
+    "Next Greater",
+    "Next Smaller",
+    "Histogram"
+  ],
+  "Trees": [
+    "Traversal",
+    "LCA",
+    "BST Properties",
+    "Root to Leaf Path",
+    "Level Order",
+    "Recursive"
+  ],
+  "Graphs": [
+    "Shortest Path",
+    "Connected Components",
+    "Matrix/Grid DFS",
+    "Cycle Detection",
+    "Bipartite"
+  ],
+  "Heap": [
+    "Top K",
+    "K-way Merge",
+    "Two Heaps"
+  ],
+  "Dynamic Programming": [
+    "1D DP",
+    "2D DP",
+    "0/1 Knapsack",
+    "Unbounded Knapsack",
+    "Fibonacci",
+    "Longest Common Subsequence",
+    "Palindromes",
+    "Grid DP",
+    "State Machine"
+  ],
+  "Greedy": [
+    "Optimal Choice",
+    "Two Arrays",
+    "Sorting"
+  ],
+  "Backtracking": [
+    "Permutations",
+    "Combinations",
+    "Subsets",
+    "Matrix DFS"
+  ],
+  "Bit Manipulation": [
+    "XOR",
+    "Bit Masking",
+    "Shifting"
+  ],
+  "Trie": [
+    "Prefix Matching",
+    "Word Search",
+    "Bit Trie"
+  ],
+  "Union Find": [
+    "Connected Components",
+    "Cycle Detection",
+    "Path Compression"
+  ],
+  "Topological Sort": [
+    "Kahn's Algorithm",
+    "Course Schedule",
+    "Dependency Resolution"
+  ],
+  "Segment Tree": [
+    "Range Query",
+    "Point Update",
+    "Lazy Propagation"
+  ],
+  "Sweep Line": [
+    "Meeting Rooms",
+    "Interval Overlaps",
+    "Events Handling"
+  ],
+  "Intervals": [
+    "Merge",
+    "Insert",
+    "Overlap"
+  ],
+  "Prefix Sum": [
+    "Subarray Sum",
+    "2D Prefix Sum",
+    "Difference Array"
+  ],
+  "Math & Geometry": [
+    "Prime Numbers",
+    "Modular Arithmetic",
+    "Matrix Rotation"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "Hash Table": "Hashing",
+  "HashMap": "Hashing",
+  "HashSet": "Hashing",
+  "Memoization": "Dynamic Programming",
+  "DP": "Dynamic Programming",
+  "DFS": "Graphs",
+  "BFS": "Graphs",
+  "Depth-First Search": "Graphs",
+  "Breadth-First Search": "Graphs",
+  "Window Sliding": "Sliding Window",
+  "Priority Queue": "Heap",
+  "Disjoint Set": "Union Find",
+  "Math": "Math & Geometry",
+  "Geometry": "Math & Geometry",
+  "Binary Search Tree": "Trees",
+  "BST": "Trees"
+}

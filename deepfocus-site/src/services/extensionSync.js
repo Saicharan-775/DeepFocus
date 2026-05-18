@@ -6,5 +6,5 @@ import { addRevisionProblem } from './revisionService';
  * content script bridge running on this page.
  */
 export function startExtensionSync() {
-  console.log('🔄 DeepFocus Passive Extension Sync Enabled');
+
 }

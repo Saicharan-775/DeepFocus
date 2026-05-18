@@ -105,6 +105,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   };
 
+  // Roast Mode Toggle Logic
+  const roastToggle = document.getElementById('roast-toggle');
+  
+  chrome.storage.local.get(['deepfocus_roast_mode'], (res) => {
+    // Default to true if not set
+    const isRoast = res.deepfocus_roast_mode !== false;
+    roastToggle.checked = isRoast;
+  });
+
+  roastToggle.addEventListener('change', (e) => {
+    chrome.storage.local.set({ deepfocus_roast_mode: e.target.checked });
+  });
+
   // Initial load
   await updateStatus();
 });

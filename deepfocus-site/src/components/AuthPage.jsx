@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Mail, Lock, User, X, ChevronDown, Github, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function AuthPage() {
-  const [mode, setMode] = useState('signup'); // 'signup' or 'signin'
+  const [mode, setMode] = useState('signup'); // 'signup', 'signin', 'forgot_password', 'magic_link'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -34,15 +35,13 @@ export default function AuthPage() {
 
         if (error) throw error;
 
-        // Note: With "Email Enumeration Protection" ON, Supabase returns 
-        // a user even if already registered. We check if identities are empty.
         if (data?.user?.identities?.length === 0) {
            setError('An account with this email already exists and is confirmed. Try signing in instead.');
            return;
         }
 
         setSuccessMessage('Verification link sent! Please check your email inbox.');
-      } else {
+      } else if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           if (error.message === 'Invalid login credentials') {
@@ -50,7 +49,24 @@ export default function AuthPage() {
           } else {
             throw error;
           }
+        } else {
+          navigate('/dashboard');
         }
+      } else if (mode === 'forgot_password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/update-password`,
+        });
+        if (error) throw error;
+        setSuccessMessage('Password reset instructions sent to your email.');
+      } else if (mode === 'magic_link') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin,
+          }
+        });
+        if (error) throw error;
+        setSuccessMessage('Magic link sent! Check your email to sign in.');
       }
     } catch (err) {
       setError(err.message);
@@ -60,11 +76,17 @@ export default function AuthPage() {
   };
 
   const handleGoogleLogin = async () => {
-     await supabase.auth.signInWithOAuth({ provider: 'google' });
+     await supabase.auth.signInWithOAuth({ 
+       provider: 'google',
+       options: { redirectTo: window.location.origin + '/dashboard' }
+     });
   };
-
+ 
   const handleGithubLogin = async () => {
-     await supabase.auth.signInWithOAuth({ provider: 'github' });
+     await supabase.auth.signInWithOAuth({ 
+       provider: 'github',
+       options: { redirectTo: window.location.origin + '/dashboard' }
+     });
   };
 
   return (
@@ -111,7 +133,10 @@ export default function AuthPage() {
               exit={{ opacity: 0, x: 10 }}
             >
               <h2 className="text-2xl font-semibold mb-6 tracking-tight">
-                {mode === 'signup' ? 'Create an account' : 'Welcome back'}
+                {mode === 'signup' && 'Create an account'}
+                {mode === 'signin' && 'Welcome back'}
+                {mode === 'forgot_password' && 'Reset Password'}
+                {mode === 'magic_link' && 'Sign in with Magic Link'}
               </h2>
 
               <form onSubmit={handleAuth} className="space-y-3.5">
@@ -127,24 +152,57 @@ export default function AuthPage() {
                   />
                 </div>
 
-                <div className="relative group">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-gray-300 transition" />
-                  <input 
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    required
-                    className="w-full bg-[#161616] border border-white/5 rounded-xl pl-11 pr-12 py-3.5 text-sm focus:outline-none focus:border-white/20 transition hover:bg-[#1a1a1a]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+                {(mode === 'signup' || mode === 'signin') && (
+                  <div className="relative group">
+                    <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-gray-300 transition" />
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      required
+                      className="w-full bg-[#161616] border border-white/5 rounded-xl pl-11 pr-12 py-3.5 text-sm focus:outline-none focus:border-white/20 transition hover:bg-[#1a1a1a]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                )}
+
+                {mode === 'signin' && (
+                  <div className="flex justify-between items-center px-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setMode('magic_link')}
+                      className="text-[11px] text-gray-400 hover:text-white transition"
+                    >
+                      Use Magic Link
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setMode('forgot_password')}
+                      className="text-[11px] text-blue-400 hover:text-blue-300 transition"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                {(mode === 'forgot_password' || mode === 'magic_link') && (
+                  <div className="flex justify-center px-1 pb-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setMode('signin')}
+                      className="text-[11px] text-gray-400 hover:text-white transition"
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                )}
 
                 {error && (
                   <motion.div 
@@ -159,9 +217,16 @@ export default function AuthPage() {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:opacity-90 transition-all transform active:scale-[0.98] disabled:opacity-50 mt-2 shadow-lg"
+                  className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:opacity-90 transition-all transform active:scale-[0.98] disabled:opacity-50 mt-2 shadow-lg flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Processing...' : (mode === 'signup' ? 'Create account' : 'Sign in')}
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    mode === 'signup' ? 'Create account' : 
+                    mode === 'signin' ? 'Sign in' : 
+                    mode === 'forgot_password' ? 'Send Reset Link' : 
+                    'Send Magic Link'
+                  )}
                 </button>
               </form>
             </motion.div>
@@ -172,7 +237,7 @@ export default function AuthPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-6"
             >
-              <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-emerald-400/10 border border-emerald-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Mail className="text-emerald-400" size={28} />
               </div>
               <h2 className="text-2xl font-semibold mb-3 tracking-tight text-white">Check your email</h2>
@@ -197,6 +262,7 @@ export default function AuthPage() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={handleGoogleLogin}
+            type="button"
             className="flex items-center justify-center py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group"
           >
             <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
@@ -208,6 +274,7 @@ export default function AuthPage() {
           </button>
           <button 
             onClick={handleGithubLogin}
+            type="button"
             className="flex items-center justify-center py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group"
           >
             <Github size={20} className="text-white group-hover:scale-110 transition-transform" />
