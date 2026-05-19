@@ -73,7 +73,7 @@ export default function Hero() {
 
         {/* Floating Mockup (Left) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute left-[-160px] xl:left-[-140px] 2xl:left-[-80px] top-[18%] w-[260px] xl:w-[290px] 2xl:w-[340px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
+          className="absolute left-[-160px] xl:left-[-100px] 2xl:left-[-70px] top-[18%] w-[260px] xl:w-[320px] 2xl:w-[380px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
           style={{ 
             rotateX, 
             rotateY,
@@ -92,7 +92,7 @@ export default function Hero() {
 
         {/* Floating Mockup (Right) - Mathematically anchored to never collide with text */}
         <motion.div
-          className="absolute right-[-160px] xl:right-[-140px] 2xl:right-[-80px] top-[30%] w-[280px] xl:w-[310px] 2xl:w-[360px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
+          className="absolute right-[-160px] xl:right-[-100px] 2xl:right-[-70px] top-[30%] w-[280px] xl:w-[340px] 2xl:w-[420px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
           style={{ 
             rotateX: useTransform(smoothY, [-500, 500], [-8, 8]), 
             rotateY: useTransform(smoothX, [-500, 500], [8, -8]),
