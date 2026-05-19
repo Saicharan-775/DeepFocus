@@ -6,7 +6,7 @@ export default function VideoDemo() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
-    <section className="py-10 md:py-16 px-6 relative z-20">
+    <section id="demo" className="py-10 md:py-16 px-6 relative z-20">
       {/* Ambient Background Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[500px] bg-violet-600/[0.04] blur-[120px] rounded-full pointer-events-none z-0" />
       <div className="absolute top-0 right-[-10%] w-[40vw] h-[400px] bg-fuchsia-600/[0.03] blur-[120px] rounded-full pointer-events-none z-0" />

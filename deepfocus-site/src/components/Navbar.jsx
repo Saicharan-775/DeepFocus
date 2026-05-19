@@ -30,11 +30,22 @@ export default function Navbar() {
     await signOut();
   };
 
+  const handleScrollToSection = (e, href) => {
+    if (href.startsWith("/#") && window.location.pathname === "/") {
+      const id = href.split("#")[1];
+      const element = document.getElementById(id);
+      if (element) {
+        e.preventDefault();
+        element.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", href);
+      }
+    }
+  };
+
   const navLinks = [
     { name: "Features", href: "/#features" },
     { name: "How It Works", href: "/#how-it-works" },
-    { name: "Revision Sheet", href: "/revision" },
-    { name: "Analytics", href: "/insights" },
+    { name: "Watch Demo", href: "/#demo" },
   ];
 
   return (
@@ -93,9 +104,10 @@ export default function Navbar() {
             <a
               key={link.name}
               href={link.href}
+              onClick={(e) => handleScrollToSection(e, link.href)}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className="relative px-3.5 py-1.5 text-[11px] font-semibold tracking-wider text-zinc-400 hover:text-zinc-100 uppercase transition-colors rounded-full"
+              className="relative px-3.5 py-1.5 text-[11px] font-semibold tracking-wider text-zinc-400 hover:text-zinc-100 uppercase transition-colors rounded-full cursor-pointer"
             >
               {hoveredIndex === idx && (
                 <motion.span
@@ -246,8 +258,11 @@ export default function Navbar() {
                 <a
                   key={link.name}
                   href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-[11px] font-semibold tracking-wider text-zinc-400 hover:text-white uppercase transition-colors rounded-xl hover:bg-white/[0.03]"
+                  onClick={(e) => {
+                    setIsOpen(false);
+                    handleScrollToSection(e, link.href);
+                  }}
+                  className="px-4 py-2 text-[11px] font-semibold tracking-wider text-zinc-400 hover:text-white uppercase transition-colors rounded-xl hover:bg-white/[0.03] cursor-pointer"
                 >
                   {link.name}
                 </a>
