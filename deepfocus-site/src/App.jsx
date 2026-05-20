@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect, lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const MainLayout = lazy(() => import("./layouts/MainLayout"));
 const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
@@ -60,6 +61,7 @@ function App() {
           </Routes>
         </Suspense>
       </Router>
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
