@@ -21,7 +21,7 @@ export default function Sidebar() {
     { name: 'Revision Sheet', path: '/revision', icon: ClipboardList },
     { name: 'AI Planner', path: '/planner', icon: BrainCircuit },
     { name: 'AI Tutor', path: '/tutor', icon: MessageSquare },
-    { name: 'Analytics', path: '/insights', icon: LineChart },
+    { name: 'Analytics', path: '/analytics', icon: LineChart },
     { name: 'Library', path: '/library', icon: Library },
   ];
 

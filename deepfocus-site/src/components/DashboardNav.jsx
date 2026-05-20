@@ -15,7 +15,7 @@ export default function DashboardNav() {
     { label: "Mission", href: "/today", icon: Binary },
     { label: "Sheet", href: "/revision", icon: ClipboardList },
     { label: "Library", href: "/library", icon: BookOpen },
-    { label: "Insights", href: "/insights", icon: BarChart3 },
+    { label: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
   const getInitial = () => {

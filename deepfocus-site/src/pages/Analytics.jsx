@@ -181,7 +181,7 @@ function EmptyState({ message }) {
   );
 }
 
-export default function Insights() {
+export default function Analytics() {
    const navigate = useNavigate();
    const [user, setUser] = useState(null);
    const [data, setData] = useState({ sessions: [], problems: [] });
@@ -212,7 +212,7 @@ export default function Insights() {
       init();
 
       const channel = supabase
-        .channel('insights_sync_profile')
+        .channel('analytics_sync_profile')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadData())
         .subscribe();
@@ -903,7 +903,7 @@ export default function Insights() {
 
                       <button
                          onClick={() => setSelectedBadge(null)}
-                         className="w-full mt-6 py-3.5 px-6 rounded-xl bg-white hover:bg-zinc-100 text-black font-bold text-[10px] uppercase tracking-[0.25em] shadow-[0_8px_25px_rgba(255,255,255,0.05)] active:scale-[0.97] hover:scale-[1.015] transition-all duration-300 cursor-pointer flex items-center justify-center"
+                         className="w-full mt-6 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-[10px] uppercase tracking-[0.25em] shadow-[0_8px_25px_rgba(245,158,11,0.25)] active:scale-[0.97] hover:scale-[1.015] transition-all duration-300 cursor-pointer flex items-center justify-center border border-amber-400/20"
                       >
                          <span>CLAIM REWARD</span>
                       </button>

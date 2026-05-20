@@ -13,9 +13,10 @@ const Sheet = lazy(() => import("./pages/Sheet.jsx"));
 const TodaysRevision = lazy(() => import("./pages/TodaysRevision.jsx"));
 const Settings = lazy(() => import("./pages/Settings.jsx"));
 const Guide = lazy(() => import("./pages/Guide"));
-const Insights = lazy(() => import("./pages/Insights.jsx"));
+const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const Library = lazy(() => import("./pages/Library.jsx"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword.jsx"));
+const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
@@ -47,7 +48,7 @@ function App() {
                 <Route path="/today" element={<TodaysRevision />} />
                 <Route path="/planner" element={<AiPlanner />} />
                 <Route path="/tutor" element={<AiTutor />} />
-                <Route path="/insights" element={<Insights />} />
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/library" element={<Library />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
@@ -55,6 +56,7 @@ function App() {
             {/* Auth routes */}
             <Route path="/login" element={<AuthPage />} />
             <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </Router>

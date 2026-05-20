@@ -48,7 +48,7 @@ export default function OnboardingTour() {
       content: 'Stuck on a tricky edge case or need a template? Ask our AI Tutor for immediate architectural coding hints.',
     },
     {
-      target: '.tour-insights',
+      target: '.tour-analytics',
       title: 'Developer Analytics & Trophies',
       content: 'Track your focus ranking, and earn premium metallic 3D achievements to showcase your progress.',
     },

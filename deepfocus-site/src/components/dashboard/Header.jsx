@@ -53,7 +53,7 @@ export default function Header() {
       case '/revision': return 'Revision Sheet';
       case '/planner': return 'AI Planner';
       case '/tutor': return 'AI Tutor';
-      case '/insights': return 'Profile';
+      case '/analytics': return 'Profile';
       case '/library': return 'Library';
       case '/settings': return 'Settings';
       default: return 'Dashboard';
@@ -163,7 +163,7 @@ export default function Header() {
                 <div className="h-[1px] bg-white/[0.06] my-1" />
 
                 <Link
-                  to="/insights"
+                  to="/analytics"
                   onClick={() => setAvatarDropdownOpen(false)}
                   className="px-3 py-2 text-[11px] font-medium text-zinc-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-between"
                 >

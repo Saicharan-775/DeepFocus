@@ -26,7 +26,7 @@ export default function AuthPage() {
           email, 
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + '/revision',
             data: {
               full_name: '', // Optional: Add default metadata if needed
             }
@@ -38,7 +38,7 @@ export default function AuthPage() {
         if (data?.user?.identities?.length === 0) {
            setError('An account with this email already exists and is confirmed. Try signing in instead.');
            return;
-        }
+         }
 
         setSuccessMessage('Verification link sent! Please check your email inbox.');
       } else if (mode === 'signin') {
@@ -62,7 +62,7 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + '/revision',
           }
         });
         if (error) throw error;
