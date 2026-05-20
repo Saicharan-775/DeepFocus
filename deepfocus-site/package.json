@@ -16,6 +16,7 @@
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.99.1",
     "@tailwindcss/vite": "^4.2.1",
+    "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.4",
     "dayjs": "^1.11.20",
     "framer-motion": "^12.38.0",

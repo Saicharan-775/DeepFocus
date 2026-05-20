@@ -5,6 +5,9 @@ import './index.css'
 import "./styles/animations.css"
 import "./styles/global.css"
 import { AuthProvider } from './hooks/useAuth.jsx'
+import { inject } from '@vercel/analytics'
+
+inject();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
