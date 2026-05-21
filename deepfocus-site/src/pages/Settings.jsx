@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
+import dayjs from "dayjs";
 
 const tabs = [
   {
@@ -55,6 +56,14 @@ export default function Settings() {
     localStorage.getItem("df_gemini_model") || "gemini-1.5-flash"
   );
 
+  const [stats, setStats] = useState({
+    focusScore: 0,
+    sessions: 0,
+    dayStreak: 0,
+    problems: 0,
+    loading: true
+  });
+
   const [extensionLinked, setExtensionLinked] = useState(false);
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -65,17 +74,81 @@ export default function Settings() {
   const [saveState, setSaveState] = useState("saved");
 
   useEffect(() => {
+    let channel;
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
 
       if (user) {
         checkExtensionConnection(user.id);
+
+        const loadStats = async () => {
+          const [pRes, sRes] = await Promise.all([
+            supabase.from("revision_problems").select("*").eq("user_id", user.id),
+            supabase.from("focus_sessions").select("*").eq("user_id", user.id)
+          ]);
+
+          const problems = pRes.data || [];
+          const sessions = sRes.data || [];
+
+          const problemScores = problems.filter(p => p.focus_score !== undefined && p.focus_score !== null);
+          let avgFocusScore = 0;
+          if (problemScores.length > 0) {
+            avgFocusScore = Math.round(problemScores.reduce((acc, p) => acc + p.focus_score, 0) / problemScores.length);
+          } else if (sessions.length > 0) {
+            avgFocusScore = Math.round(sessions.reduce((acc, s) => acc + (s.focus_score || 0), 0) / sessions.length);
+          }
+
+          const activityMap = {};
+          problems.forEach(p => {
+             const dateKey = dayjs(p.created_at).format('YYYY-MM-DD');
+             activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+          });
+          sessions.forEach(s => {
+             const dateKey = dayjs(s.start_time || s.created_at).format('YYYY-MM-DD');
+             activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+          });
+
+          let currentStreak = 0;
+          const today = dayjs().format('YYYY-MM-DD');
+          const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+          if (activityMap[today] || activityMap[yesterday]) {
+             let checkDate = activityMap[today] ? dayjs(today) : dayjs(yesterday);
+             while (activityMap[checkDate.format('YYYY-MM-DD')]) {
+                 currentStreak++;
+                 checkDate = checkDate.subtract(1, 'day');
+             }
+          }
+
+          setStats({
+            focusScore: avgFocusScore,
+            sessions: sessions.length,
+            dayStreak: currentStreak,
+            problems: problems.length,
+            loading: false
+          });
+        };
+
+        loadStats();
+
+        channel = supabase
+          .channel('settings_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadStats())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadStats())
+          .subscribe();
       }
     });
 
     setDailyGoal(
       parseInt(localStorage.getItem("dailyRevisionGoal")) || 5
     );
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -320,10 +393,10 @@ export default function Settings() {
                 {/* STATS CARD */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    ["Focus Score", "94%"],
-                    ["Sessions", "128"],
-                    ["Day Streak", "18"],
-                    ["Problems", "42"],
+                    ["Focus Score", stats.loading ? "..." : `${stats.focusScore}%`],
+                    ["Sessions", stats.loading ? "..." : stats.sessions.toString()],
+                    ["Day Streak", stats.loading ? "..." : stats.dayStreak.toString()],
+                    ["Problems", stats.loading ? "..." : stats.problems.toString()],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-xl border border-white/[0.06] bg-[#0c0c0c] p-5 flex flex-col justify-center items-center text-center">
                       <div className="text-2xl font-semibold text-white">

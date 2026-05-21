@@ -39,12 +39,14 @@ export default function TodaysRevision() {
 
   async function loadDashboardData(userId) {
     const todayStr = dayjs().format('YYYY-MM-DD');
-    const { data: problems } = await supabase.from('revision_problems').select('*').eq('user_id', userId);
     
-    if (!problems) {
-        setLoading(false);
-        return;
-    }
+    const [pRes, sRes] = await Promise.all([
+      supabase.from('revision_problems').select('*').eq('user_id', userId),
+      supabase.from('focus_sessions').select('*').eq('user_id', userId)
+    ]);
+    
+    const problems = pRes.data || [];
+    const sessions = sRes.data || [];
     
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
     const strengths = JSON.parse(localStorage.getItem('df_strength') || '{}');
@@ -54,7 +56,14 @@ export default function TodaysRevision() {
     const dailyGoal = parseInt(localStorage.getItem('dailyRevisionGoal')) || 5;
     const todayCompletedList = JSON.parse(localStorage.getItem(`revised_${new Date().toDateString()}`)) || [];
 
-    const uniqueDays = [...new Set(problems.map(p => dayjs(p.created_at).format('YYYY-MM-DD')))].sort((a, b) => new Date(b) - new Date(a));
+    const activeDates = new Set();
+    problems.forEach(p => {
+       activeDates.add(dayjs(p.created_at).format('YYYY-MM-DD'));
+    });
+    sessions.forEach(s => {
+       activeDates.add(dayjs(s.start_time || s.created_at).format('YYYY-MM-DD'));
+    });
+    const uniqueDays = [...activeDates].sort((a, b) => new Date(b) - new Date(a));
     let streak = 0;
     if (uniqueDays.length > 0 && (uniqueDays[0] === todayStr || uniqueDays[0] === dayjs().subtract(1, 'day').format('YYYY-MM-DD'))) {
        streak = 1;

@@ -53,10 +53,14 @@ export function useGamification() {
             }
          });
 
-         // Streak Calculation
+         // Streak Calculation (Merging both problems and sessions to correctly update the streak on repeat practice)
          const activityMap = {};
          problems.forEach(p => {
-            const dateKey = dayjs(p.solved_at || p.created_at).format('YYYY-MM-DD');
+            const dateKey = dayjs(p.created_at).format('YYYY-MM-DD');
+            activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+         });
+         sessions.forEach(s => {
+            const dateKey = dayjs(s.start_time || s.created_at).format('YYYY-MM-DD');
             activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
          });
 
@@ -103,6 +107,7 @@ export function useGamification() {
       const channel = supabase
         .channel('gamification_sync_nav')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadStats())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadStats())
         .subscribe();
         
       return () => { supabase.removeChannel(channel); };

@@ -243,7 +243,11 @@ export default function Analytics() {
 
       const activityMap = {};
       problems.forEach(p => {
-         const dateKey = dayjs(p.updated_at || p.solved_at || p.created_at).format('YYYY-MM-DD');
+         const dateKey = dayjs(p.created_at).format('YYYY-MM-DD');
+         activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+      });
+      sessions.forEach(s => {
+         const dateKey = dayjs(s.start_time || s.created_at).format('YYYY-MM-DD');
          activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
       });
 

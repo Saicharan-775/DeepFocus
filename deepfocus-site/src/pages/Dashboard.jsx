@@ -5,12 +5,14 @@ import { getRevisionProblems, getSuggestedProblems } from '../services/revisionS
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import dayjs from 'dayjs';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
   const [problems, setProblems] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [suggestedProblem, setSuggestedProblem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -24,6 +26,17 @@ export default function Dashboard() {
       const suggested = await getSuggestedProblems(1);
       if (suggested && suggested.length > 0) {
         setSuggestedProblem(suggested[0]);
+      }
+
+      // Fetch focus sessions for streak / active days calculations
+      const { supabase } = await import('../lib/supabaseClient');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: sData } = await supabase
+          .from('focus_sessions')
+          .select('*')
+          .eq('user_id', authUser.id);
+        setSessions(sData || []);
       }
     }
 
@@ -64,31 +77,58 @@ export default function Dashboard() {
   const scores = problems.filter(p => p.focus_score !== undefined && p.focus_score !== null).map(p => p.focus_score);
   const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
-  // Compute streak (unique active days in the last 7 days)
-  const today = new Date();
-  const activeDays = new Set();
+  // Compute streak (consecutive active days merging problems & sessions)
+  const activityMap = {};
   problems.forEach(p => {
-    // Attempt to use any available timestamp, falling back to created_at
-    const dateStr = p.updated_at || p.solved_at || p.created_at;
-    if (dateStr) {
-      const d = new Date(dateStr);
-      const diffTime = Math.abs(today - d);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+     const dateKey = dayjs(p.created_at).format('YYYY-MM-DD');
+     activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+  });
+  sessions.forEach(s => {
+     const dateKey = dayjs(s.start_time || s.created_at).format('YYYY-MM-DD');
+     activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+  });
+
+  let currentStreak = 0;
+  const todayStr = dayjs().format('YYYY-MM-DD');
+  const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  
+  if (activityMap[todayStr] || activityMap[yesterdayStr]) {
+     let checkDate = activityMap[todayStr] ? dayjs(todayStr) : dayjs(yesterdayStr);
+     while (activityMap[checkDate.format('YYYY-MM-DD')]) {
+         currentStreak++;
+         checkDate = checkDate.subtract(1, 'day');
+     }
+  }
+
+  // Active Days count in the last 7 days (merging problems and sessions)
+  const activeDaysInLast7Days = new Set();
+  problems.forEach(p => {
+    if (p.created_at) {
+      const diffDays = Math.abs(dayjs().diff(dayjs(p.created_at), 'day'));
       if (diffDays <= 7) {
-        activeDays.add(d.toDateString());
+        activeDaysInLast7Days.add(dayjs(p.created_at).format('YYYY-MM-DD'));
       }
     }
   });
-  const currentStreak = activeDays.size;
+  sessions.forEach(s => {
+    const dateStr = s.start_time || s.created_at;
+    if (dateStr) {
+      const diffDays = Math.abs(dayjs().diff(dayjs(dateStr), 'day'));
+      if (diffDays <= 7) {
+        activeDaysInLast7Days.add(dayjs(dateStr).format('YYYY-MM-DD'));
+      }
+    }
+  });
+  const activeDaysCount = activeDaysInLast7Days.size;
 
   const stats = [
     { title: 'Total Problems', value: totalSolved.toString(), change: `${masteredCount} Mastered`, icon: Target, color: 'text-violet-400', bg: 'bg-violet-500/10', glow: 'from-violet-500/20' },
-    { title: 'Active Days', value: `${currentStreak} Days`, change: 'Last 7 days', icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10', glow: 'from-orange-500/20' },
+    { title: 'Active Days', value: `${activeDaysCount} Days`, change: 'Last 7 days', icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10', glow: 'from-orange-500/20' },
     { title: 'Time Spent', value: formattedTime, change: 'All time', icon: Clock, color: 'text-emerald-400', bg: 'bg-emerald-400/10', glow: 'from-emerald-400/20' },
     { title: 'Average Score', value: `${avgScore}%`, change: 'Across all sessions', icon: Calendar, color: 'text-cyan-400', bg: 'bg-cyan-500/10', glow: 'from-cyan-500/20' },
   ];
 
-  // Compute chart data (Last 7 days)
+  // Compute chart data (Last 7 days unique problems solved/revised)
   const chartData = [0, 0, 0, 0, 0, 0, 0];
   const dayLabels = [];
   for (let i = 6; i >= 0; i--) {
@@ -96,25 +136,44 @@ export default function Dashboard() {
     d.setDate(d.getDate() - i);
     dayLabels.push(['S','M','T','W','T','F','S'][d.getDay()]);
     
-    const dayProblems = problems.filter(p => {
-      const dateStr = p.updated_at || p.solved_at || p.created_at;
-      if (!dateStr) return false;
-      const pDate = new Date(dateStr);
-      return pDate.toDateString() === d.toDateString();
+    const dayProblemsSet = new Set();
+    problems.forEach(p => {
+      if (p.created_at && new Date(p.created_at).toDateString() === d.toDateString()) {
+        dayProblemsSet.add(p.link);
+      }
     });
-    chartData[6-i] = dayProblems.length;
+    sessions.forEach(s => {
+      const dateStr = s.start_time || s.created_at;
+      if (dateStr && new Date(dateStr).toDateString() === d.toDateString()) {
+        dayProblemsSet.add(s.problem_url);
+      }
+    });
+    chartData[6-i] = dayProblemsSet.size;
   }
   const maxChartVal = Math.max(...chartData, 5); // Minimum scale of 5
 
   // Compute daily progress
-  const todayProblems = problems.filter(p => {
-    const dateStr = p.updated_at || p.solved_at || p.created_at;
-    if (!dateStr) return false;
-    const pDate = new Date(dateStr);
-    return pDate.toDateString() === new Date().toDateString();
+  const todayProblemsSet = new Set();
+  problems.forEach(p => {
+    if (p.created_at && new Date(p.created_at).toDateString() === new Date().toDateString()) {
+      todayProblemsSet.add(p.link);
+    }
   });
-  const todaySolved = todayProblems.length;
-  const todayDuration = todayProblems.reduce((acc, p) => acc + (p.focus_duration || 0), 0);
+  sessions.forEach(s => {
+    const dateStr = s.start_time || s.created_at;
+    if (dateStr && new Date(dateStr).toDateString() === new Date().toDateString()) {
+      todayProblemsSet.add(s.problem_url);
+    }
+  });
+  const todaySolved = todayProblemsSet.size;
+
+  const todayDuration = sessions.reduce((acc, s) => {
+    const dateStr = s.start_time || s.created_at;
+    if (dateStr && new Date(dateStr).toDateString() === new Date().toDateString()) {
+      return acc + (s.focus_duration || 0);
+    }
+    return acc;
+  }, 0);
   const todayDurationMinutes = Math.floor(todayDuration / 60);
 
   const targets = [
