@@ -13,7 +13,10 @@
     "*://leetcode.com/*",
     "*://*.leetcode.com/*",
     "*://*.supabase.co/*",
-    "http://localhost/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*.vercel.app/*",
+    "https://*.netlify.app/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -21,14 +24,18 @@
   "content_scripts": [
     {
       "matches": [
-        "*://leetcode.com/*", 
-        "*://*.leetcode.com/*",
-        "http://localhost/*"
+        "https://leetcode.com/*",
+        "https://www.leetcode.com/*",
+        "https://*.leetcode.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*.vercel.app/*",
+        "https://*.netlify.app/*"
       ],
       "css": ["styles/widget.css"],
       "js": ["config.js", "utils/soundManager.js", "content.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": false
     }
   ],
   "web_accessible_resources": [
@@ -38,12 +45,16 @@
         "content/blocked-overlay.js",
         "utils/pageInterceptor.js",
         "assets/icons/*",
-        "sounds/*"
+        "sounds/success.mp3",
+        "sounds/fail.mp3"
       ],
       "matches": [
         "*://leetcode.com/*",
         "*://*.leetcode.com/*",
-        "http://localhost/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*.vercel.app/*",
+        "https://*.netlify.app/*"
       ]
     }
   ],

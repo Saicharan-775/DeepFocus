@@ -9,11 +9,11 @@ export default function DashboardLayout() {
     <div className="flex h-screen bg-[#000000] text-gray-200 overflow-hidden font-sans">
       <OnboardingTour />
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden relative">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto scrollbar-hide">
+        <main className="scrollbar-hide min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           {/* Main content container with proper spacing */}
-          <div className="p-8 pb-24 max-w-[1400px] mx-auto min-h-full">
+          <div className="mx-auto min-h-full w-full max-w-[1600px] p-4 pb-24 md:p-6 md:pb-24 xl:p-8 xl:pb-24">
             <Outlet />
           </div>
         </main>

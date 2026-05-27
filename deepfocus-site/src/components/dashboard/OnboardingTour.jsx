@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as ReactJoyride from 'react-joyride';
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const { STATUS } = ReactJoyride;
+import { Joyride, STATUS } from 'react-joyride';
 
 export default function OnboardingTour() {
   const [run, setRun] = useState(false);
@@ -41,11 +39,6 @@ export default function OnboardingTour() {
       target: '.tour-sheet',
       title: 'Curriculum Sheets',
       content: 'Complete structured patterns (like NeetCode/Blind75) with interactive state filters and difficulty metrics.',
-    },
-    {
-      target: '.tour-tutor',
-      title: '24/7 AI Coding Mentor',
-      content: 'Stuck on a tricky edge case or need a template? Ask our AI Tutor for immediate architectural coding hints.',
     },
     {
       target: '.tour-analytics',

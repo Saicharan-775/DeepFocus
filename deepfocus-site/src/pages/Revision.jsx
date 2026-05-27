@@ -1,22 +1,154 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import {
-  FolderOpen, ShieldAlert, Target, CheckSquare, Search, ExternalLink, FileText, ChevronLeft, ChevronRight, X, Link as LinkIcon, CheckCircle2, ChevronDown
+  FolderOpen, ShieldAlert, Target, CheckSquare, Search, ExternalLink, FileText, ChevronLeft, ChevronRight, X, Link as LinkIcon, CheckCircle2, ChevronDown, Sparkles,
+  Brain, Code, Lightbulb, AlertTriangle, Clock, Database, Zap
 } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { motion, AnimatePresence } from "framer-motion";
-import { getRevisionProblems } from "../services/revisionService";
-import { getProblemPattern, patternPriorityMap } from "../utils/patternMatcher";
+import { refreshRevisionProblems, subscribeRevisionStore, updateRevisionProblem } from "../store/revisionStore";
+import { setProblemRevisionNeeded } from "../services/revisionService";
+import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from "../utils/patternMatcher";
+import { getAiSummary } from "../services/aiService";
+import curatedQuestions from '../constants/Patterns/curated_questions.json';
+
+const COMPLETED_FOCUS_STATUSES = new Set(["Focus Kept", "Low Focus", "Give Up", "Cheated"]);
+
+function toFocusSeconds(value) {
+  const seconds = Number(value || 0);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : 0;
+}
+
+function formatFocusDuration(value, compact = false) {
+  const seconds = toFocusSeconds(value);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours > 0) return compact ? `${hours}h ${minutes}m` : `${hours}h ${minutes}m invested`;
+  if (minutes > 0) return compact ? `${minutes}m` : `${minutes}m invested`;
+  return compact ? "0m" : "Not tracked yet";
+}
+
+function parseDbNotes(dbNotes) {
+  if (!dbNotes || typeof dbNotes !== 'string') {
+    return { userNotes: {}, aiSummary: "" };
+  }
+  const aiMarker = "### AI Summary";
+  const index = dbNotes.indexOf(aiMarker);
+  
+  let rawUserNotes = "";
+  let aiSummary = "";
+  
+  if (index === -1) {
+    rawUserNotes = dbNotes.trim();
+  } else {
+    rawUserNotes = dbNotes.substring(0, index).trim();
+    aiSummary = dbNotes.substring(index + aiMarker.length).trim();
+  }
+  
+  // Try to parse rawUserNotes as JSON
+  let userNotes = {};
+  if (rawUserNotes) {
+    try {
+      userNotes = JSON.parse(rawUserNotes);
+    } catch (e) {
+      // If it's not valid JSON, treat it as plain text and put it in optimal
+      userNotes = {
+        optimal: rawUserNotes,
+        brute: "", bruteTime: "", bruteSpace: "",
+        better: "", betterTime: "", betterSpace: "",
+        optimalTime: "", optimalSpace: ""
+      };
+    }
+  }
+  
+  return { userNotes, aiSummary };
+}
+
+function parseAiSummary(text) {
+  if (!text) return null;
+
+  const patterns = [
+    /(?:1\.\s*\*\*Code Review & Mistake\*\*|1\.\s*\*Code Review & Mistake\*|1\.\s*Code Review & Mistake|Code Review & Mistake):?/i,
+    /(?:2\.\s*\*\*Cognitive Root Cause \("What made you think like this\?"\)\*\*|2\.\s*\*Cognitive Root Cause \("What made you think like this\?"\)\*|2\.\s*Cognitive Root Cause \("What made you think like this\?"\)|Cognitive Root Cause|Cognitive Root Cause \("What made you think like this\?"\)):?/i,
+    /(?:3\.\s*\*\*Correct Approach Tip\*\*|3\.\s*\*Correct Approach Tip\*|3\.\s*Correct Approach Tip|Correct Approach Tip):?/i
+  ];
+
+  let part1 = -1, part2 = -1, part3 = -1;
+  let len1 = 0, len2 = 0, len3 = 0;
+
+  let m1 = text.match(patterns[0]);
+  if (m1) { part1 = text.indexOf(m1[0]); len1 = m1[0].length; }
+  
+  let m2 = text.match(patterns[1]);
+  if (m2) { part2 = text.indexOf(m2[0]); len2 = m2[0].length; }
+
+  let m3 = text.match(patterns[2]);
+  if (m3) { part3 = text.indexOf(m3[0]); len3 = m3[0].length; }
+
+  if (part1 !== -1 && part2 !== -1 && part3 !== -1) {
+    return {
+      mistake: text.substring(part1 + len1, part2).trim().replace(/^:\s*/, ""),
+      cause: text.substring(part2 + len2, part3).trim().replace(/^:\s*/, ""),
+      tip: text.substring(part3 + len3).trim().replace(/^:\s*/, "")
+    };
+  }
+
+  const parts = text.split(/(?:1\.|2\.|3\.)/);
+  if (parts.length >= 4) {
+    return {
+      mistake: parts[1].replace(/^\s*\*\*Code Review & Mistake\*\*:\s*/i, "").trim().replace(/^\s*\*Code Review & Mistake\*:\s*/i, "").trim().replace(/^\s*Code Review & Mistake:\s*/i, "").trim(),
+      cause: parts[2].replace(/^\s*\*\*Cognitive Root Cause \("What made you think like this\?"\)\*\*:\s*/i, "").trim().replace(/^\s*Cognitive Root Cause \("What made you think like this\?"\):\s*/i, "").trim(),
+      tip: parts[3].replace(/^\s*\*\*Correct Approach Tip\*\*:\s*/i, "").trim().replace(/^\s*Correct Approach Tip:\s*/i, "").trim()
+    };
+  }
+
+  const lines = text.split('\n');
+  let currentSec = 'mistake';
+  const result = { mistake: "", cause: "", tip: "" };
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/Code Review & Mistake/i.test(trimmed)) {
+      currentSec = 'mistake';
+      continue;
+    } else if (/Cognitive Root Cause/i.test(trimmed)) {
+      currentSec = 'cause';
+      continue;
+    } else if (/Correct Approach/i.test(trimmed)) {
+      currentSec = 'tip';
+      continue;
+    }
+    result[currentSec] += (result[currentSec] ? '\n' : '') + line;
+  }
+
+  if (result.mistake.trim() || result.cause.trim() || result.tip.trim()) {
+    result.mistake = result.mistake.trim().replace(/^:\s*/, "");
+    result.cause = result.cause.trim().replace(/^:\s*/, "");
+    result.tip = result.tip.trim().replace(/^:\s*/, "");
+    return result;
+  }
+
+  return {
+    mistake: text,
+    cause: "",
+    tip: ""
+  };
+}
 
 export default function Revision() {
+  const navigate = useNavigate();
   const [problems, setProblems] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const loadSeqRef = useRef(0);
 
   const [extensionLinked, setExtensionLinked] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [generatedToken, setGeneratedToken] = useState(null);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [alertModal, setAlertModal] = useState({ open: false, message: "" });
 
   const [viewMode, setViewMode] = useState("list"); // 'list' or 'pattern'
   const [expandedPattern, setExpandedPattern] = useState(null);
@@ -27,47 +159,91 @@ export default function Revision() {
   const [masteryFilter, setMasteryFilter] = useState("all");
   const [strengthFilter, setStrengthFilter] = useState("all");
 
-  const [notesModal, setNotesModal] = useState({
-    open: false, id: null, activeTab: 'brute',
-    brute: "", bruteTime: "", bruteSpace: "",
-    better: "", betterTime: "", betterSpace: "",
-    optimal: "", optimalTime: "", optimalSpace: ""
-  });
+
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    loadData();
-    const channel = supabase
-      .channel('dashboard_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  async function loadData() {
-    setDataLoading(true);
-    const rawData = await getRevisionProblems();
+  function mapRawProblems(rawData) {
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
     const strengths = JSON.parse(localStorage.getItem('df_strength') || '{}');
+    const localNotes = JSON.parse(localStorage.getItem('df_notes') || '{}');
 
-    const mapped = rawData.map(p => ({
-      ...p,
-      id: p.id,
-      focusStatus: p.focus_status,
-      focusScore: p.focus_score,
-      focusDuration: p.focus_duration || 0,
-      revised: masteredIds.includes(p.id),
-      strength: strengths[p.id] || "Normal",
-      pattern: getProblemPattern(p.title),
-      notes: JSON.parse(localStorage.getItem('df_notes') || '{}')[p.id] || {},
-      added: p.created_at ? new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''
-    }));
+    // Build a curated lookup for enriching DB problems with reliable pattern data
+    const curatedByNormTitle = {};
+    const curatedByNormSlug = {};
+    curatedQuestions.forEach(cq => {
+      const normCqTitle = normalizeTitle(cq.title);
+      const cqSlugRaw = cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const normCqSlug = getSlugFromLink(`/problems/${cqSlugRaw}/`);
+      if (normCqTitle) curatedByNormTitle[normCqTitle] = cq;
+      if (normCqSlug) curatedByNormSlug[normCqSlug] = cq;
+    });
 
-    setProblems(mapped);
-    
+    return rawData.map(p => {
+      const normTitle = normalizeTitle(p.title);
+      const normSlug = getSlugFromLink(p.link);
+      const curatedMatch = curatedByNormTitle[normTitle] || curatedByNormSlug[normSlug];
+      const hasDbReviewState = typeof p.revision_needed === 'boolean';
+      return {
+        ...p,
+        id: p.id,
+        focusStatus: p.focus_status,
+        focusScore: Number.isFinite(Number(p.focus_score)) ? Number(p.focus_score) : 0,
+        focusDuration: toFocusSeconds(p.focus_duration),
+        revised: hasDbReviewState ? !p.revision_needed : masteredIds.includes(p.id),
+        revisionNeeded: hasDbReviewState ? p.revision_needed : !masteredIds.includes(p.id),
+        strength: strengths[p.id] || "Normal",
+        pattern: curatedMatch?.primary_pattern || getProblemPattern(p.title),
+        notes: localNotes[p.id] || {},
+        dbNotes: p.notes || "",
+        added: p.created_at ? new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '',
+        code: p.code || ''
+      };
+    }).sort((a, b) => {
+      const aTime = new Date(a.updated_at || a.created_at || 0).getTime() || 0;
+      const bTime = new Date(b.updated_at || b.created_at || 0).getTime() || 0;
+      return bTime - aTime;
+    });
+  }
+
+  useEffect(() => {
+    const unsubscribeRevisionStore = subscribeRevisionStore((snapshot) => {
+      setProblems(mapRawProblems(snapshot.items));
+      if (!snapshot.loading) setDataLoading(false);
+    });
+
+    loadData();
+    const channel = supabase
+      .channel('revision_sheet_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => {
+        refreshRevisionProblems();
+      })
+      .subscribe();
+
+    const handleConnectionChange = (e) => {
+      if (e.detail && e.detail.connected !== undefined) {
+        setExtensionLinked(e.detail.connected);
+      }
+    };
+    window.addEventListener('deepfocus_connection_changed', handleConnectionChange);
+
+    return () => { 
+      unsubscribeRevisionStore();
+      supabase.removeChannel(channel); 
+      window.removeEventListener('deepfocus_connection_changed', handleConnectionChange);
+    };
+  }, []);
+
+  async function loadData(silent = false) {
+    const loadSeq = ++loadSeqRef.current;
+    if (!silent) setDataLoading(true);
+
+    const snapshot = await refreshRevisionProblems();
+    if (loadSeq !== loadSeqRef.current) return;
+    setProblems(mapRawProblems(snapshot.items));
+
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: conn } = await supabase
@@ -75,14 +251,15 @@ export default function Revision() {
         .select('created_at')
         .eq('user_id', user.id)
         .maybeSingle();
+      if (loadSeq !== loadSeqRef.current) return;
       setExtensionLinked(!!conn);
     }
-    
-    setDataLoading(false);
+
+    if (!silent) setDataLoading(false);
   }
 
   const filtered = useMemo(() => {
-    return problems
+    return [...problems]
       .filter(p => statusFilter === "all" || p.focusStatus === statusFilter)
       .filter(p => difficultyFilter === "all" || p.difficulty === difficultyFilter)
       .filter(p => {
@@ -100,6 +277,10 @@ export default function Revision() {
         if (sortConfig.key === "difficulty") {
           const order = { Hard: 3, Medium: 2, Easy: 1 };
           aValue = order[aValue]; bValue = order[bValue];
+        }
+        if (sortConfig.key === "focusDuration") {
+          aValue = toFocusSeconds(aValue);
+          bValue = toFocusSeconds(bValue);
         }
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
@@ -135,16 +316,72 @@ export default function Revision() {
   }
 
   async function toggle(id) {
+    const problem = problems.find(p => p.id === id);
+    if (!problem) return;
+
+    if (String(problem.id).startsWith('optimistic:') || problem.__syncState === 'optimistic' || problem.__syncState === 'queued') {
+      setAlertModal({
+        open: true,
+        message: "This problem is still syncing. Please try again after it appears in your revision sheet."
+      });
+      return;
+    }
+
+    if (!COMPLETED_FOCUS_STATUSES.has(problem.focusStatus)) {
+      setAlertModal({
+        open: true,
+        message: "Complete a DeepFocus session for this problem before marking it as reviewed."
+      });
+      return;
+    }
+
+    const nextRevised = !problem.revised;
+    const nextRevisionNeeded = !nextRevised;
+
+    const optimisticPatch = {
+      revised: nextRevised,
+      revisionNeeded: nextRevisionNeeded,
+      revision_needed: nextRevisionNeeded
+    };
+    setProblems(prev => prev.map(p => p.id === id ? { ...p, ...optimisticPatch } : p));
+    updateRevisionProblem(id, optimisticPatch);
+
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
-    let newMastered;
-    if (masteredIds.includes(id)) newMastered = masteredIds.filter(i => i !== id);
-    else newMastered = [...masteredIds, id];
+    const newMastered = nextRevised
+      ? Array.from(new Set([...masteredIds, id]))
+      : masteredIds.filter(i => i !== id);
     localStorage.setItem('df_mastered', JSON.stringify(newMastered));
-    setProblems(prev => prev.map(p => p.id === id ? { ...p, revised: !p.revised } : p));
-    
-    // Sync with Supabase
-    await supabase.auth.updateUser({
+
+    const { data: updatedProblem, error } = await setProblemRevisionNeeded(id, nextRevisionNeeded);
+
+    if (error) {
+      console.error('[Revision] Failed to update reviewed state:', error.message);
+      const rollbackPatch = {
+        revised: problem.revised,
+        revisionNeeded: problem.revisionNeeded,
+        revision_needed: problem.revision_needed
+      };
+      setProblems(prev => prev.map(p => p.id === id ? {
+        ...p,
+        ...rollbackPatch
+      } : p));
+      updateRevisionProblem(id, rollbackPatch);
+      localStorage.setItem('df_mastered', JSON.stringify(masteredIds));
+      setAlertModal({
+        open: true,
+        message: "Could not update reviewed state. Please check your connection and try again."
+      });
+      return;
+    }
+
+    if (updatedProblem) {
+      updateRevisionProblem(id, updatedProblem);
+    }
+
+    supabase.auth.updateUser({
       data: { df_mastered: newMastered }
+    }).catch((error) => {
+      console.warn('[Revision] Failed to sync legacy mastered metadata:', error?.message || error);
     });
   }
 
@@ -163,33 +400,15 @@ export default function Revision() {
   }
 
   function openNotes(id) {
-    const problem = problems.find(p => p.id === id);
-    const localNotes = problem?.notes || {};
-    setNotesModal({
-      open: true, id, activeTab: 'brute',
-      ...localNotes
-    });
+    navigate(`/workspace?id=${id}`);
   }
 
-  async function saveNotes() {
-    const allNotes = JSON.parse(localStorage.getItem('df_notes') || '{}');
-    allNotes[notesModal.id] = {
-      brute: notesModal.brute, bruteTime: notesModal.bruteTime, bruteSpace: notesModal.bruteSpace,
-      better: notesModal.better, betterTime: notesModal.betterTime, betterSpace: notesModal.betterSpace,
-      optimal: notesModal.optimal, optimalTime: notesModal.optimalTime, optimalSpace: notesModal.optimalSpace
-    };
-    localStorage.setItem('df_notes', JSON.stringify(allNotes));
-    loadData();
-    setNotesModal({ open: false, id: null });
-    
-    // Sync with Supabase
-    await supabase.auth.updateUser({
-      data: { df_notes: allNotes }
-    });
-  }
+
 
   const cheated = problems.filter(p => p.focusStatus === "Cheated").length;
-  const avgScore = problems.length > 0 ? Math.round(problems.reduce((a, b) => a + b.focusScore, 0) / problems.length) : 0;
+  const avgScore = problems.length > 0 ? Math.round(problems.reduce((a, b) => a + (Number(b.focusScore) || 0), 0) / problems.length) : 0;
+  const totalFocusSeconds = problems.reduce((total, problem) => total + toFocusSeconds(problem.focusDuration), 0);
+  const formattedTotalFocus = formatFocusDuration(totalFocusSeconds, true);
 
   const handleConnectExtension = async () => {
     setIsConnecting(true);
@@ -220,26 +439,27 @@ export default function Revision() {
 
   const copyTokenToClipboard = () => {
     if (generatedToken) {
-      try {
-        // Use the modern clipboard API to set multiple MIME types
-        const type = "text/plain";
-        const blob = new Blob([generatedToken], { type });
-        const internalBlob = new Blob(["true"], { type: "text/deepfocus-internal" });
-        const data = [new ClipboardItem({ 
-          [type]: blob, 
-          "text/deepfocus-internal": internalBlob 
-        })];
-        
-        navigator.clipboard.write(data).then(() => {
+      navigator.clipboard.writeText(generatedToken)
+        .then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
+        })
+        .catch((err) => {
+          console.error("Failed to copy token:", err);
+          // Fallback
+          try {
+            const textArea = document.createElement("textarea");
+            textArea.value = generatedToken;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          } catch (e) {
+            console.error("Fallback copy failed:", e);
+          }
         });
-      } catch (err) {
-        // Fallback for browsers that don't support ClipboardItem with custom types fully
-        navigator.clipboard.writeText(generatedToken);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
     }
   };
 
@@ -287,10 +507,11 @@ export default function Revision() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard title="Total Problems" value={filtered.length} icon={FolderOpen} />
         <StatCard title="Cheated" value={cheated} icon={ShieldAlert} />
         <StatCard title="Avg Focus" value={`${avgScore}%`} icon={Target} />
+        <StatCard title="Time Invested" value={formattedTotalFocus} icon={Clock} />
         <StatCard title="Revised" value={problems.filter(p=>p.revised).length} icon={CheckSquare} />
       </div>
 
@@ -328,6 +549,7 @@ export default function Revision() {
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("title")}>Problem</th>
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("focusStatus")}>Status</th>
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("focusScore")}>Focus Score</th>
+                    <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("focusDuration")}>Time Invested</th>
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("difficulty")}>Difficulty</th>
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("strength")}>Strength</th>
                     <th className="p-4 cursor-pointer hover:text-white" onClick={() => requestSort("added")}>Added</th>
@@ -335,43 +557,78 @@ export default function Revision() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
-                  {items.map(p => (
-                    <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-4 text-center">
-                        <input type="checkbox" checked={p.revised} onChange={() => toggle(p.id)} className="w-4 h-4 rounded border-gray-600 text-violet-500 focus:ring-violet-500 bg-transparent cursor-pointer" />
-                      </td>
-                      <td className="p-4 font-medium text-white max-w-[250px] truncate">
-                        <a href={p.link} target="_blank" rel="noreferrer" className="hover:text-violet-400 flex items-center gap-2 transition-colors">
-                          {p.title} <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
-                        </a>
-                      </td>
-                      <td className="p-4"><StatusBadge status={p.focusStatus} /></td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-xs w-6">{p.focusScore}</span>
-                          <div className="w-20 h-1.5 bg-[#000000] rounded-full overflow-hidden">
-                            <div style={{ width: p.focusScore + "%" }} className={`h-full ${p.focusScore >= 80 ? 'bg-emerald-400' : p.focusScore >= 50 ? 'bg-violet-500' : 'bg-rose-400'}`} />
+                  {items.map(p => {
+                    const parsedDb = parseDbNotes(p.dbNotes);
+                    const hasAiSummary = !!parsedDb.aiSummary;
+                    const dbUserNotes = parsedDb.userNotes || {};
+                    const localNotes = p.notes || {};
+                    const hasUserNotes = (
+                      Object.values(localNotes).some(v => typeof v === 'string' && v.trim() !== "") ||
+                      Object.values(dbUserNotes).some(v => typeof v === 'string' && v.trim() !== "")
+                    );
+                    const hasCode = !!p.code;
+                    return (
+                      <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="p-4 text-center">
+                          <input type="checkbox" checked={p.revised} onChange={() => toggle(p.id)} className="w-4 h-4 rounded border-gray-600 text-violet-500 focus:ring-violet-500 bg-transparent cursor-pointer" />
+                        </td>
+                        <td className="p-4 font-medium text-white max-w-[250px] truncate">
+                          <a href={p.link} target="_blank" rel="noreferrer" className="hover:text-violet-400 flex items-center gap-2 transition-colors">
+                            {p.title} <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
+                          </a>
+                        </td>
+                        <td className="p-4"><StatusBadge status={p.focusStatus} /></td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-xs w-6">{p.focusScore}</span>
+                            <div className="w-20 h-1.5 bg-[#000000] rounded-full overflow-hidden">
+                              <div style={{ width: p.focusScore + "%" }} className={`h-full ${p.focusScore >= 80 ? 'bg-emerald-400' : p.focusScore >= 50 ? 'bg-violet-500' : 'bg-rose-400'}`} />
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${p.difficulty==='Easy'?'bg-emerald-400/10 text-emerald-400 border-emerald-400/20':p.difficulty==='Medium'?'bg-amber-400/10 text-amber-400 border-amber-400/20':'bg-rose-400/10 text-rose-400 border-rose-400/20'}`}>
-                          {p.difficulty}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <button onClick={() => cycleStrength(p.id, p.strength)} className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border transition-all hover:scale-105 active:scale-95 ${p.strength==='Weakest'?'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.2)]':p.strength==='Strongest'?'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]':'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
-                          {p.strength}
-                        </button>
-                      </td>
-                      <td className="p-4 text-[#94A3B8] text-xs">{p.added}</td>
-                      <td className="p-4">
-                        <button onClick={() => openNotes(p.id)} className="p-1.5 rounded-lg text-[#64748B] hover:bg-white/[0.06] hover:text-white transition-colors">
-                          <FileText size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-4">
+                          <div className="inline-flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.025] px-2.5 py-1.5 text-xs text-[#CBD5E1]">
+                            <Clock size={13} className="text-violet-300/80" />
+                            <span className="font-mono">{formatFocusDuration(p.focusDuration, true)}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${p.difficulty==='Easy'?'bg-emerald-400/10 text-emerald-400 border-emerald-400/20':p.difficulty==='Medium'?'bg-amber-400/10 text-amber-400 border-amber-400/20':'bg-rose-400/10 text-rose-400 border-rose-400/20'}`}>
+                            {p.difficulty}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <button onClick={() => cycleStrength(p.id, p.strength)} className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border transition-all hover:scale-105 active:scale-95 ${p.strength==='Weakest'?'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.2)]':p.strength==='Strongest'?'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]':'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
+                            {p.strength}
+                          </button>
+                        </td>
+                        <td className="p-4 text-[#94A3B8] text-xs">{p.added}</td>
+                        <td className="p-4">
+                          <div className="relative inline-block shrink-0">
+                            <button
+                              onClick={() => openNotes(p.id)}
+                              className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+                                hasAiSummary
+                                  ? 'text-violet-400 bg-violet-500/10 border-violet-500/30 shadow-[0_0_8px_rgba(139,92,246,0.2)] hover:bg-violet-500/20 hover:border-violet-500/40'
+                                  : (hasUserNotes || hasCode)
+                                  ? 'text-[#0ea5e9] bg-[#0ea5e9]/8 border-[#0ea5e9]/20 hover:bg-[#0ea5e9]/15'
+                                  : 'text-[#64748B] border-transparent hover:bg-white/[0.06] hover:text-white'
+                              }`}
+                              title={hasAiSummary ? 'View AI Summary & Notes' : (hasUserNotes || hasCode) ? 'View/Edit Note' : 'Add Note'}
+                            >
+                              <FileText size={16} />
+                            </button>
+                            {hasAiSummary && (
+                              <span className="absolute -top-1 -right-1 flex h-2 w-2 pointer-events-none">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -472,32 +729,30 @@ export default function Revision() {
         </div>
       )}
 
-      {notesModal.open && (
-        <div className="fixed inset-0 /80 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#111827] border border-white/[0.06] rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-[#000000]">
-              <h2 className="font-semibold text-white">Problem Notes</h2>
-              <button onClick={() => setNotesModal({ ...notesModal, open: false })} className="text-[#64748B] hover:text-white transition-colors"><X size={18} /></button>
-            </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div className="flex gap-2">
-                {['brute', 'better', 'optimal'].map(tab => (
-                  <button key={tab} onClick={() => setNotesModal({ ...notesModal, activeTab: tab })} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${notesModal.activeTab === tab ? 'bg-violet-500 text-white' : 'bg-white/[0.03] text-[#94A3B8] hover:text-white hover:bg-white/[0.06]'}`}>{tab}</button>
-                ))}
-              </div>
-              <div className="flex gap-4">
-                <input value={notesModal[`${notesModal.activeTab}Time`] || ""} onChange={e => setNotesModal({...notesModal, [`${notesModal.activeTab}Time`]: e.target.value})} placeholder="Time O(N)" className="premium-input flex-1" />
-                <input value={notesModal[`${notesModal.activeTab}Space`] || ""} onChange={e => setNotesModal({...notesModal, [`${notesModal.activeTab}Space`]: e.target.value})} placeholder="Space O(1)" className="premium-input flex-1" />
-              </div>
-              <textarea value={notesModal[notesModal.activeTab] || ""} onChange={e => setNotesModal({...notesModal, [notesModal.activeTab]: e.target.value})} placeholder="Write your approach or code here..." className="premium-input h-64 resize-none font-mono" />
-            </div>
-            <div className="px-6 py-4 border-t border-white/[0.06] bg-[#000000] flex justify-end gap-3">
-              <button onClick={() => setNotesModal({ ...notesModal, open: false })} className="premium-button-secondary">Cancel</button>
-              <button onClick={saveNotes} className="premium-button">Save Notes</button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      {/* ALERT MODAL */}
+      <AnimatePresence>
+        {alertModal.open && (
+          <div className="fixed inset-0 bg-[#040405]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98, y: 10 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              className="bg-[#0b0b0c] border border-white/[0.06] rounded-xl w-full max-w-sm shadow-2xl p-8 relative flex flex-col items-center text-center"
+            >
+              <h3 className="text-sm font-semibold text-white mb-2 tracking-tight">System Message</h3>
+              <p className="text-zinc-500 text-xs leading-relaxed mb-6 font-medium">
+                {alertModal.message}
+              </p>
+              <button 
+                onClick={() => setAlertModal({ open: false, message: "" })} 
+                className="w-full py-2 px-4 bg-white text-black text-xs font-medium rounded-lg hover:bg-zinc-200 transition-colors"
+              >
+                Understood
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

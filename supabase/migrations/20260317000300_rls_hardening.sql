@@ -26,7 +26,8 @@
 -- ==============================================================
 
 -- Ensure pgcrypto is available for gen_random_uuid()
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 
@@ -137,36 +138,135 @@ ALTER TABLE focus_violations      FORCE ROW LEVEL SECURITY;
 
 
 -- ==============================================================
+-- ==============================================================
 -- SECTION 4 — CLEAN SLATE: Drop all existing policies first
 -- This ensures no stale or duplicate policies remain.
 -- ==============================================================
 
+-- --------------------------------------------------------------
 -- revision_problems
-DROP POLICY IF EXISTS "Users can select their own problems"        ON revision_problems;
-DROP POLICY IF EXISTS "Users can insert their own problems"        ON revision_problems;
-DROP POLICY IF EXISTS "Users can update their own problems"        ON revision_problems;
-DROP POLICY IF EXISTS "Users can delete their own problems"        ON revision_problems;
-DROP POLICY IF EXISTS "Users can manage their own revision problems" ON revision_problems;
+-- OLD policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can select their own problems"
+ON revision_problems;
 
+DROP POLICY IF EXISTS "Users can insert their own problems"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "Users can update their own problems"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "Users can delete their own problems"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "Users can manage their own revision problems"
+ON revision_problems;
+
+-- --------------------------------------------------------------
+-- revision_problems
+-- NEW policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "rls_revision_problems_select"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "rls_revision_problems_insert"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "rls_revision_problems_update"
+ON revision_problems;
+
+DROP POLICY IF EXISTS "rls_revision_problems_delete"
+ON revision_problems;
+
+
+-- --------------------------------------------------------------
 -- extension_connections
-DROP POLICY IF EXISTS "Users can view their own connections"       ON extension_connections;
-DROP POLICY IF EXISTS "Users can insert their own connections"     ON extension_connections;
-DROP POLICY IF EXISTS "Users can delete their own connections"     ON extension_connections;
-DROP POLICY IF EXISTS "Users can read own connections"             ON extension_connections;
-DROP POLICY IF EXISTS "Users can manage their own connections"     ON extension_connections;
+-- OLD policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view their own connections"
+ON extension_connections;
 
+DROP POLICY IF EXISTS "Users can insert their own connections"
+ON extension_connections;
+
+DROP POLICY IF EXISTS "Users can delete their own connections"
+ON extension_connections;
+
+DROP POLICY IF EXISTS "Users can read own connections"
+ON extension_connections;
+
+DROP POLICY IF EXISTS "Users can manage their own connections"
+ON extension_connections;
+
+-- --------------------------------------------------------------
+-- extension_connections
+-- NEW policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "rls_extension_connections_select"
+ON extension_connections;
+
+DROP POLICY IF EXISTS "rls_extension_connections_delete"
+ON extension_connections;
+
+
+-- --------------------------------------------------------------
 -- focus_sessions
-DROP POLICY IF EXISTS "Users can manage their own sessions"        ON focus_sessions;
-DROP POLICY IF EXISTS "Users can select their own sessions"        ON focus_sessions;
-DROP POLICY IF EXISTS "Users can insert their own sessions"        ON focus_sessions;
-DROP POLICY IF EXISTS "Users can update their own sessions"        ON focus_sessions;
-DROP POLICY IF EXISTS "Users can delete their own sessions"        ON focus_sessions;
+-- OLD policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can manage their own sessions"
+ON focus_sessions;
 
+DROP POLICY IF EXISTS "Users can select their own sessions"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "Users can insert their own sessions"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "Users can update their own sessions"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "Users can delete their own sessions"
+ON focus_sessions;
+
+-- --------------------------------------------------------------
+-- focus_sessions
+-- NEW policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "rls_focus_sessions_select"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "rls_focus_sessions_insert"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "rls_focus_sessions_update"
+ON focus_sessions;
+
+DROP POLICY IF EXISTS "rls_focus_sessions_delete"
+ON focus_sessions;
+
+
+-- --------------------------------------------------------------
 -- focus_violations
-DROP POLICY IF EXISTS "Users can view violations of their sessions" ON focus_violations;
-DROP POLICY IF EXISTS "Users can insert violations for their sessions" ON focus_violations;
+-- OLD policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view violations of their sessions"
+ON focus_violations;
 
+DROP POLICY IF EXISTS "Users can insert violations for their sessions"
+ON focus_violations;
 
+-- --------------------------------------------------------------
+-- focus_violations
+-- NEW policy names
+-- --------------------------------------------------------------
+DROP POLICY IF EXISTS "rls_focus_violations_select"
+ON focus_violations;
+
+DROP POLICY IF EXISTS "rls_focus_violations_insert"
+ON focus_violations;
+
+DROP POLICY IF EXISTS "rls_focus_violations_delete"
+ON focus_violations;
 -- ==============================================================
 -- SECTION 5 — REVISION_PROBLEMS POLICIES
 --
@@ -450,35 +550,35 @@ ALTER TABLE revision_problems
     DROP CONSTRAINT IF EXISTS chk_focus_score_range;
 ALTER TABLE revision_problems
     ADD CONSTRAINT chk_focus_score_range
-    CHECK (focus_score >= 0 AND focus_score <= 100);
+    CHECK (focus_score >= 0 AND focus_score <= 100) NOT VALID;
 
 -- revision_problems: ensure switches is non-negative
 ALTER TABLE revision_problems
     DROP CONSTRAINT IF EXISTS chk_switches_non_negative;
 ALTER TABLE revision_problems
     ADD CONSTRAINT chk_switches_non_negative
-    CHECK (switches >= 0);
+    CHECK (switches >= 0) NOT VALID;
 
 -- revision_problems: valid difficulty values
 ALTER TABLE revision_problems
     DROP CONSTRAINT IF EXISTS chk_difficulty_values;
 ALTER TABLE revision_problems
     ADD CONSTRAINT chk_difficulty_values
-    CHECK (difficulty IN ('Easy', 'Medium', 'Hard'));
+    CHECK (difficulty IN ('Easy', 'Medium', 'Hard')) NOT VALID;
 
 -- revision_problems: valid focus_status values
 ALTER TABLE revision_problems
     DROP CONSTRAINT IF EXISTS chk_focus_status_values;
 ALTER TABLE revision_problems
     ADD CONSTRAINT chk_focus_status_values
-    CHECK (focus_status IN ('Cheated', 'Give Up', 'Low Focus', 'Focus Kept'));
+    CHECK (focus_status IN ('Cheated', 'Give Up', 'Low Focus', 'Focus Kept')) NOT VALID;
 
 -- extension_connections: token_hash must look like a SHA-256 hex string (64 chars)
 ALTER TABLE extension_connections
     DROP CONSTRAINT IF EXISTS chk_token_hash_format;
 ALTER TABLE extension_connections
     ADD CONSTRAINT chk_token_hash_format
-    CHECK (length(token_hash) = 64 AND token_hash ~ '^[0-9a-f]+$');
+    CHECK (length(token_hash) = 64 AND token_hash ~ '^[0-9a-f]+$') NOT VALID;
 
 
 -- ==============================================================

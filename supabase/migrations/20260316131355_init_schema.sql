@@ -1,4 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 
 -- Create the revision_problems table
 CREATE TABLE IF NOT EXISTS revision_problems (
@@ -20,22 +22,26 @@ CREATE TABLE IF NOT EXISTS revision_problems (
 ALTER TABLE revision_problems ENABLE ROW LEVEL SECURITY;
 
 -- Create Policies
+DROP POLICY IF EXISTS "Users can select their own problems" ON revision_problems;
 CREATE POLICY "Users can select their own problems"
 ON revision_problems FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own problems" ON revision_problems;
 CREATE POLICY "Users can insert their own problems"
 ON revision_problems FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own problems" ON revision_problems;
 CREATE POLICY "Users can update their own problems"
 ON revision_problems FOR UPDATE
 TO authenticated
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own problems" ON revision_problems;
 CREATE POLICY "Users can delete their own problems"
 ON revision_problems FOR DELETE
 TO authenticated
@@ -53,16 +59,19 @@ CREATE TABLE IF NOT EXISTS extension_connections (
 ALTER TABLE extension_connections ENABLE ROW LEVEL SECURITY;
 
 -- Create Policies for extension_connections
+DROP POLICY IF EXISTS "Users can view their own connections" ON extension_connections;
 CREATE POLICY "Users can view their own connections"
 ON extension_connections FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own connections" ON extension_connections;
 CREATE POLICY "Users can insert their own connections"
 ON extension_connections FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own connections" ON extension_connections;
 CREATE POLICY "Users can delete their own connections"
 ON extension_connections FOR DELETE
 TO authenticated

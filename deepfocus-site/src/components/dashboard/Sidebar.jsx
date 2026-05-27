@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
@@ -19,8 +19,8 @@ export default function Sidebar() {
     { name: 'Today\'s Revision', path: '/today', icon: Target },
     { name: 'Curriculum Sheet', path: '/sheet', icon: ClipboardList },
     { name: 'Revision Sheet', path: '/revision', icon: ClipboardList },
+    { name: 'Revision Workspace', path: '/workspace', icon: Sparkles },
     { name: 'AI Planner', path: '/planner', icon: BrainCircuit },
-    { name: 'AI Tutor', path: '/tutor', icon: MessageSquare },
     { name: 'Analytics', path: '/analytics', icon: LineChart },
     { name: 'Library', path: '/library', icon: Library },
   ];

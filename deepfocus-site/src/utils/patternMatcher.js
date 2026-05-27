@@ -3,24 +3,71 @@ import patternPriority from '../constants/Patterns/pattern_priority.json';
 import patternsData from '../constants/Patterns/patterns.json';
 import aliasMap from '../constants/Patterns/pattern_alias_map.json';
 
-const exactMatchMap = {};
-curatedQuestions.forEach(q => {
-  exactMatchMap[q.title.toLowerCase()] = q;
-});
-
 export const patternsList = patternsData.patterns;
 export const patternPriorityMap = patternPriority;
 
+// Helper to normalize problem titles (lowercase, strip leading digits/punctuation, strip non-alphanumeric)
+export function normalizeTitle(title) {
+  if (!title) return "";
+  let clean = title.toLowerCase().trim();
+  clean = clean.replace(/^\d+[\.\-\s]*/, ""); // strip leading numbers like "51. ", "51 ", "51-"
+  clean = clean.replace(/[^a-z0-9]/g, ""); // strip non-alphanumeric characters
+  return clean;
+}
+
+// Helper to extract and normalize slug from problem link
+export function getSlugFromLink(url) {
+  if (!url) return "";
+  const match = url.match(/\/problems\/([^\/]+)/);
+  if (!match) return "";
+  let slug = match[1].toLowerCase().trim();
+  slug = slug.replace(/^\d+[\.\-\s]*/, ""); // strip leading numbers from slug
+  slug = slug.replace(/[^a-z0-9]/g, ""); // strip non-alphanumeric characters
+  return slug;
+}
+
+// Build a map of curated questions indexed by both normalized title and normalized slug
+const normalizedCuratedMap = {};
+curatedQuestions.forEach(q => {
+  const normTitle = normalizeTitle(q.title);
+  if (normTitle) {
+    normalizedCuratedMap[normTitle] = q;
+  }
+  const slug = q.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const normSlug = getSlugFromLink(`/problems/${slug}/`);
+  if (normSlug && normSlug !== normTitle) {
+    normalizedCuratedMap[normSlug] = q;
+  }
+});
+
+// Retrieve curated question data based on title or link
+export function getProblemData(title, link = "") {
+  if (title) {
+    const normTitle = normalizeTitle(title);
+    if (normalizedCuratedMap[normTitle]) {
+      return normalizedCuratedMap[normTitle];
+    }
+  }
+  if (link) {
+    const normSlug = getSlugFromLink(link);
+    if (normalizedCuratedMap[normSlug]) {
+      return normalizedCuratedMap[normSlug];
+    }
+  }
+  return null;
+}
+
 // Simple deterministic tag/title matcher for unknown questions
-export function getProblemPattern(title, tags = []) {
+export function getProblemPattern(title, tags = [], link = "") {
   if (!title) return "Other";
   
-  const lowerTitle = title.toLowerCase();
-  
-  // 1. Search in curated_questions.json
-  if (exactMatchMap[lowerTitle]) {
-    return exactMatchMap[lowerTitle].primary_pattern;
+  // 1. Search in curated questions using normalized lookup
+  const cq = getProblemData(title, link);
+  if (cq) {
+    return cq.primary_pattern;
   }
+  
+  const lowerTitle = title.toLowerCase();
   
   // 2. Deterministic logic based on tags and title keywords
   const combinedKeywords = [...tags, ...lowerTitle.split(/\s+/)].map(k => k.toLowerCase());
@@ -71,8 +118,3 @@ export function getProblemPattern(title, tags = []) {
   return bestPattern;
 }
 
-export function getProblemData(title) {
-  const lowerTitle = title.toLowerCase();
-  if (exactMatchMap[lowerTitle]) return exactMatchMap[lowerTitle];
-  return null;
-}

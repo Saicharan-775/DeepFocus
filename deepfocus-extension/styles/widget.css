@@ -342,27 +342,32 @@
   background: #000;
 }
 
-/* Glassmorphism Toast */
 .df-toast {
   position: fixed;
-  bottom: 24px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: rgba(18, 18, 20, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  padding: 14px 24px;
-  border-radius: 99px;
+  min-width: min(420px, calc(100vw - 32px));
+  max-width: min(520px, calc(100vw - 32px));
+  background:
+    linear-gradient(135deg, rgba(18, 18, 22, 0.94), rgba(8, 8, 10, 0.92)),
+    radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.18), transparent 38%);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px 16px;
+  border-radius: 18px;
   color: #fff;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   z-index: 2147483647;
-  transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(251, 191, 36, 0.1);
+  opacity: 0;
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .df-toast.show {
@@ -371,11 +376,210 @@
 }
 
 .df-toast-icon {
-  color: #ef4444;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 14px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  color: #f4f4f5;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.df-toast-message {
+.df-toast-success {
+  border-color: rgba(52, 211, 153, 0.26);
+  background:
+    linear-gradient(135deg, rgba(10, 18, 16, 0.96), rgba(7, 10, 12, 0.94)),
+    radial-gradient(circle at 10% 0%, rgba(52, 211, 153, 0.24), transparent 42%);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.58),
+    0 0 36px rgba(16, 185, 129, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.df-toast-success .df-toast-icon {
+  color: #07110d;
+  background: linear-gradient(135deg, #a7f3d0, #34d399);
+  border-color: rgba(167, 243, 208, 0.45);
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.28);
+}
+
+.df-toast-queued {
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.df-toast-queued .df-toast-icon {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.df-toast-copy {
+  min-width: 0;
+}
+
+.df-toast-title {
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.df-toast-detail {
+  margin-top: 3px;
+  color: rgba(244, 244, 245, 0.62);
+  font-size: 12px;
   font-weight: 500;
+  line-height: 1.35;
+}
+
+/* AI Modal Styling */
+
+#df-ai-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: df-fade-in 0.2s ease-out;
+}
+
+.df-ai-modal-content {
+  background: #121214 !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15), 0 0 30px rgba(0, 0, 0, 0.8) !important;
+  width: 480px !important;
+  max-width: calc(100vw - 48px) !important;
+  text-align: left !important;
+  padding: 28px !important;
+  border-radius: 20px !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  animation: df-modal-up 0.25s ease-out !important;
+}
+
+.df-ai-icon-wrap {
+  background: rgba(139, 92, 246, 0.1) !important;
+  color: #a78bfa !important;
+  margin-bottom: 0 !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+}
+
+.df-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.df-ai-modal-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  margin-bottom: 24px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Custom Scrollbar for body */
+.df-ai-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.df-ai-modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+.df-ai-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.df-ai-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+.df-ai-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 0;
+  color: #94a3b8;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+}
+
+/* Spinner animation */
+.df-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(139, 92, 246, 0.1);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: df-spin 0.8s linear infinite;
+}
+
+@keyframes df-spin {
+  to { transform: rotate(360deg); }
+}
+
+.df-ai-error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  padding: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  width: 100%;
+}
+
+.df-ai-summary-text {
+  white-space: pre-wrap;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+}
+
+/* Summary Prompt Buttons */
+.df-summary-prompt-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.df-summary-prompt-btn-yes {
+  flex: 1;
+  background: #f8fafc;
+  color: #0f172a;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.df-summary-prompt-btn-yes:hover {
+  background: #e2e8f0;
+}
+
+.df-summary-prompt-btn-no {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.df-summary-prompt-btn-no:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
 }

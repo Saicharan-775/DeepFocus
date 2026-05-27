@@ -1,3 +1,9 @@
+(() => {
+if (window.__DEEPFOCUS_CONTENT_LOADED__) {
+  return;
+}
+window.__DEEPFOCUS_CONTENT_LOADED__ = true;
+
 // =============================================
 // INSTANT BLOCK — runs before DOM renders
 // We read focus active from local storage via a
@@ -6,6 +12,39 @@
 // immediately hide the page and show a blocker
 // overlay at the style level if we're on a forbidden URL.
 // =============================================
+const isDashboard = !window.location.hostname.includes('leetcode.com');
+
+function removeFocusUIArtifacts() {
+  document.getElementById('df-widget-container')?.remove();
+  document.getElementById('df-modal-overlay')?.remove();
+  document.getElementById('df-ai-modal-overlay')?.remove();
+  document.getElementById('df-extend-overlay')?.remove();
+  document.getElementById('df-blocked-frame')?.remove();
+  document.getElementById('df-css-blocker')?.remove();
+  document.getElementById('df-instant-block-style')?.remove();
+  document.querySelector('.df-toast')?.remove();
+  if (document.body) document.body.style.display = '';
+}
+
+function prunePendingEvents() {
+  safeStorageGet(['deepfocus_pending_events'], (res) => {
+    const current = Array.isArray(res.deepfocus_pending_events) ? res.deepfocus_pending_events : [];
+    const pruned = current.filter(isValidPendingProblem);
+    if (pruned.length !== current.length) {
+      safeStorageSet({ deepfocus_pending_events: pruned });
+    }
+  });
+}
+
+if (isDashboard) {
+  prunePendingEvents();
+  if (document.body) {
+    removeFocusUIArtifacts();
+  } else {
+    document.addEventListener('DOMContentLoaded', removeFocusUIArtifacts, { once: true });
+  }
+}
+
 (function instantBlock() {
   const BLOCKED_PATTERN = /\/problems\/[^\/]+\/(solutions?|editorial)/i;
   if (!BLOCKED_PATTERN.test(window.location.href)) return;
@@ -15,8 +54,8 @@
   // Inject a full-page style hider immediately; then remove if focus is not active.
   const styleId = 'df-instant-block-style';
 
-  // Don't run on localhost (dashboard)
-  if (window.location.hostname === 'localhost') return;
+  // Don't run on dashboard
+  if (isDashboard) return;
 
   const style = document.createElement('style');
   style.id = styleId;
@@ -25,8 +64,8 @@
 
   // Now check focus state asynchronously as fast as possible
   try {
-    chrome.storage.local.get(['focusState'], (res) => {
-      if (chrome.runtime.lastError || !res || !res.focusState || !res.focusState.focusActive) {
+    requestValidatedFocusState((state) => {
+      if (!isUsableFocusState(state)) {
         // Not in focus — reveal the page
         const s = document.getElementById(styleId);
         if (s) s.remove();
@@ -49,12 +88,32 @@ let observer = null;
 let blockingObserver = null;  // Fixed: Persistent singleton observer
 let acceptedObserverInterval = null;
 let difficulty = "Medium"; // default
+let lastInterceptedCode = "";
+
+function isUsableFocusState(state) {
+  return !!(state && state.focusActive && state.sessionId && state.sessionStartAt && state.durationSeconds && state.focusTabId);
+}
+
+function requestValidatedFocusState(callback) {
+  try {
+    chrome.runtime.sendMessage({ type: 'GET_FOCUS_STATE' }, (response) => {
+      if (chrome.runtime.lastError || !response?.success) {
+        callback({ focusActive: false });
+        return;
+      }
+      callback(response.state || { focusActive: false });
+    });
+  } catch (e) {
+    callback({ focusActive: false });
+  }
+}
 
 // Get Font Awesome / Iconify raw SVGs
 const clockIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 const tabIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>`;
 const crossIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 const lightningIcon = `<svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg>`;
+
 const minusIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>`;
 const plusIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>`;
 
@@ -65,163 +124,203 @@ function syncStateToPage() {
   }, '*');
 }
 
+function appendToBodyWhenReady(node) {
+  if (document.body) {
+    document.body.appendChild(node);
+    return;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!node.isConnected && document.body) {
+      document.body.appendChild(node);
+    }
+  }, { once: true });
+}
+
 // Initial sync
-chrome.storage.local.get(['focusState'], (res) => {
-  if (res.focusState) {
-    focusState = res.focusState;
+requestValidatedFocusState((state) => {
+  if (isUsableFocusState(state)) {
+    focusState = state;
     initFocusEnvironment();
     syncStateToPage();
+  }
+  // Request AI keys if we are on the dashboard
+  if (isDashboard) {
+    window.postMessage({ type: "DEEPFOCUS_GET_AI_KEYS" }, "*");
   }
 });
 
 // Listen for messages from background & popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'FOCUS_STARTED') {
-    focusState = message.state;
-    initFocusEnvironment();
-    syncStateToPage();
-  }
-  if (message.type === 'FOCUS_STOPPED') {
-    focusState = { focusActive: false };
-    cleanupFocusEnvironment();
-    syncStateToPage();
-  }
-  if (message.type === 'TAB_SWITCH_WARNING') {
-    focusState = message.state;
-    updateWidgetUI();
-    showWarningModal();
-    syncStateToPage();
-  }
-  if (message.type === 'GET_DIFFICULTY') {
-    let diff = 'Medium'; // default
-    let titleStr = "Previously Solved Problem";
-
-    try {
-      // 1. IMPROVED TITLE DETECTION
-      // First try the specific 1.1 title element LeetCode uses
-      const titleEl = document.querySelector('[data-cy="question-title"]') ||
-        document.querySelector('div.text-title-large') ||
-        document.querySelector('h4.text-title-large');
-
-      if (titleEl && titleEl.textContent) {
-        titleStr = titleEl.textContent.replace(/^\d+\.\s*/, '').trim();
-      } else if (document.title) {
-        // Fallback to document title: "1. Two Sum - LeetCode" -> "Two Sum"
-        titleStr = document.title.split('-')[0].replace(/^\d+\.\s*/, '').trim();
-      }
-
-      if (!titleStr || titleStr.toLowerCase().includes("leetcode") || titleStr === "Previously Solved Problem" || titleStr === "LeetCode Problem") {
-        // Last resort: extract from URL
-        const urlMatch = window.location.href.match(/\/problems\/([^\/]+)/);
-        if (urlMatch) {
-          titleStr = urlMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        }
-      }
-
-      // Explicitly get link
-      const fullUrl = window.location.href.split('?')[0].split('#')[0];
-      const linkMatch = fullUrl.match(/https?:\/\/leetcode\.com\/problems\/[^\/]+\//);
-      const link = linkMatch ? linkMatch[0] : fullUrl;
-
-      // 2. IMPROVED DIFFICULTY DETECTION
-      if (document.body) {
-        // Try precise badge selection first (best for modern LeetCode)
-        const diffBadge = document.querySelector('[data-track-load="description_content"] div[class*="text-difficulty-"], .text-difficulty-easy, .text-difficulty-medium, .text-difficulty-hard');
-
-        if (diffBadge) {
-          const txt = diffBadge.textContent.trim();
-          if (txt.includes('Hard')) diff = 'Hard';
-          else if (txt.includes('Easy')) diff = 'Easy';
-          else if (txt.includes('Medium')) diff = 'Medium';
-        } else {
-          // Fallback to broader check but prioritize main content area
-          const mainContent = document.querySelector('[data-track-load="description_content"]') || document.body;
-          const hards = mainContent.querySelectorAll('.text-pink, .text-difficulty-hard, .text-red-6');
-          const mediums = mainContent.querySelectorAll('.text-yellow, .text-difficulty-medium, .text-orange-6');
-          const easys = mainContent.querySelectorAll('.text-olive, .text-difficulty-easy, .text-green-6');
-
-          const hasText = (list, key) => Array.from(list).some(el => (el.textContent || '').includes(key));
-
-          if (hasText(hards, 'Hard')) diff = 'Hard';
-          else if (hasText(mediums, 'Medium')) diff = 'Medium';
-          else if (hasText(easys, 'Easy')) diff = 'Easy';
-        }
-      }
-    } catch (err) {
-      console.error("DeepFocus: Error detecting difficulty:", err);
-    }
-
-    difficulty = diff;
-    sendResponse({ difficulty: diff, title: titleStr, link: link });
+  if (message.type === 'SYNC_INTERNAL_COPY') {
+    lastLocalCopy = message.text;
     return;
   }
-
+  if (message.type === 'REVISION_OPTIMISTIC_UPSERT') {
+    if (isDashboard) {
+      window.postMessage({
+        type: 'DEEPFOCUS_REVISION_UPSERT',
+        problem: message.problem,
+        syncState: message.syncState || 'optimistic'
+      }, '*');
+    }
+    return;
+  }
+  if (message.type === 'REVISION_REFRESH') {
+    if (isDashboard) {
+      window.postMessage({ type: 'DEEPFOCUS_REVISION_REFRESH' }, '*');
+    }
+    return;
+  }
+  if (isDashboard && ['FOCUS_STARTED', 'TAB_SWITCH_WARNING', 'URL_CHANGED', 'FOCUS_STATE_UPDATED', 'GET_FINAL_SYNC_DATA', 'SHOW_TOAST'].includes(message.type)) {
+    removeFocusUIArtifacts();
+    if (message.type === 'GET_FINAL_SYNC_DATA') {
+      sendResponse(null);
+      return true;
+    }
+    return;
+  }
   if (message.type === 'FOCUS_STARTED') {
+    if (!isUsableFocusState(message.state)) return;
     focusState = message.state;
     isCurrentlyBlocked = false;
-
     initFocusEnvironment();
-
-    if (document.body) {
+    if (!isDashboard && document.body) {
       injectWidget();
       updateWidgetUI();
     }
+    syncStateToPage();
     return;
   }
-
   if (message.type === 'FOCUS_STOPPED') {
     focusState = { focusActive: false };
     cleanupFocusEnvironment();
+    syncStateToPage();
+    return;
   }
-
   if (message.type === 'TAB_SWITCH_WARNING') {
-    // Score has been updated by background — sync it and refresh widget
+    if (!isUsableFocusState(message.state)) return;
     focusState = message.state;
     updateWidgetUI();
     showWarningModal();
-
-    // Mid-session syncing disabled per user request. Use final end syncs only.
+    syncStateToPage();
+    return;
   }
-
+  if (message.type === 'GET_DIFFICULTY') {
+    const details = getProblemDetails();
+    sendResponse({ difficulty: details.difficulty, title: details.title, link: details.link });
+    return true;
+  }
   if (message.type === 'URL_CHANGED') {
     blockSolutionsIfNeeded();
+    return;
   }
-
-  if (message.type === 'SYNC_AND_STOP') {
-    syncWithWebsite(message.status, message.score, message.switches);
-    // Note: cleanup will be handled shortly after by FOCUS_STOPPED message from background
-  }
-
   if (message.type === 'FOCUS_STATE_UPDATED') {
-    focusState = message.state;
-    updateWidgetUI();
+    if (isUsableFocusState(message.state)) {
+      focusState = message.state;
+      updateWidgetUI();
+    } else {
+      focusState = { focusActive: false };
+      cleanupFocusEnvironment();
+      syncStateToPage();
+    }
+    return;
+  }
+  if (message.type === 'GET_FINAL_SYNC_DATA') {
+    const details = getProblemDetails();
+    let userCode = "";
+    try {
+      userCode = getEditorCode();
+    } catch (e) {
+      console.error("Error reading editor code:", e);
+    }
+    sendResponse({
+      title: details.title,
+      link: details.link,
+      difficulty: details.difficulty,
+      code: userCode
+    });
+    return true;
+  }
+  if (message.type === 'SHOW_TOAST') {
+    showToast(message.text, message.variant);
+    return;
   }
 });
 
+/** Normalize LeetCode problem URLs to consistently have a trailing slash */
+function normalizeProblemUrl(url) {
+  if (!url) return '';
+  const fullUrl = url.split('?')[0].split('#')[0];
+  const match = fullUrl.match(/https?:\/\/(?:www\.)?leetcode\.com\/problems\/([^\/]+)/);
+  if (match) {
+    return `https://leetcode.com/problems/${match[1]}/`;
+  }
+  return fullUrl;
+}
+
 /** Get Problem Details */
 function getProblemDetails() {
-  const titleEl = document.querySelector('[data-cy="question-title"]') ||
-    document.querySelector('div.text-title-large') ||
-    document.querySelector('h4.text-title-large') ||
-    document.querySelector('.question-title');
-  const title = titleEl ? titleEl.textContent.replace(/^\d+\.\s*/, '').trim() : "Unknown Problem";
+  let titleStr = "Unknown Problem";
+  let link = normalizeProblemUrl(window.location.href);
+  let diff = difficulty || "Medium";
 
-  const fullUrl = window.location.href.split('?')[0].split('#')[0];
-  // Normalize: https://leetcode.com/problems/name/description/ -> https://leetcode.com/problems/name/
-  const linkMatch = fullUrl.match(/https?:\/\/leetcode\.com\/problems\/[^\/]+\//);
-  const link = linkMatch ? linkMatch[0] : fullUrl;
+  try {
+    // 1. IMPROVED TITLE DETECTION
+    const titleEl = document.querySelector('[data-cy="question-title"]') ||
+      document.querySelector('div.text-title-large') ||
+      document.querySelector('h4.text-title-large') ||
+      document.querySelector('.question-title');
+
+    if (titleEl && titleEl.textContent) {
+      titleStr = titleEl.textContent.replace(/^\d+\.\s*/, '').trim();
+    } else if (document.title) {
+      titleStr = document.title.split('-')[0].replace(/^\d+\.\s*/, '').trim();
+    }
+
+    if (!titleStr || titleStr.toLowerCase().includes("leetcode") || titleStr === "Previously Solved Problem" || titleStr === "LeetCode Problem" || titleStr === "Unknown Problem") {
+      const urlMatch = window.location.href.match(/\/problems\/([^\/]+)/);
+      if (urlMatch) {
+        titleStr = urlMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+    }
+
+    // 2. DIFFICULTY DETECTION
+    if (document.body) {
+      const diffBadge = document.querySelector('[data-track-load="description_content"] div[class*="text-difficulty-"], .text-difficulty-easy, .text-difficulty-medium, .text-difficulty-hard');
+      if (diffBadge) {
+        const txt = diffBadge.textContent.trim();
+        if (txt.includes('Hard')) diff = 'Hard';
+        else if (txt.includes('Easy')) diff = 'Easy';
+        else if (txt.includes('Medium')) diff = 'Medium';
+      } else {
+        const mainContent = document.querySelector('[data-track-load="description_content"]') || document.body;
+        const hards = mainContent.querySelectorAll('.text-pink, .text-difficulty-hard, .text-red-6');
+        const mediums = mainContent.querySelectorAll('.text-yellow, .text-difficulty-medium, .text-orange-6');
+        const easys = mainContent.querySelectorAll('.text-olive, .text-difficulty-easy, .text-green-6');
+        const hasText = (list, key) => Array.from(list).some(el => (el.textContent || '').includes(key));
+        if (hasText(hards, 'Hard')) diff = 'Hard';
+        else if (hasText(mediums, 'Medium')) diff = 'Medium';
+        else if (hasText(easys, 'Easy')) diff = 'Easy';
+      }
+    }
+  } catch (err) {
+    console.error("DeepFocus: Error in getProblemDetails:", err);
+  }
+
+  difficulty = diff;
 
   return {
     id: Date.now(),
-    title,
-    link,
-    difficulty: difficulty,
+    title: titleStr,
+    link: link,
+    difficulty: diff,
     added: new Date().toISOString().split('T')[0]
   };
 }
 
 /** QUEUE EVENTS (Secure Supabase Sync) */
-function syncWithWebsite(status, score, switches) {
+function syncWithWebsite(status, score, switches, processNow = true) {
   // IGNORE lists/general leetcode pages — only sync on problem pages
   if (!window.location.href.includes('/problems/')) return;
 
@@ -229,6 +328,13 @@ function syncWithWebsite(status, score, switches) {
   const elapsedSecs = focusState.sessionStartAt
     ? Math.floor((Date.now() - focusState.sessionStartAt) / 1000)
     : 0;
+
+  let userCode = "";
+  try {
+    userCode = getEditorCode();
+  } catch (e) {
+    console.error("Error reading editor code:", e);
+  }
 
   const problemObject = {
     title: details.title,
@@ -238,6 +344,7 @@ function syncWithWebsite(status, score, switches) {
     focus_score: score,
     switches: switches,
     focus_duration: elapsedSecs,
+    code: userCode,
     timestamp: Date.now()
   };
 
@@ -249,7 +356,9 @@ function syncWithWebsite(status, score, switches) {
     if (queue.length > 50) queue = queue.slice(-50);
 
     chrome.storage.local.set({ deepfocus_pending_events: queue }, () => {
-      processEventQueue(); // Try immediately
+      if (processNow) {
+        processEventQueue();
+      }
     });
   });
 }
@@ -259,6 +368,15 @@ let isProcessingQueue = false;
 async function processEventQueue() {
   if (isProcessingQueue) return;
   isProcessingQueue = true;
+
+  try {
+    chrome.runtime.sendMessage({ type: 'PROCESS_PENDING_EVENTS' }, () => {});
+  } catch (_) {
+    // Background owns persistence; content pages only request a retry.
+  } finally {
+    isProcessingQueue = false;
+  }
+  return;
 
   try {
     // Safely check context validity. chrome?.storage?.local passes even on
@@ -274,18 +392,21 @@ async function processEventQueue() {
       // Context invalidated — old tab, extension was reloaded. Silently bail.
       return;
     }
-    let queue = res.deepfocus_pending_events || [];
+    let queue = (res.deepfocus_pending_events || []).filter(isValidPendingProblem);
     const token = res.deepfocus_connection_token;
 
     if (queue.length === 0) return;
+    await chrome.storage.local.set({ deepfocus_pending_events: queue });
 
     if (!token) {
+      console.error("[DeepFocus] ❌ No connection token found. Please connect the extension from the DeepFocus dashboard Settings page.");
+      showToast("⚠️ Extension not connected! Open DeepFocus dashboard → Settings → Connect Extension");
       return;
     }
 
     // 1. SMART DEDUPLICATE: Only keep the LATEST event for each unique link
     const uniqueMap = new Map();
-    queue.forEach(item => uniqueMap.set(item.link, item));
+    queue.forEach(item => uniqueMap.set(normalizeProblemUrl(item.link), item));
     const dedupedQueue = Array.from(uniqueMap.values());
 
     if (dedupedQueue.length !== queue.length) {
@@ -299,7 +420,20 @@ async function processEventQueue() {
 
       try {
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: 'SYNC_EVENT', problem, token }, resolve);
+          chrome.runtime.sendMessage({ type: 'SYNC_EVENT', problem, token }, (reply) => {
+            if (chrome.runtime.lastError) {
+              resolve({
+                success: false,
+                error: chrome.runtime.lastError.message || "Background sync handler unavailable"
+              });
+              return;
+            }
+
+            resolve(reply || {
+              success: false,
+              error: "Background sync handler returned no response"
+            });
+          });
         });
 
         if (response && response.success) {
@@ -308,16 +442,28 @@ async function processEventQueue() {
           // Save progress IMMEDIATELY after each success
           await chrome.storage.local.set({ deepfocus_pending_events: remainingQueue });
 
-          if (remainingQueue.length === 0) showToast("🚀 Revision Sheet Updated!");
+          if (remainingQueue.length === 0) showToast("Revision Sheet updated", "success");
         } else {
-          console.error("❌ Sync failure. Stopping for now.");
+          console.error("[DeepFocus] ❌ Sync failure. Details (raw response):", response);
+          const errDetail = response?.error || (response?.status ? `HTTP ${response.status}` : "Unknown sync error");
+          console.error("[DeepFocus] ❌ Sync failure (error/status derived):", {
+            error: response?.error,
+            status: response?.status,
+            errDetail
+          });
+          const retryMessage = errDetail === 'Sync request timed out'
+            ? "Revision saved locally. It will sync automatically."
+            : `Revision sync queued: ${errDetail}`;
+          showToast(retryMessage);
           break;
         }
+
 
         // Small pulse between requests
         await new Promise(r => setTimeout(r, 1000));
       } catch (error) {
-        console.error("🌐 Messaging Failure:", error);
+        console.error("[DeepFocus] 🌐 Messaging Failure:", error);
+        showToast("⚠️ Extension messaging error. Try reloading the extension.");
         break;
       }
     }
@@ -332,8 +478,20 @@ async function processEventQueue() {
   }
 }
 
-// Background retry loop - only on real LeetCode pages, never on localhost/dashboard
-if (window.location.hostname !== 'localhost') {
+function isValidPendingProblem(item) {
+  return !!(
+    item &&
+    typeof item.link === 'string' &&
+    /^https:\/\/leetcode\.com\/problems\/[^/]+\/?$/.test(normalizeProblemUrl(item.link)) &&
+    typeof item.title === 'string' &&
+    item.title.trim() &&
+    ['Easy', 'Medium', 'Hard'].includes(item.difficulty) &&
+    ['Cheated', 'Give Up', 'Low Focus', 'Focus Kept'].includes(item.focus_status)
+  );
+}
+
+// Background retry loop - only on real LeetCode pages, never on dashboard
+if (!isDashboard) {
   setInterval(() => {
     if (!chrome.runtime?.id) return;
     processEventQueue();
@@ -343,12 +501,14 @@ if (window.location.hostname !== 'localhost') {
 // Check if currently active from storage on load
 try {
   if (chrome.runtime?.id) {
-    chrome.storage.local.get(['focusState', 'widgetCollapsed', 'widgetPos'], (res) => {
+    chrome.storage.local.get(['widgetCollapsed', 'widgetPos'], (res) => {
       if (chrome.runtime.lastError) return;
-      if (res && res.focusState && res.focusState.focusActive) {
-        focusState = res.focusState;
-        initFocusEnvironment(res.widgetCollapsed, res.widgetPos);
-      }
+      requestValidatedFocusState((state) => {
+        if (isUsableFocusState(state)) {
+          focusState = state;
+          initFocusEnvironment(res.widgetCollapsed, res.widgetPos);
+        }
+      });
     });
   }
 } catch (e) { /* context invalidated */ }
@@ -382,8 +542,8 @@ function setupMouseLeaveWarning() {
 // Tab Switch Guard removed - now handled exclusively by background.js for stability.
 
 function initFocusEnvironment(initialCollapsed = false, initialPos = null) {
-  // Don't run on localhost
-  if (window.location.hostname === 'localhost') return;
+  // Don't run on dashboard
+  if (isDashboard) return;
 
   if (!focusState.focusActive) return;
 
@@ -411,12 +571,15 @@ function initFocusEnvironment(initialCollapsed = false, initialPos = null) {
 
 function cleanupFocusEnvironment() {
   if (widgetContainer) widgetContainer.remove();
+  document.getElementById('df-widget-container')?.remove();
   if (timerInterval) clearInterval(timerInterval);
   if (observer) observer.disconnect();
   if (acceptedObserverInterval) clearInterval(acceptedObserverInterval);
   if (urlWatcherInterval) clearInterval(urlWatcherInterval);
   const modal = document.getElementById('df-modal-overlay');
   if (modal) modal.remove();
+  document.getElementById('df-ai-modal-overlay')?.remove();
+  document.getElementById('df-extend-overlay')?.remove();
   const cssBlocker = document.getElementById('df-css-blocker');
   if (cssBlocker) cssBlocker.remove();
   document.removeEventListener('copy', handleClipboardEvent, true);
@@ -523,6 +686,7 @@ function showBlockOverlay() {
   if (document.getElementById('df-blocked-frame')) return;
 
   try {
+    if (!chrome.runtime?.id) return;
     const overlayUrl = chrome.runtime.getURL('content/blocked-overlay.html');
     const frame = document.createElement('iframe');
     frame.id = 'df-blocked-frame';
@@ -530,7 +694,7 @@ function showBlockOverlay() {
     frame.className = 'df-global-overlay';
     frame.style.border = 'none';
     document.documentElement.appendChild(frame);
-    document.body.style.display = 'none';
+    if (document.body) document.body.style.display = 'none';
     const instantStyle = document.getElementById('df-instant-block-style');
     if (instantStyle) instantStyle.remove();
   } catch (e) { }
@@ -580,13 +744,92 @@ function blockSolutionsIfNeeded() {
   }
 }
 
-// Listen for messages from the iframe (e.g. clicking "Go Back")
+// Helper: safely call chrome.storage.local.get — guards both the call AND the callback
+function safeStorageGet(keys, callback) {
+  try {
+    if (!chrome?.runtime?.id) return;
+    chrome.storage.local.get(keys, function () {
+      try { callback.apply(this, arguments); }
+      catch (e) { /* context invalidated inside callback — ignore */ }
+    });
+  } catch (e) { /* context invalidated — ignore */ }
+}
+
+// Helper: safely call chrome.storage.local.set
+function safeStorageSet(obj, callback) {
+  try {
+    if (!chrome?.runtime?.id) return;
+    chrome.storage.local.set(obj, function () {
+      try { if (callback) callback.apply(this, arguments); }
+      catch (e) { /* context invalidated inside callback — ignore */ }
+    });
+  } catch (e) { /* context invalidated — ignore */ }
+}
+
+// Listen for messages from the page / iframe
 window.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'DEEPFOCUS_BACK_TO_PROBLEM') {
+  if (!e.data) return;
+
+  if (e.data.type === '__DEEPFOCUS_EXTRACTED_CODE__') {
+    if (e.data.code && e.data.code.trim()) {
+      lastInterceptedCode = e.data.code;
+    }
+  }
+
+  if (e.data.type === '__DEEPFOCUS_SUBMITTED_CODE__') {
+    if (e.data.code && e.data.code.trim()) {
+      lastInterceptedCode = e.data.code;
+    }
+  }
+
+  if (e.data.type === 'DEEPFOCUS_SET_AI_KEYS') {
+    const { openrouterApiKey, groqApiKey, openAiApiKey, aiKeyMode } = e.data;
+    safeStorageSet({
+      df_openrouter_api_key: openrouterApiKey || "",
+      df_groq_api_key: groqApiKey || "",
+      df_openai_api_key: openAiApiKey || "",
+      df_ai_key_mode: aiKeyMode === "byok" ? "byok" : "demo"
+    }, () => {
+      console.log("DeepFocus AI keys updated in storage.");
+    });
+  }
+
+  if (e.data.type === 'DEEPFOCUS_CONNECT') {
+    const token = e.data.token;
+    safeStorageSet({ deepfocus_connection_token: token }, () => {
+      console.log("[DeepFocus] Connection token saved automatically:", token);
+    });
+  }
+
+  if (e.data.type === 'DEEPFOCUS_PING_EXTENSION') {
+    safeStorageGet(['deepfocus_connection_token'], (res) => {
+      window.postMessage({
+        type: 'DEEPFOCUS_PONG_EXTENSION',
+        token: res?.deepfocus_connection_token || null
+      }, '*');
+    });
+  }
+
+  if (e.data.type === 'DEEPFOCUS_GET_PENDING_NOTES') {
+    safeStorageGet(['df_pending_ai_notes'], (res) => {
+      if (res.df_pending_ai_notes && res.df_pending_ai_notes.length > 0) {
+        window.postMessage({
+          type: 'DEEPFOCUS_SET_PENDING_NOTES',
+          notes: res.df_pending_ai_notes
+        }, '*');
+      }
+    });
+  }
+
+  if (e.data.type === 'DEEPFOCUS_CLEAR_PENDING_NOTES') {
+    safeStorageSet({ df_pending_ai_notes: [] });
+  }
+
+  if (e.data.type === 'DEEPFOCUS_BACK_TO_PROBLEM') {
     // Hide overlay immediately feeling responsive
     const frame = document.getElementById('df-blocked-frame');
     if (frame) frame.style.display = 'none';
-    document.body.style.display = '';
+    if (document.body) document.body.style.display = '';
     isCurrentlyBlocked = false;
 
     // First try the SPA way: find the "Description" tab element and click it
@@ -658,7 +901,12 @@ function injectWidget(initialCollapsed = false, initialPos = null) {
 
         <div class="df-divider"></div>
 
-        <div style="padding-top: 12px;">
+        <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <button id="df-btn-analyze-mistake" class="df-analyze-btn">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            Analyze Mistake (AI)
+          </button>
+          
           <button id="df-btn-stop-focus" class="df-stop-focus-btn">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
             Stop Focus
@@ -675,7 +923,7 @@ function injectWidget(initialCollapsed = false, initialPos = null) {
     </div>
   `;
 
-  document.body.appendChild(widgetContainer);
+  appendToBodyWhenReady(widgetContainer);
   makeWidgetDraggable(widgetContainer);
   updateWidgetUI();
 
@@ -703,9 +951,193 @@ function injectWidget(initialCollapsed = false, initialPos = null) {
   if (btnStop) {
     btnStop.addEventListener('click', (e) => {
       e.stopPropagation();
-      stopFocusRequest();
+      btnStop.disabled = true;
+      btnStop.textContent = "Stopping...";
+      let finalStatus = "Give Up";
+      if (focusState.tabSwitches > 8) {
+        finalStatus = "Cheated";
+      }
+      stopFocusRequest(false, finalStatus, true);
     });
   }
+  
+  const btnAnalyze = widgetContainer.querySelector('#df-btn-analyze-mistake');
+  if (btnAnalyze) {
+    btnAnalyze.addEventListener('click', (e) => {
+      e.stopPropagation();
+      btnAnalyze.disabled = true;
+      btnAnalyze.textContent = "Stopping...";
+      let finalStatus = "Give Up";
+      if (focusState.tabSwitches > 8) {
+        finalStatus = "Cheated";
+      }
+      stopFocusRequest(false, finalStatus, true);
+    });
+  }
+}
+
+function getAISummarySnapshot(finalStatus) {
+  const details = getProblemDetails();
+  let userCode = "";
+  try {
+    userCode = getEditorCode();
+  } catch (e) {
+    userCode = "";
+  }
+
+  return {
+    title: details.title || focusState.title || "Unknown Problem",
+    link: details.link || normalizeProblemUrl(window.location.href),
+    difficulty: details.difficulty || focusState.difficulty || "Medium",
+    code: userCode && userCode.trim() ? userCode : "No code or notes provided yet.",
+    finalStatus,
+    score: typeof focusState.score === 'number' ? focusState.score : 100,
+    switches: focusState.tabSwitches || 0
+  };
+}
+
+function promptAISummaryAfterStop(snapshot) {
+  if (document.getElementById('df-ai-modal-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'df-ai-modal-overlay';
+  overlay.innerHTML = `
+      <div class="df-modal-content df-ai-modal-content">
+        <div class="df-modal-header">
+          <h2 class="df-modal-title" style="margin:0;">Session Ended</h2>
+        </div>
+        <div class="df-ai-modal-body">
+          Would you like a quick AI summary of your approach, highlighting mistakes and providing a better direction?
+        </div>
+        <div class="df-summary-prompt-actions">
+          <button class="df-summary-prompt-btn-yes" id="df-prompt-yes">Yes, analyze my code</button>
+          <button class="df-summary-prompt-btn-no" id="df-prompt-no">No thanks</button>
+        </div>
+      </div>
+    `;
+  appendToBodyWhenReady(overlay);
+
+  document.getElementById('df-prompt-no').onclick = () => {
+    overlay.remove();
+  };
+
+  document.getElementById('df-prompt-yes').onclick = () => {
+    const bodyEl = overlay.querySelector('.df-ai-modal-body');
+    const actionsEl = overlay.querySelector('.df-summary-prompt-actions');
+    actionsEl.style.display = 'none';
+    bodyEl.innerHTML = `
+        <div class="df-ai-loading">
+          <div class="df-spinner"></div>
+          <div>Analyzing your code and approach...</div>
+        </div>
+      `;
+
+    chrome.runtime.sendMessage({
+      type: 'ANALYZE_MISTAKE',
+      payload: {
+        title: snapshot.title,
+        difficulty: snapshot.difficulty,
+        code: snapshot.code
+      }
+    }, (res) => {
+      if (chrome.runtime.lastError || !res) {
+        showToast("Failed to communicate with AI.");
+        overlay.remove();
+        return;
+      }
+
+      if (res.success) {
+        queuePendingNote(snapshot, res.summary);
+
+        bodyEl.innerHTML = `
+            <div style="color: #10b981; font-weight:600; margin-bottom:12px;">Analysis Complete! (Saved to Notes)</div>
+            <div class="df-ai-summary-text">${res.summary}</div>
+          `;
+          
+        actionsEl.style.display = 'flex';
+        actionsEl.innerHTML = `<button class="df-btn-fight" id="df-prompt-close" style="background:#a78bfa;color:#000;width:100%;">Close & Finish</button>`;
+        document.getElementById('df-prompt-close').onclick = () => {
+          overlay.remove();
+        };
+      } else {
+        showToast(res.error || "Error analyzing code.");
+        overlay.remove();
+      }
+    });
+  };
+}
+
+function queuePendingNote(snapshot, summary) {
+  chrome.storage.local.get(['df_pending_ai_notes'], (res) => {
+    let queue = res.df_pending_ai_notes || [];
+    const link = snapshot.link || normalizeProblemUrl(window.location.href);
+
+    queue.push({
+      link: link,
+      title: snapshot.title,
+      summary: summary,
+      difficulty: snapshot.difficulty || "Medium",
+      code: snapshot.code || "",
+      timestamp: Date.now()
+    });
+    chrome.storage.local.set({ df_pending_ai_notes: queue });
+
+    // Tell background script to save directly to Supabase
+    chrome.runtime.sendMessage({
+      type: 'SAVE_AI_SUMMARY',
+      payload: { 
+        link: link, 
+        summary: summary,
+        title: snapshot.title,
+        difficulty: snapshot.difficulty || "Medium",
+        code: snapshot.code || ""
+      }
+    });
+  });
+}
+
+function getEditorCode() {
+  if (lastInterceptedCode && lastInterceptedCode.trim()) {
+    return lastInterceptedCode;
+  }
+
+  // 1. CodeMirror 6 (LeetCode's modern default editor)
+  const cmContent = document.querySelector('.cm-content');
+  if (cmContent) {
+    const cmLines = cmContent.querySelectorAll('.cm-line');
+    if (cmLines && cmLines.length > 0) {
+      return Array.from(cmLines).map(line => line.textContent).join('\n');
+    }
+    return cmContent.innerText || cmContent.textContent || "";
+  }
+
+  // 2. Monaco Editor (lines are rendered inside .view-lines)
+  const viewLines = document.querySelector('.view-lines');
+  if (viewLines) {
+    const lines = Array.from(viewLines.querySelectorAll('.view-line'));
+    if (lines.length > 0) {
+      return lines.map(line => line.textContent).join('\n');
+    }
+  }
+
+  // 3. Fallback: CodeMirror 5 (often has text in pre elements inside CodeMirror-code)
+  const cmCode = document.querySelector('.CodeMirror-code');
+  if (cmCode) {
+    const lines = Array.from(cmCode.querySelectorAll('pre'));
+    if (lines.length > 0) {
+      return lines.map(line => line.textContent).join('\n');
+    }
+  }
+
+  // 4. Last resort: Try textareas in editor components
+  const textareas = document.querySelectorAll('.monaco-editor textarea, .cm-editor textarea, textarea.inputarea');
+  for (const ta of textareas) {
+    if (ta.value && ta.value.length > 20) {
+      return ta.value;
+    }
+  }
+
+  return "";
 }
 
 function updateWidgetUI() {
@@ -779,7 +1211,7 @@ function showExtendPrompt() {
       </div>
     </div>
   `;
-  document.body.appendChild(overlay);
+  appendToBodyWhenReady(overlay);
 
   document.getElementById('df-btn-extend-5').onclick = () => {
     overlay.remove();
@@ -793,7 +1225,7 @@ function showExtendPrompt() {
 
   document.getElementById('df-btn-finish-session').onclick = () => {
     overlay.remove();
-    stopFocusRequest(false, "Focus Kept");
+    stopFocusRequest(false, "Focus Kept", true);
   };
 }
 
@@ -905,7 +1337,8 @@ function handleClipboardEvent(e) {
     const clipboardData = (e.clipboardData || window.clipboardData).getData('text');
     const normalize = (str) => (str || '').replace(/\r\n/g, '\n').trim();
     const normClipboard = normalize(clipboardData);
-    const isInternalFlag = e.clipboardData?.getData('text/deepfocus-internal') === 'true';
+    const isInternalFlag = e.clipboardData?.getData('text/deepfocus-internal') === 'true' ||
+      e.clipboardData?.getData('web text/deepfocus-internal') === 'true';
 
     const normLocalSync = normalize(lastLocalCopy);
     const isInternalSync = isInternalFlag || (lastLocalCopy && normClipboard === normLocalSync && normClipboard.length > 0);
@@ -919,6 +1352,9 @@ function handleClipboardEvent(e) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+    if (window.DeepFocusSound) {
+      window.DeepFocusSound.playSound('fail');
+    }
     showCheekyPasteToast();
     return false;
   }
@@ -958,40 +1394,84 @@ function showCheekyPasteToast() {
   showToast(line);
 }
 
-function showToast(message) {
-  // Remove existing toast if any
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getToastMeta(message, variant) {
+  const text = String(message || '');
+  if (variant === 'success' || /revision sheet updated/i.test(text)) {
+    return {
+      variant: 'success',
+      title: 'Revision Sheet updated',
+      detail: 'Your focus session was saved and synced.',
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>`
+    };
+  }
+  if (variant === 'queued' || /queued|saved locally|not connected/i.test(text)) {
+    return {
+      variant: 'queued',
+      title: 'Saved locally',
+      detail: text,
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>`
+    };
+  }
+  return {
+    variant: 'default',
+    title: text,
+    detail: '',
+    icon: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 14.25 9 20 11.25 14.25 13.5 12 19 9.75 13.5 4 11.25 9.75 9 12 3.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path><path d="M18.5 4.75 19.25 6.5 21 7.25 19.25 8 18.5 9.75 17.75 8 16 7.25 17.75 6.5 18.5 4.75Z" fill="currentColor"></path></svg>`
+  };
+}
+
+function showToast(message, variant = 'default') {
   const existing = document.querySelector('.df-toast');
   if (existing) existing.remove();
 
+  const meta = getToastMeta(message, variant);
   const toast = document.createElement('div');
-  toast.className = 'df-toast';
+  toast.className = `df-toast df-toast-${meta.variant}`;
   toast.innerHTML = `
     <div class="df-toast-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-      </svg>
+      ${meta.icon}
     </div>
-    <div class="df-toast-message">${message}</div>
+    <div class="df-toast-copy">
+      <div class="df-toast-title">${escapeHtml(meta.title)}</div>
+      ${meta.detail ? `<div class="df-toast-detail">${escapeHtml(meta.detail)}</div>` : ''}
+    </div>
   `;
-  document.body.appendChild(toast);
+  appendToBodyWhenReady(toast);
 
-  // Trigger animation
   requestAnimationFrame(() => {
     toast.classList.add('show');
   });
 
-  // Remove after 3 seconds
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, meta.variant === 'success' ? 4200 : 3200);
 }
 
 // Warning Modal
+const tabRoastLines = [
+  "Caught you red-handed! No sneak-peeks allowed here.",
+  "Distraction alert! What's so interesting outside LeetCode?",
+  "Another tab switch? Your brain must be running out of RAM.",
+  "Are you looking up the solution on another tab? Busted!",
+  "Tab switching won't compile your solution. Get back to coding!",
+  "Focus, young padawan! Your attention span is shorter than a goldfish.",
+  "Did you really just switch tabs? Focus score goes brrr...",
+];
+
 function showWarningModal() {
   if (document.getElementById('df-modal-overlay')) return;
 
+  const roast = tabRoastLines[Math.floor(Math.random() * tabRoastLines.length)];
   const modalOverlay = document.createElement('div');
   modalOverlay.id = 'df-modal-overlay';
   modalOverlay.innerHTML = `
@@ -1004,6 +1484,7 @@ function showWarningModal() {
         </svg>
       </div>
       <h2 class="df-modal-title">Focus Mode Active</h2>
+      <p class="df-modal-text" style="font-style: italic; color: #a78bfa; margin-bottom: 12px;">"${roast}"</p>
       <p class="df-modal-text">Leaving the problem interrupts your focus.<br>Your score has dropped by <strong>10 points</strong>.</p>
       <div class="df-modal-actions">
         <button class="df-btn-fight" id="df-btn-fight-modal">
@@ -1014,7 +1495,7 @@ function showWarningModal() {
       </div>
     </div>
   `;
-  document.body.appendChild(modalOverlay);
+  appendToBodyWhenReady(modalOverlay);
 
   document.getElementById('df-btn-fight-modal').onclick = () => {
     modalOverlay.remove();
@@ -1022,8 +1503,7 @@ function showWarningModal() {
 
   document.getElementById('df-btn-giveup-modal').onclick = () => {
     modalOverlay.remove();
-    syncWithWebsite("Give Up", focusState.score || 0, focusState.tabSwitches || 0);
-    stopFocusRequest();
+    stopFocusRequest(false, "Give Up", true);
   };
 }
 
@@ -1041,6 +1521,7 @@ function setupAcceptedDetection() {
   // to catch the actual submission result from LeetCode's API.
   // This is the most reliable method as it reads the raw server response.
   try {
+    if (!chrome.runtime?.id) return;
     const interceptScript = document.createElement('script');
     interceptScript.src = chrome.runtime.getURL('utils/pageInterceptor.js');
     interceptScript.onload = function () {
@@ -1202,24 +1683,89 @@ function setupAcceptedDetection() {
   }, 500);
 }
 
-function stopFocusRequest(skipSync = false, customStatus = null) {
-  // If stopping naturally or via button, sync as Give Up (unless overridden by switches or customStatus)
-  if (focusState.focusActive && !skipSync) {
+let stopFocusInProgress = false;
+
+function stopFocusRequest(skipSync = false, customStatus = null, offerAISummary = false) {
+  if (!focusState.focusActive) return;
+  if (stopFocusInProgress) return;
+  // Determine final status based on tab switches or custom status
+  let finalStatus = customStatus || "Give Up";
+  if (!customStatus && focusState.tabSwitches > 8) {
+    finalStatus = "Cheated";
+  }
+
+  const aiSnapshot = offerAISummary ? getAISummarySnapshot(finalStatus) : null;
+  stopFocusInProgress = true;
+  if (aiSnapshot) {
+    setTimeout(() => promptAISummaryAfterStop(aiSnapshot), 650);
+  }
+  executeStopFocus(skipSync, finalStatus, () => {
+    stopFocusInProgress = false;
+  });
+}
+
+function executeStopFocus(skipSync = false, customStatus = null, onComplete = null) {
+  try {
     let finalStatus = "Give Up";
     if (focusState.tabSwitches > 8) {
       finalStatus = "Cheated";
     } else if (customStatus) {
       finalStatus = customStatus;
     }
-    syncWithWebsite(finalStatus, focusState.score || 0, focusState.tabSwitches || 0);
-  }
 
-  try {
-    chrome.runtime.sendMessage({ type: 'STOP_FOCUS' });
+    const fallbackScore = focusState.score || 0;
+    const fallbackSwitches = focusState.tabSwitches || 0;
+    let cleaned = false;
+    let completed = false;
+    const cleanupLocal = () => {
+      if (cleaned) return;
+      cleaned = true;
+      focusState = { focusActive: false };
+      cleanupFocusEnvironment();
+      syncStateToPage();
+    };
+    const completeStop = () => {
+      if (completed) return;
+      completed = true;
+      cleanupLocal();
+      if (typeof onComplete === 'function') {
+        onComplete();
+      }
+    };
+
+    const localCleanupTimer = setTimeout(cleanupLocal, 500);
+    const completionFallbackTimer = setTimeout(() => {
+      if (!skipSync) {
+        syncWithWebsite(finalStatus, fallbackScore, fallbackSwitches, false);
+      }
+      showToast("Focus stopped locally. Sync queued.");
+      completeStop();
+    }, 12000);
+
+    chrome.runtime.sendMessage({
+      type: 'STOP_FOCUS',
+      customStatus: finalStatus,
+      skipSync: skipSync
+    }, (res) => {
+      clearTimeout(localCleanupTimer);
+      clearTimeout(completionFallbackTimer);
+
+      if (chrome.runtime.lastError || !res?.success) {
+        if (!skipSync) {
+          syncWithWebsite(finalStatus, fallbackScore, fallbackSwitches, false);
+        }
+        showToast(res?.error || chrome.runtime.lastError?.message || "Focus stopped locally. Sync queued.");
+      }
+
+      completeStop();
+    });
   } catch (e) {
-    // If context invalidated (extension reloaded), cleanly dismantle locally
+    stopFocusInProgress = false;
     focusState = { focusActive: false };
     cleanupFocusEnvironment();
+    if (typeof onComplete === 'function') {
+      onComplete();
+    }
   }
 }
 
@@ -1242,13 +1788,13 @@ setInterval(() => {
       // Safety check: is context still valid?
       if (!chrome.runtime?.id) return;
 
-      chrome.storage.local.get(['focusState'], (res) => {
-        if (chrome.runtime.lastError) return;
-        if (res && res.focusState && res.focusState.focusActive) {
-          focusState = res.focusState;
+      requestValidatedFocusState((state) => {
+        if (isUsableFocusState(state)) {
+          focusState = state;
           initFocusEnvironment();
         }
       });
     }
   }
 }, 200);
+})();

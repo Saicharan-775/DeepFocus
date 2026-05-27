@@ -29,6 +29,12 @@ Thumbs.db
 *.tmp
 *.swp
 
+# Local agent/tooling state
+.kilocode/
+.sixth/
+deepfocus-site/scratch/
+scratch/
+
 # Supabase local dev
 supabase/.temp/
 supabase/functions/**/.deps/

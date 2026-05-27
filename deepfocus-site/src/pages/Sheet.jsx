@@ -1,12 +1,48 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
-import { getProblemPattern, patternPriorityMap } from '../utils/patternMatcher';
+import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from '../utils/patternMatcher';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import subpatternFilters from '../constants/Patterns/subpattern_filters.json';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { Search, ChevronDown, Check, X, FileText } from 'lucide-react';
+import { Search, ChevronDown, Check, X, FileText, Sparkles } from 'lucide-react';
+
+function parseDbNotes(dbNotes) {
+  if (!dbNotes || typeof dbNotes !== 'string') {
+    return { userNotes: {}, aiSummary: "" };
+  }
+  const aiMarker = "### AI Summary";
+  const index = dbNotes.indexOf(aiMarker);
+  
+  let rawUserNotes = "";
+  let aiSummary = "";
+  
+  if (index === -1) {
+    rawUserNotes = dbNotes.trim();
+  } else {
+    rawUserNotes = dbNotes.substring(0, index).trim();
+    aiSummary = dbNotes.substring(index + aiMarker.length).trim();
+  }
+  
+  let userNotes = {};
+  if (rawUserNotes) {
+    try {
+      userNotes = JSON.parse(rawUserNotes);
+    } catch (e) {
+      userNotes = {
+        optimal: rawUserNotes,
+        brute: "", bruteTime: "", bruteSpace: "",
+        better: "", betterTime: "", betterSpace: "",
+        optimalTime: "", optimalSpace: "",
+        mentalModel: ""
+      };
+    }
+  }
+  
+  return { userNotes, aiSummary };
+}
 
 // Study tips for each pattern, displayed upon selection
 const PATTERN_TIPS = {
@@ -57,33 +93,36 @@ export default function Sheet() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Notes Modal
-  const [notesModal, setNotesModal] = useState({ open: false, id: null, content: "" });
+  const navigate = useNavigate();
   const [alertModal, setAlertModal] = useState({ open: false, message: "" });
 
   useEffect(() => {
-    loadData();
+    loadData(false);
     const channel = supabase
       .channel('sheet_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData(true))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(silent = false) {
+    if (!silent) setLoading(true);
     const rawData = await getRevisionProblems();
     setDbProblems(rawData);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }
 
   const { mergedData, patternsMap, smartQueue } = useMemo(() => {
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
     const localNotes = JSON.parse(localStorage.getItem('df_notes') || '{}');
     
-    const dbMap = {};
+    // Map DB problems to normalized keys for robust matching
+    const dbMatchMap = {};
     dbProblems.forEach(p => {
-      dbMap[p.title.toLowerCase()] = p;
+      const normTitle = normalizeTitle(p.title);
+      const normSlug = getSlugFromLink(p.link);
+      if (normTitle) dbMatchMap[normTitle] = p;
+      if (normSlug) dbMatchMap[normSlug] = p;
     });
 
     const combined = [];
@@ -91,7 +130,11 @@ export default function Sheet() {
 
     // 1. Map Curated Questions
     curatedQuestions.forEach(cq => {
-      const dbMatch = dbMap[cq.title.toLowerCase()];
+      const normCqTitle = normalizeTitle(cq.title);
+      const cqSlug = cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const normCqSlug = getSlugFromLink(`/problems/${cqSlug}/`);
+      
+      const dbMatch = dbMatchMap[normCqTitle] || dbMatchMap[normCqSlug];
       let status = "Unattempted";
       let focusScore = null;
       let revised = false;
@@ -115,7 +158,9 @@ export default function Sheet() {
         focusScore,
         revised,
         isCurated: true,
-        notes: dbId ? (localNotes[dbId]?.optimal || "") : "",
+        notes: localNotes[dbId || `cq-${cq.leetcode_id}`] || {},
+        dbNotes: dbMatch?.notes || "",
+        code: dbMatch?.code || "",
         link: dbMatch?.link || `https://leetcode.com/problems/${cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`
       });
     });
@@ -127,13 +172,15 @@ export default function Sheet() {
           id: p.id,
           title: p.title,
           difficulty: p.difficulty,
-          pattern: getProblemPattern(p.title),
+          pattern: getProblemPattern(p.title, [], p.link),
           hiddenTags: [],
           status: p.focus_status,
           focusScore: p.focus_score,
           revised: masteredIds.includes(p.id),
           isCurated: false,
-          notes: localNotes[p.id]?.optimal || "",
+          notes: localNotes[p.id] || {},
+          dbNotes: p.notes || "",
+          code: p.code || "",
           link: p.link
         });
       }
@@ -194,13 +241,17 @@ export default function Sheet() {
   }, [dbProblems]);
 
   async function toggleMastered(id, isCurated) {
-    if (isCurated && String(id).startsWith('cq-')) {
+    const problem = mergedData.find(item => item.id === id);
+    if (!problem) return;
+
+    if (problem.status !== "Focus Kept") {
       setAlertModal({ 
         open: true, 
-        message: "You need to attempt or solve this problem using the DeepFocus extension first before marking it as mastered." 
+        message: "You must successfully complete a Focus Session with 'Focus Kept' status on LeetCode first before marking it as mastered." 
       });
       return;
     }
+
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
     let newMastered;
     if (masteredIds.includes(id)) newMastered = masteredIds.filter(i => i !== id);
@@ -213,17 +264,18 @@ export default function Sheet() {
     }).catch(console.error);
   }
 
-  async function saveNotes() {
-    const allNotes = JSON.parse(localStorage.getItem('df_notes') || '{}');
-    if (!allNotes[notesModal.id]) allNotes[notesModal.id] = {};
-    allNotes[notesModal.id].optimal = notesModal.content;
-    localStorage.setItem('df_notes', JSON.stringify(allNotes));
-    setNotesModal({ open: false, id: null, content: "" });
-    setDbProblems([...dbProblems]); 
-    
-    supabase.auth.updateUser({
-      data: { df_notes: allNotes }
-    }).catch(console.error);
+  function openNotes(itemOrId) {
+    const id = (itemOrId && typeof itemOrId === 'object') ? itemOrId.id : itemOrId;
+    if (id) {
+      if (String(id).startsWith('cq-')) {
+        setAlertModal({ 
+          open: true, 
+          message: "You need to solve or attempt this problem using the DeepFocus extension first before viewing it in the workspace." 
+        });
+        return;
+      }
+      navigate(`/workspace?id=${id}`);
+    }
   }
 
   if (loading) {
@@ -365,7 +417,7 @@ export default function Sheet() {
         <div className="relative z-10 min-h-[360px]">
           <AnimatePresence mode="wait">
             {searchQuery ? (
-              <SearchResults key="search" query={searchQuery} data={mergedData} toggleMastered={toggleMastered} setNotesModal={setNotesModal} />
+              <SearchResults key="search" query={searchQuery} data={mergedData} toggleMastered={toggleMastered} setNotesModal={openNotes} />
             ) : activeView === 'dashboard' && !selectedPattern ? (
               <PatternDashboard 
                 key="dashboard"
@@ -378,59 +430,13 @@ export default function Sheet() {
                 pattern={selectedPattern} 
                 onBack={() => { setSelectedPattern(null); setActiveView('dashboard'); }}
                 toggleMastered={toggleMastered}
-                setNotesModal={setNotesModal}
+                setNotesModal={openNotes}
               />
             ) : activeView === 'smart' ? (
-              <SmartRevision key="smart" queue={smartQueue} toggleMastered={toggleMastered} setNotesModal={setNotesModal} />
+              <SmartRevision key="smart" queue={smartQueue} toggleMastered={toggleMastered} setNotesModal={openNotes} />
             ) : null}
           </AnimatePresence>
         </div>
-
-        {/* IDE NOTES MODAL */}
-        <AnimatePresence>
-          {notesModal.open && (
-            <div className="fixed inset-0 bg-[#040405]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <motion.div 
-                initial={{ opacity: 0, y: 12, scale: 0.98 }} 
-                animate={{ opacity: 1, y: 0, scale: 1 }} 
-                exit={{ opacity: 0, y: 8, scale: 0.98 }} 
-                className="bg-[#0b0b0c] border border-white/[0.06] rounded-xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col"
-              >
-                <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">Workspace Notes</h2>
-                  <button 
-                    onClick={() => setNotesModal({ open: false, id: null, content: "" })} 
-                    className="text-zinc-500 hover:text-white transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="p-6">
-                  <textarea 
-                    value={notesModal.content} 
-                    onChange={e => setNotesModal({...notesModal, content: e.target.value})} 
-                    placeholder="Write mental models, optimal edge cases, or complexity analysis..." 
-                    className="w-full bg-white/[0.005] border border-white/[0.05] rounded-lg p-4 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-white/10 transition-all h-60 resize-none leading-relaxed font-mono" 
-                  />
-                </div>
-                <div className="px-6 py-4 bg-white/[0.005] border-t border-white/[0.04] flex justify-end gap-3">
-                  <button 
-                    onClick={() => setNotesModal({ open: false, id: null, content: "" })} 
-                    className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={saveNotes} 
-                    className="px-4 py-2 text-xs font-medium bg-white text-black rounded-lg hover:bg-zinc-200 transition-colors shadow-sm"
-                  >
-                    Save Note
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
 
         {/* ALERT MODAL */}
         <AnimatePresence>
@@ -754,92 +760,113 @@ function SearchResults({ query, data, toggleMastered, setNotesModal }) {
   );
 }
 
-// Minimal Quest-style Problem List Component (No decorative icons, monochrome, clear tags)
 function ProblemList({ items, toggleMastered, setNotesModal, showPattern = false, compact = false }) {
   return (
     <div className={`flex flex-col ${compact ? 'gap-1.5 pt-2' : 'gap-2'}`}>
-      {items.map((item, i) => (
-        <motion.div
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0, transition: { delay: Math.min(i * 0.01, 0.1) } }}
-          key={item.id}
-          className={`group flex items-center rounded-xl border border-transparent hover:border-white/[0.03] hover:bg-white/[0.005] transition-all duration-200 ${compact ? 'px-3 py-2 gap-3.5' : 'px-5 py-3 gap-4'}`}
-        >
-          {/* Custom Circular Checkbox */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => toggleMastered(item.id, item.isCurated)}
-            className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center transition-all ${
-              item.revised
-                ? 'bg-[#0ea5e9]/10 border-[#0ea5e9]/30 text-[#0ea5e9]'
-                : 'border-zinc-700 hover:border-[#0ea5e9]/40 text-transparent hover:text-[#0ea5e9]/30'
-            }`}
-            title={item.revised ? 'Mastered' : 'Mark mastered'}
-          >
-            <AnimatePresence>
-              {item.revised && (
-                <motion.span 
-                  initial={{ scale: 0 }} 
-                  animate={{ scale: 1 }} 
-                  exit={{ scale: 0 }}
-                >
-                  <Check strokeWidth={3} size={11} />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+      {items.map((item, i) => {
+        const parsedDb = parseDbNotes(item.dbNotes);
+        const hasAiSummary = !!parsedDb.aiSummary;
+        const dbUserNotes = parsedDb.userNotes || {};
+        const localNotes = item.notes || {};
+        const hasUserNotes = (
+          Object.values(localNotes).some(v => typeof v === 'string' && v.trim() !== "") ||
+          Object.values(dbUserNotes).some(v => typeof v === 'string' && v.trim() !== "")
+        );
+        const hasCode = !!item.code;
 
-          {/* Problem Link */}
-          <div className="flex-1 min-w-0">
-            <a
-              href={item.link}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 truncate block transition-colors"
+        return (
+          <motion.div
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0, transition: { delay: Math.min(i * 0.01, 0.1) } }}
+            key={item.id}
+            className={`group flex items-center rounded-xl border border-transparent hover:border-white/[0.03] hover:bg-white/[0.005] transition-all duration-200 ${compact ? 'px-3 py-2 gap-3.5' : 'px-5 py-3 gap-4'}`}
+          >
+            {/* Custom Circular Checkbox */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => toggleMastered(item.id, item.isCurated)}
+              className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center transition-all ${
+                item.revised
+                  ? 'bg-[#0ea5e9]/10 border-[#0ea5e9]/30 text-[#0ea5e9]'
+                  : 'border-zinc-700 hover:border-[#0ea5e9]/40 text-transparent hover:text-[#0ea5e9]/30'
+              }`}
+              title={item.revised ? 'Mastered' : 'Mark mastered'}
             >
-              {item.title}
-            </a>
-            {showPattern && (
-              <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block truncate">{item.pattern}</span>
-            )}
-          </div>
+              <AnimatePresence>
+                {item.revised && (
+                  <motion.span 
+                    initial={{ scale: 0 }} 
+                    animate={{ scale: 1 }} 
+                    exit={{ scale: 0 }}
+                  >
+                    <Check strokeWidth={3} size={11} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
 
-          {/* Colored difficulty badge */}
-          <span className={`shrink-0 w-16 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-center border ${
-            item.difficulty === 'Easy'
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-              : item.difficulty === 'Medium'
-              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-              : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-          }`}>
-            {item.difficulty}
-          </span>
+            {/* Problem Link */}
+            <div className="flex-1 min-w-0">
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 truncate block transition-colors"
+              >
+                {item.title}
+              </a>
+              {showPattern && (
+                <span className="text-[10px] text-zinc-500 font-mono mt-0.5 block truncate">{item.pattern}</span>
+              )}
+            </div>
 
-          {/* Focus Score (Simple Text) */}
-          <div className="w-12 text-right shrink-0">
-            {item.focusScore !== null ? (
-              <span className="text-xs font-mono font-semibold text-zinc-300 tabular-nums">
-                {item.focusScore}%
-              </span>
-            ) : (
-              <span className="text-xs text-zinc-700 font-mono">—</span>
-            )}
-          </div>
+            {/* Colored difficulty badge */}
+            <span className={`shrink-0 w-16 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase text-center border ${
+              item.difficulty === 'Easy'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : item.difficulty === 'Medium'
+                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+            }`}>
+              {item.difficulty}
+            </span>
 
-          {/* Icon-based Notes Action */}
-          <button
-            onClick={() => setNotesModal({ open: true, id: item.id, content: item.notes })}
-            className={`p-2 rounded-lg border transition-all shrink-0 flex items-center justify-center ${
-              item.notes 
-                ? 'text-[#0ea5e9] bg-[#0ea5e9]/8 border-[#0ea5e9]/20 hover:bg-[#0ea5e9]/15' 
-                : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:bg-white/[0.03]'
-            }`}
-            title={item.notes ? 'View/Edit Note' : 'Add Note'}
-          >
-            <FileText size={15} />
-          </button>
-        </motion.div>
-      ))}
+            {/* Focus Score (Simple Text) */}
+            <div className="w-12 text-right shrink-0">
+              {item.focusScore !== null ? (
+                <span className="text-xs font-mono font-semibold text-zinc-300 tabular-nums">
+                  {item.focusScore}%
+                </span>
+              ) : (
+                <span className="text-xs text-zinc-700 font-mono">—</span>
+              )}
+            </div>
+
+            {/* Icon-based Notes Action */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setNotesModal(item.id)}
+                className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+                  hasAiSummary
+                    ? 'text-violet-400 bg-violet-500/10 border-violet-500/30 shadow-[0_0_8px_rgba(139,92,246,0.2)] hover:bg-violet-500/20 hover:border-violet-500/40'
+                    : (hasUserNotes || hasCode)
+                    ? 'text-[#0ea5e9] bg-[#0ea5e9]/8 border-[#0ea5e9]/20 hover:bg-[#0ea5e9]/15'
+                    : 'text-zinc-500 border-transparent hover:bg-white/[0.03] hover:text-zinc-300'
+                }`}
+                title={hasAiSummary ? 'View AI Summary & Notes' : (hasUserNotes || hasCode) ? 'View/Edit Note' : 'Add Note'}
+              >
+                <FileText size={15} />
+              </button>
+              {hasAiSummary && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2 pointer-events-none">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                </span>
+              )}
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

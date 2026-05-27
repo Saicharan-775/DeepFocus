@@ -11,8 +11,22 @@ ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + IN
 ALTER TABLE revision_problems 
 DROP CONSTRAINT IF EXISTS unique_user_title;
 
-ALTER TABLE revision_problems 
-ADD CONSTRAINT unique_user_title UNIQUE(user_id, title);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.revision_problems
+    WHERE user_id IS NOT NULL
+      AND title IS NOT NULL
+    GROUP BY user_id, title
+    HAVING COUNT(*) > 1
+  ) THEN
+    ALTER TABLE public.revision_problems
+      ADD CONSTRAINT unique_user_title UNIQUE(user_id, title);
+  ELSE
+    RAISE NOTICE 'Skipping unique_user_title: duplicate user/title rows already exist.';
+  END IF;
+END $$;
 
 -- 3. Update the SECURITY DEFINER function to handle expiry
 CREATE OR REPLACE FUNCTION upsert_extension_token(p_token_hash TEXT)

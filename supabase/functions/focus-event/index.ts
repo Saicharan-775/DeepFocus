@@ -1,116 +1,158 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, X-Extension-Token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const VALID_DIFFICULTIES = new Set(['Easy', 'Medium', 'Hard']);
+const VALID_STATUSES = new Set(['Cheated', 'Give Up', 'Low Focus', 'Focus Kept']);
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 }
 
-function validatePayload(payload: any) {
-  if (typeof payload.title !== 'string') return false;
-  if (typeof payload.link !== 'string' || !payload.link.startsWith('https://leetcode.com/')) return false;
-  if (!['Easy', 'Medium', 'Hard'].includes(payload.difficulty)) return false;
-  if (!['Cheated', 'Give Up', 'Low Focus', 'Focus Kept'].includes(payload.focus_status)) return false;
-  
-  const score = Number(payload.focus_score);
-  if (isNaN(score) || score < 0 || score > 100) return false;
-  
-  const sws = Number(payload.switches);
-  if (isNaN(sws) || sws < 0) return false;
-  
-  return true;
+function normalizeProblemUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  const match = cleanUrl.match(/https?:\/\/(?:www\.)?leetcode\.com\/problems\/([^/]+)/i);
+  return match ? `https://leetcode.com/problems/${match[1]}/` : cleanUrl;
 }
 
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token.trim());
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+function normalizePayload(payload) {
+  const normalized = {
+    title: typeof payload?.title === 'string' && payload.title.trim() ? payload.title.trim() : 'Unknown Problem',
+    link: normalizeProblemUrl(payload?.link),
+    difficulty: VALID_DIFFICULTIES.has(payload?.difficulty) ? payload.difficulty : 'Medium',
+    focus_status: VALID_STATUSES.has(payload?.focus_status) ? payload.focus_status : 'Give Up',
+    focus_score: Number(payload?.focus_score),
+    switches: Number(payload?.switches),
+    focus_duration: Number(payload?.focus_duration || 0),
+    code: typeof payload?.code === 'string' ? payload.code : null,
+  };
+
+  if (!/^https:\/\/leetcode\.com\/problems\/[^/]+\/$/.test(normalized.link)) {
+    return { error: 'Invalid LeetCode problem link' };
+  }
+
+  if (!Number.isFinite(normalized.focus_score)) normalized.focus_score = 0;
+  normalized.focus_score = Math.max(0, Math.min(100, Math.round(normalized.focus_score)));
+
+  if (!Number.isFinite(normalized.switches) || normalized.switches < 0) normalized.switches = 0;
+  normalized.switches = Math.round(normalized.switches);
+
+  if (!Number.isFinite(normalized.focus_duration) || normalized.focus_duration < 0) normalized.focus_duration = 0;
+  normalized.focus_duration = Math.round(normalized.focus_duration);
+
+  return { payload: normalized };
 }
 
-export default async (req: Request) => {
-  // Handle CORS
+function extractExtensionToken(req) {
+  let extToken = req.headers.get('X-Extension-Token') || '';
+
+  if (!extToken) {
+    const auth = req.headers.get('Authorization') || '';
+    if (auth.startsWith('Bearer dfx_')) {
+      extToken = auth.slice('Bearer '.length);
+    }
+  }
+
+  return extToken.trim();
+}
+
+async function callSyncRpc(supabaseUrl, serviceRoleKey, token, payload, includeCode) {
+  const body = {
+    p_raw_token: token,
+    p_title: payload.title,
+    p_link: payload.link,
+    p_difficulty: payload.difficulty,
+    p_status: payload.focus_status,
+    p_score: payload.focus_score,
+    p_switches: payload.switches,
+    p_duration: payload.focus_duration,
+  };
+
+  if (includeCode) {
+    body.p_code = payload.code;
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sync_focus_event`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch (_) {}
+
+  return { response, data, text };
+}
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders, status: 200 })
+    return new Response('ok', { headers: corsHeaders, status: 200 });
+  }
+
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
   try {
-  const extToken = req.headers.get('X-Extension-Token')
-  if (!extToken) {
-    return new Response(JSON.stringify({ error: 'Missing Sync Token' }), { status: 401, headers: corsHeaders })
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return jsonResponse({ error: 'Server configuration error' }, 500);
+    }
+
+    const extToken = extractExtensionToken(req);
+    if (!extToken || !extToken.startsWith('dfx_')) {
+      return jsonResponse({ error: 'Missing or invalid extension token' }, 401);
+    }
+
+    let rawPayload;
+    try {
+      rawPayload = await req.json();
+    } catch (_) {
+      return jsonResponse({ error: 'Invalid JSON body' }, 400);
+    }
+
+    const normalized = normalizePayload(rawPayload);
+    if (normalized.error) {
+      return jsonResponse({ error: normalized.error }, 400);
+    }
+
+    let result = await callSyncRpc(supabaseUrl, serviceRoleKey, extToken, normalized.payload, true);
+
+    if (!result.response.ok && (result.response.status === 400 || result.response.status === 404)) {
+      const errorText = `${result.text} ${result.data?.message || ''} ${result.data?.error || ''}`.toLowerCase();
+      if (errorText.includes('p_code') || errorText.includes('schema cache') || errorText.includes('function')) {
+        result = await callSyncRpc(supabaseUrl, serviceRoleKey, extToken, normalized.payload, false);
+      }
+    }
+
+    if (!result.response.ok) {
+      return jsonResponse({
+        error: result.data?.error || result.data?.message || result.text || 'Database sync failed',
+      }, result.response.status);
+    }
+
+    if (result.data?.success === false) {
+      return jsonResponse({ error: result.data.error || 'Database sync rejected token' }, 401);
+    }
+
+    return jsonResponse({ success: true });
+  } catch (err) {
+    return jsonResponse({
+      error: 'Internal server error',
+      details: err?.message || String(err),
+    }, 500);
   }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const adminClient = createClient(supabaseUrl, supabaseServiceKey)
-
-  const hashedToken = await hashToken(extToken)
-
-    // 1. Verify token exists AND is not expired
-    const { data: connection, error: connError } = await adminClient
-      .from('extension_connections')
-      .select('user_id, expires_at')
-      .eq('token_hash', hashedToken)
-      .maybeSingle()
-
-    if (connError) {
-      console.error('Auth Query Error:', connError)
-      return new Response(JSON.stringify({ error: 'Auth System Error' }), { status: 500, headers: corsHeaders })
-    }
-
-    if (!connection) {
-      console.log(`[Auth] No connection found for token_hash: ${hashedToken}`);
-      return new Response(JSON.stringify({ 
-        error: 'Auth failed: Token hash mismatch',
-        debug_hash: hashedToken 
-      }), { status: 401, headers: corsHeaders })
-    }
-
-    if (new Date(connection.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: 'Token Expired' }), { status: 401, headers: corsHeaders })
-    }
-
-    // Parse payload
-    const payload = await req.json()
-    
-    if (!validatePayload(payload)) {
-      return new Response(JSON.stringify({ error: 'Invalid Payload Schema' }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      })
-    }
-    
-    // 2. Data Integrity: Upsert by (user_id, link)
-    const { error: insertError } = await adminClient
-      .from('revision_problems')
-      .upsert({
-        user_id: connection.user_id,
-        title: payload.title,
-        link: payload.link,
-        difficulty: payload.difficulty,
-        focus_status: payload.focus_status,
-        focus_score: payload.focus_score,
-        switches: payload.switches,
-        focus_duration: payload.focus_duration || 0,
-        created_at: new Date().toISOString()
-      }, { onConflict: 'user_id, link' })
-
-    if (insertError) {
-      console.error('Database Upsert Error:', insertError)
-      throw insertError
-    }
-
-    return new Response(JSON.stringify({ success: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    })
-
-  } catch (err: any) {
-    console.error('Fatal Edge Function Error:', err.message)
-    return new Response(JSON.stringify({ error: 'Internal Server Error', details: err.message }), { 
-      status: 500, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    })
-  }
-}
+});

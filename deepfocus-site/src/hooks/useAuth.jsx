@@ -3,6 +3,45 @@ import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext({});
 
+const USER_SCOPED_STORAGE_KEYS = [
+  'df_strength',
+  'df_mastered',
+  'df_notes',
+  'df_srs_data',
+  'df_ai_summaries'
+];
+
+function syncUserScopedLocalStorage(user) {
+  if (!user) {
+    USER_SCOPED_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+    localStorage.removeItem('df_active_user_id');
+    return;
+  }
+
+  const previousUserId = localStorage.getItem('df_active_user_id');
+  const isDifferentUser = previousUserId !== user.id;
+
+  if (isDifferentUser) {
+    USER_SCOPED_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  }
+
+  localStorage.setItem('df_active_user_id', user.id);
+
+  const meta = user.user_metadata || {};
+  const writeMetaOrDefault = (storageKey, metaKey, fallback) => {
+    if (Object.prototype.hasOwnProperty.call(meta, metaKey)) {
+      localStorage.setItem(storageKey, JSON.stringify(meta[metaKey] || fallback));
+    } else if (isDifferentUser) {
+      localStorage.setItem(storageKey, JSON.stringify(fallback));
+    }
+  };
+
+  writeMetaOrDefault('df_strength', 'df_strength', {});
+  writeMetaOrDefault('df_mastered', 'df_mastered', []);
+  writeMetaOrDefault('df_notes', 'df_notes', {});
+  writeMetaOrDefault('df_srs_data', 'df_srs_data', {});
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
@@ -16,14 +55,7 @@ export const AuthProvider = ({ children }) => {
       setSession(session);
       const user = session?.user ?? null;
       setUser(user);
-      
-      // Load user preferences into localStorage
-      if (user?.user_metadata) {
-        const meta = user.user_metadata;
-        if (meta.df_strength) localStorage.setItem('df_strength', JSON.stringify(meta.df_strength));
-        if (meta.df_mastered) localStorage.setItem('df_mastered', JSON.stringify(meta.df_mastered));
-        if (meta.df_notes) localStorage.setItem('df_notes', JSON.stringify(meta.df_notes));
-      }
+      syncUserScopedLocalStorage(user);
       
       setLoading(false);
     };
@@ -32,13 +64,7 @@ export const AuthProvider = ({ children }) => {
       setSession(session);
       const user = session?.user ?? null;
       setUser(user);
-      
-      if (user?.user_metadata) {
-        const meta = user.user_metadata;
-        if (meta.df_strength) localStorage.setItem('df_strength', JSON.stringify(meta.df_strength));
-        if (meta.df_mastered) localStorage.setItem('df_mastered', JSON.stringify(meta.df_mastered));
-        if (meta.df_notes) localStorage.setItem('df_notes', JSON.stringify(meta.df_notes));
-      }
+      syncUserScopedLocalStorage(user);
 
       setLoading(false);
     });

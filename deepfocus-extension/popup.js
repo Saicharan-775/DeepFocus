@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 3. Listen for state updates from background
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'FOCUS_STATE_UPDATED') {
-      renderState(message.state);
+      updateUIFromState();
     }
   });
 
@@ -28,43 +28,152 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tokenInput = document.getElementById('token-input');
   const saveTokenBtn = document.getElementById('save-token-btn');
   const connStatus = document.getElementById('connection-status');
+  const connStatusDot = document.getElementById('conn-status-dot');
+  const connStatusText = document.getElementById('conn-status-text');
+  const toggleVisBtn = document.getElementById('toggle-token-vis');
+
+  function setConnUI(state = 'hidden', msg = '') {
+    if (!connStatus) return;
+    connStatus.style.display = (state === 'hidden') ? 'none' : 'flex';
+    if (state === 'hidden') {
+      connStatusText.textContent = '';
+      return;
+    }
+    if (state === 'success') {
+      connStatusDot.style.background = 'var(--green-text)';
+      connStatusDot.style.boxShadow = '0 0 8px var(--green-text)';
+      connStatus.style.color = 'var(--green-text)';
+    } else if (state === 'error') {
+      connStatusDot.style.background = '#ef4444';
+      connStatusDot.style.boxShadow = '0 0 8px rgba(239,68,68,0.4)';
+      connStatus.style.color = '#ef4444';
+    } else {
+      connStatusDot.style.background = '#f59e0b';
+      connStatusDot.style.boxShadow = '0 0 8px rgba(245,158,11,0.4)';
+      connStatus.style.color = '#f59e0b';
+    }
+    if (msg) connStatusText.textContent = msg;
+  }
+
+  function isInvalidTokenError(message = '') {
+    const normalized = String(message).toLowerCase();
+    return normalized.includes('invalid') || normalized.includes('expired');
+  }
+
+  // Toggle token visibility
+  if (toggleVisBtn && tokenInput) {
+    toggleVisBtn.addEventListener('click', () => {
+      if (tokenInput.type === 'password') {
+        tokenInput.type = 'text';
+        toggleVisBtn.textContent = 'Hide';
+      } else {
+        tokenInput.type = 'password';
+        toggleVisBtn.textContent = 'Show';
+      }
+    });
+  }
 
   if (saveTokenBtn && tokenInput && connStatus) {
-    // Check initial state
+    // Check initial state and VERIFY existing token
     chrome.storage.local.get(['deepfocus_connection_token'], (res) => {
       if (res.deepfocus_connection_token) {
-        tokenInput.value = '********';
-        connStatus.style.display = 'flex';
+        const storedToken = res.deepfocus_connection_token.trim();
+        tokenInput.type = 'password';
+        tokenInput.placeholder = 'Paste dfx_ token here';
+        tokenInput.value = storedToken;
         saveTokenBtn.textContent = 'Update';
+        saveTokenBtn.disabled = true;
+        setConnUI('loading', 'Checking connection...');
+        // Verify the existing token is still valid
+        chrome.runtime.sendMessage({ type: 'VERIFY_TOKEN', token: storedToken }, (response) => {
+          if (chrome.runtime.lastError) {
+            setConnUI('error', 'Could not verify right now.');
+            saveTokenBtn.textContent = 'Update';
+            saveTokenBtn.disabled = false;
+            return;
+          }
+
+          if (response && response.success) {
+            setConnUI('hidden');
+            saveTokenBtn.disabled = false;
+          } else {
+            const err = response?.error || 'Could not verify right now.';
+            setConnUI('error', isInvalidTokenError(err) ? 'Connection needs update.' : 'Could not verify right now.');
+            saveTokenBtn.textContent = isInvalidTokenError(err) ? 'Connect' : 'Update';
+            saveTokenBtn.disabled = false;
+            if (isInvalidTokenError(err)) {
+              chrome.storage.local.remove(['deepfocus_connection_token']);
+              tokenInput.value = '';
+              tokenInput.placeholder = 'Paste dfx_ token here';
+            }
+          }
+        });
+      }else{
+
+        tokenInput.type = 'password';
+        tokenInput.placeholder = 'Paste dfx_ token here';
+        tokenInput.value = '';
+        setConnUI('hidden');
+        saveTokenBtn.textContent = 'Connect';
+        saveTokenBtn.disabled = false;
       }
     });
 
     saveTokenBtn.addEventListener('click', () => {
       const rawToken = tokenInput.value.trim();
 
-      if (!rawToken.startsWith('dfx_')) {
-        alert("Invalid token format. It should start with 'dfx_'.");
+      if (rawToken === '') {
+        setConnUI('error', "Enter a token starting with 'dfx_'.");
         return;
       }
 
-      saveTokenBtn.textContent = 'Saving...';
-      saveTokenBtn.disabled = true;
-
-      chrome.storage.local.set({ deepfocus_connection_token: rawToken }, () => {
-        saveTokenBtn.textContent = 'Update';
-        saveTokenBtn.disabled = false;
-        tokenInput.value = '********';
-        connStatus.style.display = 'flex';
-      });
-    });
-
-    // Restrict pasting: only allow internal code
-    tokenInput.addEventListener('paste', (e) => {
-      const isInternal = e.clipboardData.getData('text/deepfocus-internal') === 'true';
-      if (!isInternal) {
-        e.preventDefault();
-        alert("Pasting external code is not allowed. Please copy the token directly from the DeepFocus website.");
+      if (!rawToken.startsWith('dfx_')) {
+        setConnUI('error', "Invalid token format.");
+        return;
       }
+
+      saveTokenBtn.textContent = 'Verifying...';
+      saveTokenBtn.disabled = true;
+      setConnUI('loading', 'Verifying token...');
+
+      // First verify, then save
+      chrome.runtime.sendMessage({ type: 'VERIFY_TOKEN', token: rawToken.trim() }, (response) => {
+        if (chrome.runtime.lastError) {
+          saveTokenBtn.textContent = 'Connect';
+          saveTokenBtn.disabled = false;
+          setConnUI('error', 'Verification failed.');
+          return;
+        }
+
+        if (response && response.success) {
+          // Valid - save it
+          chrome.storage.local.set({ deepfocus_connection_token: rawToken.trim() }, () => {
+            saveTokenBtn.textContent = 'Update';
+            saveTokenBtn.disabled = false;
+            tokenInput.type = 'password';
+            tokenInput.placeholder = 'Paste dfx_ token here';
+            tokenInput.value = rawToken.trim();
+            setConnUI('hidden');
+          });
+        } else {
+          const err = (response && response.error) ? response.error : 'Verification failed';
+          if (isInvalidTokenError(err)) {
+            saveTokenBtn.textContent = 'Connect';
+            saveTokenBtn.disabled = false;
+            setConnUI('error', err);
+            return;
+          }
+
+          chrome.storage.local.set({ deepfocus_connection_token: rawToken.trim() }, () => {
+            saveTokenBtn.textContent = 'Update';
+            saveTokenBtn.disabled = false;
+            tokenInput.type = 'password';
+            tokenInput.placeholder = 'Paste dfx_ token here';
+            tokenInput.value = rawToken.trim();
+            setConnUI('error', 'Saved. Verification will retry.');
+          });
+        }
+      });
     });
   }
 
@@ -119,6 +228,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, (res) => {
       if (res && res.success) {
         renderState(res.state);
+      } else {
+        renderState(res?.state || { focusActive: false });
+        btnStart.disabled = false;
+        if (res?.error) alert(res.error);
       }
     });
   });
@@ -137,12 +250,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function updateUIFromState() {
   try {
-    const data = await chrome.storage.local.get(['focusState']);
-    if (data.focusState) {
-      renderState(data.focusState);
-    } else {
-      renderState({ focusActive: false });
-    }
+    const response = await chrome.runtime.sendMessage({ type: 'GET_FOCUS_STATE' });
+    renderState(response?.state || { focusActive: false });
   } catch (e) {
     console.error("DeepFocus popup state update failed:", e);
     renderState({ focusActive: false });
@@ -150,7 +259,7 @@ async function updateUIFromState() {
 }
 
 function renderState(state) {
-  const isAct = state.focusActive;
+  const isAct = !!(state && state.focusActive && state.sessionId && state.sessionStartAt && state.durationSeconds);
 
   const badge = document.getElementById('status-badge');
   const badgeText = document.getElementById('status-text');

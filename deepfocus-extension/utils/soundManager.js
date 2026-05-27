@@ -1,90 +1,112 @@
-// Sound Manager Utility for DeepFocus
-// Handles audio playback for submission results with cooldown and user settings.
-
-class SoundManager {
-  constructor() {
-    this.soundUrls = {
-      success: chrome.runtime.getURL("sounds/success.mp3"),
-      fail: chrome.runtime.getURL("sounds/fail.mp3")
-    };
-
-    // Preload audio objects for faster playback
-    this.preloaded = {};
-    for (const [key, url] of Object.entries(this.soundUrls)) {
-      try {
-        this.preloaded[key] = new Audio(url);
-        this.preloaded[key].preload = "auto";
-        this.preloaded[key].load();
-      } catch(e) {
-        // Preload failed
-      }
-    }
-
-    this.lastPlayTime = 0;
-    this.cooldown = 2000; // 2 seconds minimum between sounds
-    this.soundEnabled = true;
-
-    // Load initial setting
-    chrome.storage.local.get(["soundEnabled"], (result) => {
-      if (result.soundEnabled !== undefined) {
-        this.soundEnabled = result.soundEnabled;
-      }
-    });
-
-    // Listen for setting changes
-    chrome.storage.onChanged.addListener((changes) => {
-      if (changes.soundEnabled) {
-        this.soundEnabled = changes.soundEnabled.newValue;
-      }
-    });
+(() => {
+  if (window.__DEEPFOCUS_SOUND_MANAGER_LOADED__) {
+    return;
   }
+  window.__DEEPFOCUS_SOUND_MANAGER_LOADED__ = true;
 
-  /**
-   * Play a sound by type (success or fail)
-   * @param {string} type - "success" | "fail"
-   */
-  playSound(type) {
-    if (!this.soundEnabled) {
-      return;
+  class DeepFocusSoundManager {
+    constructor() {
+      this.soundUrls = {};
+      this.preloaded = {};
+      this.lastPlayTime = 0;
+      this.cooldown = 2000;
+      this.soundEnabled = false;
+
+      if (!window.location.hostname.includes('leetcode.com')) {
+        return;
+      }
+
+      if (!chrome.runtime?.id) {
+        return;
+      }
+
+      try {
+        this.soundUrls = {
+          success: chrome.runtime.getURL("sounds/success.mp3"),
+          fail: chrome.runtime.getURL("sounds/fail.mp3")
+        };
+      } catch (e) {
+        return;
+      }
+
+      this.soundEnabled = true;
+      this.preload();
+      this.loadSettings();
+      this.watchSettings();
     }
 
-    const now = Date.now();
-    if (now - this.lastPlayTime < this.cooldown) {
-      return;
+    preload() {
+      for (const [key, url] of Object.entries(this.soundUrls)) {
+        try {
+          const audio = new Audio(url);
+          audio.preload = "auto";
+          audio.load();
+          this.preloaded[key] = audio;
+        } catch (e) {
+          // Ignore preload failures; playback falls back to a fresh Audio object.
+        }
+      }
     }
 
-    this.lastPlayTime = now;
-    const url = this.soundUrls[type];
-    
-    if (!url) {
-      console.error(`[DeepFocus Sound] No URL for type "${type}"`);
-      return;
+    loadSettings() {
+      try {
+        chrome.storage.local.get(["soundEnabled"], (result) => {
+          if (chrome.runtime.lastError) return;
+          if (result.soundEnabled !== undefined) {
+            this.soundEnabled = result.soundEnabled;
+          }
+        });
+      } catch (e) {
+        // Extension context may be invalidated after reload.
+      }
     }
 
-    // Try preloaded audio first, then fall back to fresh Audio object
-    const tryPlay = (audio, label) => {
+    watchSettings() {
+      try {
+        chrome.storage.onChanged.addListener((changes) => {
+          if (changes.soundEnabled) {
+            this.soundEnabled = changes.soundEnabled.newValue;
+          }
+        });
+      } catch (e) {
+        // Extension context may be invalidated after reload.
+      }
+    }
+
+    playSound(type) {
+      if (!this.soundEnabled) return;
+
+      const now = Date.now();
+      if (now - this.lastPlayTime < this.cooldown) return;
+
+      const url = this.soundUrls[type];
+      if (!url) return;
+
+      this.lastPlayTime = now;
+      if (this.preloaded[type] && this.tryPlay(this.preloaded[type])) {
+        return;
+      }
+
+      try {
+        this.tryPlay(new Audio(url));
+      } catch (e) {
+        // Playback can be blocked by browser gesture policies.
+      }
+    }
+
+    tryPlay(audio) {
       try {
         audio.currentTime = 0;
-        const p = audio.play();
-        if (p && typeof p.then === 'function') {
-          p.catch(() => {});
+        const result = audio.play();
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => {});
         }
         return true;
       } catch (e) {
         return false;
       }
-    };
-
-    // Attempt 1: Use preloaded audio
-    if (this.preloaded[type]) {
-      if (tryPlay(this.preloaded[type], 'preloaded')) return;
     }
-
-    // Attempt 2: Create fresh audio object  
-    const freshAudio = new Audio(url);
-    tryPlay(freshAudio, 'fresh');
   }
-}
 
-// Global instance for content activities
-window.DeepFocusSound = new SoundManager();
+  window.DeepFocusSound = window.DeepFocusSound || new DeepFocusSoundManager();
+})();

@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
+import { FlipWords } from "./ui/flip-words";
 
 function ArrowIcon() {
   return (
@@ -18,119 +19,114 @@ function DownloadIcon() {
   );
 }
 
+const cyclePhrases = [
+  "solutions tab.",
+  "ChatGPT solutions.",
+  "copy-pasting.",
+  "video editorials."
+];
+
+const HERO_VIDEO_SRC = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4";
+
 export default function Hero() {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springConfig = { damping: 25, stiffness: 150 };
-  const smoothX = useSpring(mouseX, springConfig);
-  const smoothY = useSpring(mouseY, springConfig);
-
-  // Parallax mapping for background elements
-  const rotateX = useTransform(smoothY, [-500, 500], [5, -5]);
-  const rotateY = useTransform(smoothX, [-500, 500], [-5, 5]);
-  
-  const bgX = useTransform(smoothX, [-500, 500], [20, -20]);
-  const bgY = useTransform(smoothY, [-500, 500], [20, -20]);
+  const videoRef = useRef(null);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      const { clientX, clientY } = e;
-      const moveX = clientX - window.innerWidth / 2;
-      const moveY = clientY - window.innerHeight / 2;
-      mouseX.set(moveX);
-      mouseY.set(moveY);
-    };
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("Video autoplay failed or was blocked by browser policies:", error);
+        });
+      }
+    }
+  }, []);
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
-
-  const fadeUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+  const containerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
   };
 
-  return (
-    <section className="pt-32 pb-32 px-6 relative overflow-hidden flex flex-col items-center text-center w-full min-h-screen justify-center mb-16 md:mb-24">
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
 
-      {/* Premium Dark Indigo Center Glow - Max Luminosity for All Displays */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden flex items-center justify-center">
-        {/* Soft, ultra-diffuse wide ambient glow (indigo-violet) with maximized opacities */}
-        <div className="absolute w-[95vw] h-[65vh] bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.30)_0%,_rgba(139,92,246,0.16)_60%,_transparent_100%)] blur-[130px] transform -translate-y-[15%]" />
-        {/* Concentrated luminous core (violet) to provide rich depth and excellent low-brightness visibility */}
-        <div className="absolute w-[55vw] h-[40vh] bg-[radial-gradient(circle_at_center,_rgba(139,92,246,0.22)_0%,_transparent_70%)] blur-[100px] transform -translate-y-[15%]" />
+  const titleWordsLine1 = "Build real intuition.".split(" ");
+
+  return (
+    <section className="relative w-full min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden bg-[#030305] select-none">
+      
+      <div className="absolute inset-0 w-full h-full z-10 overflow-hidden pointer-events-none">
+        <div
+          className={`absolute inset-0 transition-opacity duration-500 ${videoReady ? "opacity-0" : "opacity-100"}`}
+          style={{
+            background:
+              "radial-gradient(circle at 50% 28%, rgba(30, 100, 130, 0.42), transparent 34%), linear-gradient(180deg, #07151c 0%, #051014 42%, #030305 100%)",
+          }}
+        />
+        <div
+          className={`absolute inset-0 transition-opacity duration-500 ${videoReady ? "opacity-0" : "opacity-70"}`}
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(180,220,255,.55) 0 1px, transparent 1.4px), radial-gradient(circle, rgba(255,255,255,.35) 0 1px, transparent 1.6px)",
+            backgroundPosition: "0 0, 42px 28px",
+            backgroundSize: "84px 84px, 132px 132px",
+          }}
+        />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onCanPlay={() => setVideoReady(true)}
+          onLoadedData={() => setVideoReady(true)}
+          className={`relative z-10 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-95" : "opacity-0"}`}
+        >
+          <source src={HERO_VIDEO_SRC} type="video/mp4" />
+        </video>
       </div>
 
-      {/* Noise Texture for Premium Grain */}
-      <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay z-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#030305] to-transparent z-20 pointer-events-none" />
+      
+      <div className="absolute bottom-0 left-0 right-0 h-80 bg-gradient-to-t from-[#030305] via-[#030305]/30 to-transparent z-20 pointer-events-none" />
+      
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(3,3,5,0)_45%,rgba(3,3,5,0.45)_95%)] z-20 pointer-events-none" />
 
-      {/* Subtle, architectural grid - No heavy glows */}
-      <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_20%,transparent_100%)]"></div>
+      <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[-15%] w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-15%] w-[500px] h-[500px] bg-indigo-500/6 rounded-full blur-[120px]" />
+      </div>
 
-      {/* Content Wrapper with Fixed Max Width to prevent responsive shifting across browsers */}
-      <div className="relative w-full max-w-[1600px] mx-auto flex items-center justify-center min-h-[600px] z-10">
+      <div className="relative w-full max-w-[1200px] mx-auto flex items-center justify-center z-30">
 
-        {/* Floating Mockup (Left) - Mathematically anchored to never collide with text */}
-        <motion.div
-          className="absolute left-[-160px] xl:left-[-100px] 2xl:left-[-70px] top-[18%] w-[260px] xl:w-[320px] 2xl:w-[380px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
-          style={{ 
-            rotateX, 
-            rotateY,
-            perspective: 1200,
-            transformStyle: "preserve-3d",
-            willChange: "transform"
-          }}
-        >
-          <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}>
-            <div className="bg-[#09090b] border border-white/10 hover:border-violet-500/20 transition-colors duration-500 rounded-2xl p-2 shadow-[0_40px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
-              <img src="/screenshots/blocked.png" alt="Blocked Screen" className="w-full rounded-xl border border-white/5 relative z-10" />
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] to-transparent pointer-events-none"></div>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Floating Mockup (Right) - Mathematically anchored to never collide with text */}
-        <motion.div
-          className="absolute right-[-160px] xl:right-[-100px] 2xl:right-[-70px] top-[30%] w-[280px] xl:w-[340px] 2xl:w-[420px] opacity-60 pointer-events-none hidden xl:block z-0 transform-gpu"
-          style={{ 
-            rotateX: useTransform(smoothY, [-500, 500], [-8, 8]), 
-            rotateY: useTransform(smoothX, [-500, 500], [8, -8]),
-            perspective: 1200,
-            transformStyle: "preserve-3d",
-            willChange: "transform"
-          }}
-        >
-          <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}>
-            <div className="bg-[#09090b] border border-white/10 hover:border-violet-500/20 transition-colors duration-500 rounded-2xl p-2 shadow-[0_40px_80px_rgba(0,0,0,0.8)] relative overflow-hidden">
-              <img src="/screenshots/revisionsheet.png" alt="Revision Sheet" className="w-full rounded-xl border border-white/5 relative z-10" />
-              <div className="absolute inset-0 bg-gradient-to-tl from-white/[0.03] to-transparent pointer-events-none"></div>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Center Content - High Contrast, Centered text guaranteed to render above side panels */}
-        <div className="max-w-4xl mx-auto z-20 relative px-4 flex flex-col items-center text-center mt-12 md:mt-0">
+        <div className="max-w-4xl mx-auto px-4 flex flex-col items-center text-center">
           <motion.div 
             id="hero-content"
             initial="hidden" 
             animate="visible" 
-            variants={{ 
-              visible: { 
-                transition: { 
-                  staggerChildren: 0.12,
-                  delayChildren: 0.2
-                } 
-              } 
-            }} 
+            variants={containerVariants} 
             className="flex flex-col items-center"
           >
 
-            {/* Typography - High Contrast, Editorial Aesthetic with Mindblowing Reveal */}
-            <div className="w-full flex flex-col items-center justify-center text-center mb-14 px-4 select-none">
-              {/* Line 1: Build real intuition. */}
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[88px] font-bold tracking-tight text-white leading-none flex flex-wrap justify-center mb-1">
-                {"Build real intuition.".split(" ").map((word, wIdx, arr) => (
+            <div className="w-full flex flex-col items-center justify-center text-center">
+              
+              <h1 className="font-['Plus_Jakarta_Sans'] text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-white leading-none flex flex-wrap justify-center select-none filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">
+                {titleWordsLine1.map((word, wIdx, arr) => (
                   <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.25em]">
                     <motion.span
                       className="inline-block origin-bottom text-white"
@@ -140,7 +136,7 @@ export default function Hero() {
                           y: 0, 
                           opacity: 1, 
                           skewY: 0,
-                          transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
+                          transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } 
                         }
                       }}
                     >
@@ -150,86 +146,51 @@ export default function Hero() {
                 ))}
               </h1>
 
-              {/* Line 2 & 3: Stop relying on the solutions tab. */}
-              <h2 className="w-full flex flex-col items-center justify-center mt-0 pb-1">
-                {/* Line 2: Stop relying on the */}
-                <div className="flex flex-wrap justify-center mb-0.5">
-                  {"Stop relying on the".split(" ").map((word, i, arr) => (
-                    <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
-                      <motion.span
-                        variants={{
-                          hidden: { opacity: 0, y: "100%", skewY: 2 },
-                          visible: { 
-                            opacity: 1, 
-                            y: 0, 
-                            skewY: 0,
-                            transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
-                          }
-                        }}
-                        className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-300 via-white to-zinc-300 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal leading-tight"
-                      >
-                        {word}{i !== arr.length - 1 && "\u00A0"}
-                      </motion.span>
-                    </span>
-                  ))}
-                </div>
-
-                {/* Line 3: solutions tab. */}
-                <div className="flex flex-wrap justify-center">
-                  {"solutions tab.".split(" ").map((word, i, arr) => (
-                    <span key={i} className="inline-flex overflow-hidden pb-1 mr-[0.25em]">
-                      <motion.span
-                        variants={{
-                          hidden: { opacity: 0, y: "100%", skewY: 2 },
-                          visible: { 
-                            opacity: 1, 
-                            y: 0, 
-                            skewY: 0,
-                            transition: { duration: 1.0, ease: [0.19, 1.0, 0.22, 1.0] } 
-                          }
-                        }}
-                        className="inline-block font-serif italic font-normal bg-gradient-to-r from-zinc-300 via-white to-zinc-300 bg-clip-text text-transparent text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[76px] tracking-normal leading-tight"
-                      >
-                        {word}{i !== arr.length - 1 && "\u00A0"}
-                      </motion.span>
-                    </span>
-                  ))}
-                </div>
-              </h2>
+              <motion.h2 
+                variants={itemVariants}
+                className="font-['Plus_Jakarta_Sans'] font-light text-zinc-300 text-xl sm:text-3xl md:text-4xl tracking-wide leading-tight select-none mt-2 text-center flex flex-wrap items-center justify-center gap-x-2 filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+              >
+                <span className="text-zinc-300">Stop relying on the</span>
+                <FlipWords
+                  words={cyclePhrases}
+                  duration={2800}
+                  className="font-semibold italic text-white border-b-2 border-white/20 pb-0.5 min-w-[180px] sm:min-w-[280px] md:min-w-[360px] text-center whitespace-nowrap inline-block"
+                />
+              </motion.h2>
             </div>
 
-            {/* Subheadline - Premium Blur Reveal */}
             <motion.div 
-              variants={{
-                hidden: { opacity: 0, filter: "blur(10px)", y: 20 },
-                visible: { 
-                  opacity: 1, 
-                  filter: "blur(0px)", 
-                  y: 0, 
-                  transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } 
-                }
-              }}
+              variants={itemVariants}
+              className="w-full mt-6"
             >
-              <p className="text-lg md:text-xl text-zinc-400 mb-12 max-w-2xl font-light leading-relaxed mx-auto">
+              <p className="text-zinc-200 text-base sm:text-lg md:text-xl font-light leading-relaxed max-w-2xl mx-auto mb-8 select-none font-['Plus_Jakarta_Sans'] filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
                 DeepFocus is a browser extension that enforces discipline by blocking LeetCode solutions, disabling copy-pasting, and intelligently scheduling your revisions.
               </p>
             </motion.div>
 
-            {/* Premium Modern Buttons */}
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full sm:w-auto z-10 relative">
-              {/* Primary Button - Install Extension */}
-              <a href="#" className="group relative w-full sm:w-auto px-10 py-4 bg-white text-black rounded-xl font-bold text-[14px] tracking-wider uppercase overflow-hidden transition-all active:scale-95 border border-white shadow-[0_10px_30px_rgba(255,255,255,0.05)] hover:bg-zinc-100">
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                <div className="flex items-center justify-center gap-3">
+            <motion.div 
+              variants={itemVariants} 
+              className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto z-10 relative font-['Plus_Jakarta_Sans']"
+            >
+              <a 
+                href="#" 
+                className="group relative w-full sm:w-auto px-9 py-4 bg-white text-black rounded-xl font-extrabold text-[12px] tracking-widest uppercase overflow-hidden transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:bg-zinc-100"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
+                
+                <div className="flex items-center justify-center gap-3 relative z-10">
                   <DownloadIcon />
                   <span>Install Extension</span>
                 </div>
               </a>
 
-              {/* Secondary Button - Revision Sheet */}
-              <Link to="/revision" className="group relative w-full sm:w-auto px-10 py-4 bg-black/40 border border-white/10 text-white rounded-xl font-bold text-[14px] tracking-wider uppercase overflow-hidden backdrop-blur-md transition-all hover:border-white/25 active:scale-95">
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                <div className="flex items-center justify-center gap-3">
+              <Link 
+                to="/revision" 
+                className="group relative w-full sm:w-auto px-9 py-4 bg-black/40 hover:bg-black/60 border border-white/20 hover:border-white/40 text-white rounded-xl font-extrabold text-[12px] tracking-widest uppercase overflow-hidden backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
+                
+                <div className="flex items-center justify-center gap-3 relative z-10">
                   <span>Revision Sheet</span>
                   <ArrowIcon />
                 </div>

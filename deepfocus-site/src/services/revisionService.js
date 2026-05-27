@@ -1,5 +1,18 @@
 import { supabase } from '../lib/supabaseClient';
 
+export function normalizeProblemUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  const match = cleanUrl.match(/https?:\/\/(?:www\.)?leetcode\.com\/problems\/([^/]+)/i);
+  return match ? `https://leetcode.com/problems/${match[1]}/` : cleanUrl;
+}
+
+function revisionTimestamp(problem) {
+  const value = problem?.updated_at || problem?.created_at || 0;
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+}
+
 /**
  * Fetch all revision problems for the logged-in user.
  * RLS on the `revision_problems` table ensures users only see their own data.
@@ -8,16 +21,26 @@ export async function getRevisionProblems() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('revision_problems')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('updated_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false, nullsFirst: false });
+
+  if (error && /updated_at/i.test(error.message || '')) {
+    const fallback = await supabase
+      .from('revision_problems')
+      .select('*')
+      .order('created_at', { ascending: false, nullsFirst: false });
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('[revisionService] Error fetching revision problems:', error.message);
     return [];
   }
-  return data || [];
+  return (data || []).sort((a, b) => revisionTimestamp(b) - revisionTimestamp(a));
 }
 
 /**
@@ -34,31 +57,56 @@ export async function addRevisionProblem(problem) {
     return null;
   }
 
+  const normalizedLink = normalizeProblemUrl(problem.link);
+  if (!normalizedLink) {
+    console.error('[revisionService] Invalid problem: missing link');
+    return null;
+  }
+
   const newProblem = {
     user_id: session.user.id,
     title: problem.title,
-    link: problem.link,
-    difficulty: problem.difficulty,
-    focus_status: problem.focusStatus || problem.focus_status,
-    focus_score: problem.focusScore !== undefined ? problem.focusScore : problem.focus_score,
+    link: normalizedLink,
+    difficulty: problem.difficulty || 'Medium',
+    focus_status: problem.focusStatus || problem.focus_status || 'Unattempted',
+    focus_score: problem.focusScore !== undefined ? problem.focusScore : (problem.focus_score ?? 0),
     switches: problem.switches || 0,
     notes: problem.notes || '',
+    code: problem.code || '',
     revision_needed: true,
   };
 
-  const { data, error } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from('revision_problems')
-    .insert([newProblem])
+    .select('id, notes, code')
+    .eq('user_id', session.user.id)
+    .eq('link', newProblem.link)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error('[revisionService] Error checking existing revision problem:', lookupError.message);
+    return null;
+  }
+
+  const query = existing
+    ? supabase
+        .from('revision_problems')
+        .update({
+          ...newProblem,
+          notes: problem.notes ? problem.notes : (existing.notes || ''),
+          code: problem.code ? problem.code : (existing.code || ''),
+        })
+        .eq('id', existing.id)
+    : supabase
+        .from('revision_problems')
+        .insert([newProblem]);
+
+  const { data, error } = await query
     .select()
     .single();
 
   if (error) {
-    // 23505 = PostgreSQL unique violation — problem already exists, silently ignore
-    if (error.code === '23505') {
-      // Silently ignore unique violation
-    } else {
-      console.error('[revisionService] Error adding revision problem:', error.message);
-    }
+    console.error('[revisionService] Error upserting revision problem:', error.message);
     return null;
   }
   return data;
@@ -81,6 +129,47 @@ export async function updateProblemNotes(id, notes) {
 }
 
 /**
+ * Update problem notes for a given problem link (append AI summary).
+ */
+export async function updateProblemNotesByLink(link, summaryToAppend, title = null, difficulty = null) {
+  const normalizedLink = normalizeProblemUrl(link);
+  if (!normalizedLink || !summaryToAppend) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  // Find problem by link
+  const { data, error } = await supabase
+    .from('revision_problems')
+    .select('id, notes')
+    .eq('link', normalizedLink)
+    .eq('user_id', session.user.id)
+    .single();
+
+  if (error || !data) {
+    console.log('[revisionService] Problem not found by link, inserting new record for AI summary...');
+    await addRevisionProblem({
+      title: title || 'Unknown Problem',
+      link: normalizedLink,
+      difficulty: difficulty || 'Medium',
+      focusStatus: 'Unattempted',
+      focusScore: 0,
+      notes: '### AI Summary\n' + summaryToAppend
+    });
+    return;
+  }
+
+  if (data) {
+    // Append the new summary
+    const newNotes = data.notes 
+      ? data.notes + '\n\n### AI Summary\n' + summaryToAppend
+      : '### AI Summary\n' + summaryToAppend;
+
+    await updateProblemNotes(data.id, newNotes);
+  }
+}
+
+/**
  * Toggle whether a problem needs revision.
  */
 export async function toggleProblemMarked(id, revision_needed) {
@@ -94,6 +183,23 @@ export async function toggleProblemMarked(id, revision_needed) {
   if (error) {
     console.error('[revisionService] Error toggling revision status:', error.message);
   }
+}
+
+export async function setProblemRevisionNeeded(id, revisionNeeded) {
+  if (!id) return { data: null, error: new Error('Missing problem id') };
+
+  const { data, error } = await supabase
+    .from('revision_problems')
+    .update({ revision_needed: revisionNeeded })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[revisionService] Error updating reviewed state:', error.message);
+  }
+
+  return { data, error };
 }
 
 /**

@@ -52,7 +52,6 @@ export default function Header() {
       case '/dashboard': return 'Dashboard';
       case '/revision': return 'Revision Sheet';
       case '/planner': return 'AI Planner';
-      case '/tutor': return 'AI Tutor';
       case '/analytics': return 'Profile';
       case '/library': return 'Library';
       case '/settings': return 'Settings';
