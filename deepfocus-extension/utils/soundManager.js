@@ -8,8 +8,11 @@
     constructor() {
       this.soundUrls = {};
       this.preloaded = {};
-      this.lastPlayTime = 0;
-      this.cooldown = 2000;
+      this.lastPlayTimeByType = {};
+      this.cooldownByType = {
+        success: 0,
+        fail: 0
+      };
       this.soundEnabled = false;
 
       if (!window.location.hostname.includes('leetcode.com')) {
@@ -73,16 +76,17 @@
       }
     }
 
-    playSound(type) {
+    playSound(type, options = {}) {
       if (!this.soundEnabled) return;
 
       const now = Date.now();
-      if (now - this.lastPlayTime < this.cooldown) return;
+      const cooldown = this.cooldownByType[type] ?? 0;
+      if (!options.force && cooldown > 0 && now - (this.lastPlayTimeByType[type] || 0) < cooldown) return;
 
       const url = this.soundUrls[type];
       if (!url) return;
 
-      this.lastPlayTime = now;
+      this.lastPlayTimeByType[type] = now;
       if (this.preloaded[type] && this.tryPlay(this.preloaded[type])) {
         return;
       }

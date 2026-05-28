@@ -123,11 +123,7 @@ export default function UpdatePassword() {
                   disabled={loading}
                   className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:opacity-90 transition-all transform active:scale-[0.98] disabled:opacity-50 mt-2 shadow-lg flex items-center justify-center gap-2"
                 >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    'Update Password'
-                  )}
+                  {loading ? 'Updating...' : 'Update Password'}
                 </button>
               </form>
             </motion.div>

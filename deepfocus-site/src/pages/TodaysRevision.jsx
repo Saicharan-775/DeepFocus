@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { 
   Target, CheckCircle2, ExternalLink, 
   MessageSquare, Brain, Clock, AlertTriangle, Lightbulb, 
@@ -10,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { getProblemPattern, patternPriorityMap } from "../utils/patternMatcher";
+import DeepFocusLoader from "../components/DeepFocusLoader";
 
 function parseRevisionNotes(dbNotes) {
   if (!dbNotes || typeof dbNotes !== "string") {
@@ -259,25 +259,7 @@ export default function TodaysRevision() {
   };
 
   if (loading) {
-    return (
-       <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center z-50">
-          <div className="w-64 h-64">
-             <DotLottieReact
-                src="https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie"
-                loop
-                autoplay
-             />
-          </div>
-          <motion.p 
-             initial={{ opacity: 0, y: 10 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.5 }}
-             className="text-amber-400 font-medium tracking-widest text-xs uppercase mt-4 animate-pulse"
-          >
-             Loading your problems...
-          </motion.p>
-       </div>
-    );
+    return <DeepFocusLoader message="Loading your problems..." />;
   }
 
   const progressPercent = stats.todayTarget > 0 ? Math.min((stats.todayCompleted / stats.todayTarget) * 100, 100) : 0;

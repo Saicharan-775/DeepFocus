@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import DeepFocusLogo from "../components/DeepFocusLogo";
 
 export default function NotFound() {
   useEffect(() => {
@@ -23,33 +24,11 @@ export default function NotFound() {
       {/* TOP HEADER BAR */}
       <header className="w-full flex items-center justify-between px-8 py-6 z-20 relative">
         {/* Left: Minimal Circular Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 px-3 py-1 group">
-          <div className="relative w-5 h-5 flex items-center justify-center">
-            <motion.svg
-              animate={{ rotate: 360 }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="absolute w-5 h-5 text-zinc-500/40 group-hover:text-violet-500/60 transition-colors duration-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
-            </motion.svg>
-            <svg
-              className="absolute w-3.5 h-3.5 text-zinc-300 group-hover:text-violet-400 transition-colors duration-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="5" />
-            </svg>
-            <div className="absolute w-1.5 h-1.5 bg-violet-500 rounded-full group-hover:scale-125 transition-transform duration-300 shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
-          </div>
-          <span className="text-[12px] font-bold tracking-[0.2em] text-white uppercase group-hover:text-zinc-200 transition-colors">
-            DeepFocus
-          </span>
+        <Link to="/" className="px-3 py-1 group">
+          <DeepFocusLogo
+            markClassName="h-7 w-10 rounded-full border-white/[0.1] group-hover:border-white/20 transition-all"
+            textClassName="text-[12px] uppercase tracking-[0.2em] group-hover:text-zinc-200 transition-colors"
+          />
         </Link>
         {/* Right: Technical Project Label */}
         <span className="text-[10px] uppercase tracking-[0.25em] font-bold text-zinc-500">

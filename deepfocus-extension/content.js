@@ -1512,64 +1512,129 @@ let waitingForSubmit = false;
 let lastSeenResult = null;
 let isJudging = false;
 let xhrResultReceived = null; // Result from network interception
+let acceptedDetectionInstalled = false;
+let submissionSequence = 0;
+let activeSubmissionId = 0;
+let handledSubmissionId = 0;
+let preSubmitResultText = "";
+
+function getSubmissionResultText() {
+  const resultEl = document.querySelector('[data-e2e-locator="submission-result"]') ||
+    document.querySelector('.submission-result') ||
+    document.querySelector('[class*="result-status"]') ||
+    document.querySelector('[class*="status-column"]');
+
+  try {
+    return resultEl ? (resultEl.textContent || resultEl.innerText || '').trim().toLowerCase() : '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function classifySubmissionResult(rawStatus, rawState = "") {
+  const status = String(rawStatus || '').trim().toLowerCase();
+  const state = String(rawState || '').trim().toLowerCase();
+  const combined = `${status} ${state}`;
+
+  if (!combined.trim()) return null;
+  if (
+    combined.includes('pending') ||
+    combined.includes('started') ||
+    combined.includes('judging') ||
+    combined.includes('running') ||
+    combined.includes('queued')
+  ) {
+    return 'pending';
+  }
+
+  if (status === 'accepted' || /\baccepted\b/.test(status)) return 'success';
+
+  if (
+    combined.includes('wrong answer') ||
+    combined.includes('runtime error') ||
+    combined.includes('compile error') ||
+    combined.includes('compilation error') ||
+    combined.includes('time limit') ||
+    combined.includes('memory limit') ||
+    combined.includes('output limit') ||
+    combined.includes('limit exceeded') ||
+    combined.includes('failed') ||
+    combined.includes('error')
+  ) {
+    return 'fail';
+  }
+
+  return status ? 'fail' : null;
+}
+
+function playSubmissionResult(resultType) {
+  if (!waitingForSubmit || !activeSubmissionId || handledSubmissionId === activeSubmissionId) return false;
+  if (resultType !== 'success' && resultType !== 'fail') return false;
+
+  handledSubmissionId = activeSubmissionId;
+  if (window.DeepFocusSound) {
+    window.DeepFocusSound.playSound(resultType, { force: true });
+  }
+  return true;
+}
 
 function setupAcceptedDetection() {
   if (acceptedObserverInterval) clearInterval(acceptedObserverInterval);
 
-  // ========== STRATEGY 1: Intercept LeetCode's Network Responses ==========
-  // Inject a page-level script that hooks into XMLHttpRequest and fetch
-  // to catch the actual submission result from LeetCode's API.
-  // This is the most reliable method as it reads the raw server response.
-  try {
-    if (!chrome.runtime?.id) return;
-    const interceptScript = document.createElement('script');
-    interceptScript.src = chrome.runtime.getURL('utils/pageInterceptor.js');
-    interceptScript.onload = function () {
-      this.remove();
-    };
-    (document.head || document.documentElement).appendChild(interceptScript);
-  } catch (e) {
-    // Silently ignore
-  }
+  if (!acceptedDetectionInstalled) {
+    acceptedDetectionInstalled = true;
 
-  // Listen for intercepted results via postMessage
-  window.addEventListener('message', (event) => {
-    if (event.data?.type !== '__DEEPFOCUS_SUBMISSION_RESULT__') return;
-    if (!waitingForSubmit) return;
-
-    const msg = event.data.status_msg || '';
-    const state = event.data.state || '';
-
-    // Ignore intermediate states
-    if (state === 'PENDING' || state === 'STARTED') return;
-
-    xhrResultReceived = msg;
-  });
-
-  // Listen for internal copies from pageInterceptor
-  window.addEventListener('message', (event) => {
-    if (event.data?.type !== '__DEEPFOCUS_INTERNAL_COPY__') return;
-    lastLocalCopy = event.data.text;
-  });
-
-  // ========== STRATEGY 2: Submit Button Click Detection ==========
-  document.addEventListener('click', (e) => {
-    if (!focusState.focusActive) return;
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    const text = (btn.innerText || btn.textContent || '').trim().toLowerCase();
-    const isSubmit = text === 'submit' ||
-      btn.getAttribute('data-e2e-locator') === 'console-submit-button' ||
-      btn.getAttribute('data-cy') === 'submit-code-btn';
-
-    if (isSubmit) {
-      waitingForSubmit = true;
-      isJudging = false;
-      lastSeenResult = null;
-      xhrResultReceived = null;
-      window._dfClickTime = Date.now();
+    // ========== STRATEGY 1: Intercept LeetCode's Network Responses ==========
+    try {
+      if (!chrome.runtime?.id) return;
+      const interceptScript = document.createElement('script');
+      interceptScript.src = chrome.runtime.getURL('utils/pageInterceptor.js');
+      interceptScript.onload = function () {
+        this.remove();
+      };
+      (document.head || document.documentElement).appendChild(interceptScript);
+    } catch (e) {
+      // Silently ignore
     }
-  }, true);
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.type !== '__DEEPFOCUS_SUBMISSION_RESULT__') return;
+      if (!waitingForSubmit) return;
+
+      const msg = event.data.status_msg || '';
+      const state = event.data.state || '';
+      const resultType = classifySubmissionResult(msg, state);
+
+      if (resultType === 'pending') return;
+      xhrResultReceived = { msg, state, resultType, submissionId: activeSubmissionId };
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.type !== '__DEEPFOCUS_INTERNAL_COPY__') return;
+      lastLocalCopy = event.data.text;
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!focusState.focusActive) return;
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const text = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+      const isSubmit = text === 'submit' ||
+        btn.getAttribute('data-e2e-locator') === 'console-submit-button' ||
+        btn.getAttribute('data-cy') === 'submit-code-btn';
+
+      if (isSubmit) {
+        submissionSequence += 1;
+        activeSubmissionId = submissionSequence;
+        waitingForSubmit = true;
+        isJudging = false;
+        lastSeenResult = null;
+        xhrResultReceived = null;
+        preSubmitResultText = getSubmissionResultText();
+        window._dfClickTime = Date.now();
+      }
+    }, true);
+  }
 
   // ========== STRATEGY 3: Polling-Based Result Detection ==========
   acceptedObserverInterval = setInterval(() => {
@@ -1589,41 +1654,33 @@ function setupAcceptedDetection() {
         isJudging = false;
         xhrResultReceived = null;
         lastSeenResult = null;
+        preSubmitResultText = "";
       };
 
       // ---- CHECK 1: Network intercepted result (most reliable) ----
-      if (xhrResultReceived) {
-        const msg = xhrResultReceived.toLowerCase();
-
-        if (msg === 'accepted') {
-          if (window.DeepFocusSound) window.DeepFocusSound.playSound('success');
+      if (xhrResultReceived && xhrResultReceived.submissionId === activeSubmissionId) {
+        if (xhrResultReceived.resultType === 'success') {
+          playSubmissionResult('success');
           finishDetection();
           stopFocusRequest(false, "Focus Kept");
           return;
-        } else {
-          // Any non-Accepted final result = failure
-          if (window.DeepFocusSound) window.DeepFocusSound.playSound('fail');
+        }
+
+        if (xhrResultReceived.resultType === 'fail') {
+          const failedMessage = xhrResultReceived.msg;
+          playSubmissionResult('fail');
           finishDetection();
-          lastSeenResult = xhrResultReceived;
+          lastSeenResult = failedMessage;
           return;
         }
       }
 
       // ---- CHECK 2: DOM-based detection (fallback) ----
-      const resultEl = document.querySelector('[data-e2e-locator="submission-result"]') ||
-        document.querySelector('.submission-result') ||
-        document.querySelector('[class*="result-status"]') ||
-        document.querySelector('[class*="status-column"]');
-
-      const checkText = (el) => {
-        try { return el ? (el.textContent || el.innerText || '').trim().toLowerCase() : ''; }
-        catch (err) { return ''; }
-      };
-
-      const lowerRes = checkText(resultEl);
+      const lowerRes = getSubmissionResultText();
+      const domResultType = classifySubmissionResult(lowerRes);
 
       // Detect judging state — this is what "unlocks" DOM-based result checks
-      if (lowerRes.includes('pending') || lowerRes.includes('judging')) {
+      if (domResultType === 'pending') {
         isJudging = true;
         lastSeenResult = lowerRes;
         return;
@@ -1631,38 +1688,36 @@ function setupAcceptedDetection() {
 
       // CRITICAL: Only check DOM results AFTER we have seen the judging state.
       // This prevents stale DOM from the previous submission from triggering sounds.
-      if (isJudging) {
+      if (isJudging || (lowerRes && lowerRes !== preSubmitResultText && lowerRes !== lastSeenResult)) {
         // If result text has changed from the judging state to something new
         if (lowerRes && lowerRes !== lastSeenResult) {
           lastSeenResult = lowerRes;
 
-          if (lowerRes.includes('accepted')) {
-            if (window.DeepFocusSound) window.DeepFocusSound.playSound('success');
+          if (domResultType === 'success') {
+            playSubmissionResult('success');
             finishDetection();
             stopFocusRequest(false, "Focus Kept");
             return;
           }
 
-          // Any other non-empty, non-judging text after judging = failure
-          if (window.DeepFocusSound) window.DeepFocusSound.playSound('fail');
-          finishDetection();
-          return;
+          if (domResultType === 'fail') {
+            playSubmissionResult('fail');
+            finishDetection();
+            return;
+          }
         }
+      }
 
+      if (isJudging) {
         // ---- CHECK 3: Scan for red/error elements — only after judging ----
         const errorEls = document.querySelectorAll(
           '[class*="text-red-"], [class*="text-pink-"], [class*="error"], [data-cy*="error"]'
         );
 
         for (const el of errorEls) {
-          const txt = checkText(el);
-          if (txt && (
-            txt.includes('wrong answer') || txt.includes('time limit') ||
-            txt.includes('runtime error') || txt.includes('compile error') ||
-            txt.includes('memory limit') || txt.includes('output limit') ||
-            txt.includes('failed') || txt.includes('limit exceeded')
-          )) {
-            if (window.DeepFocusSound) window.DeepFocusSound.playSound('fail');
+          const txt = (el.textContent || el.innerText || '').trim().toLowerCase();
+          if (classifySubmissionResult(txt) === 'fail') {
+            playSubmissionResult('fail');
             finishDetection();
             lastSeenResult = txt;
             return;
@@ -1674,6 +1729,8 @@ function setupAcceptedDetection() {
       if (timeSinceClick > 15000) {
         waitingForSubmit = false;
         isJudging = false;
+        xhrResultReceived = null;
+        preSubmitResultText = "";
       }
 
     } catch (e) {

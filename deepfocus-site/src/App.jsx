@@ -4,6 +4,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import MainLayout from "./layouts/MainLayout";
 import LandingPage from "./pages/LandingPage";
+import DeepFocusLoader from "./components/DeepFocusLoader";
 
 const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -31,7 +32,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div></div>}>
+        <Suspense fallback={<DeepFocusLoader message="Loading DeepFocus..." />}>
           <Routes>
 
             {/* Marketing pages */}

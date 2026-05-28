@@ -46,10 +46,11 @@ const steps = [
 
 export default function Timeline() {
   return (
-    <section id="how-it-works" className="py-10 md:py-16 px-6 relative overflow-hidden">
+    <section id="how-it-works" className="py-10 md:py-16 px-6 relative overflow-hidden bg-[#07070b]">
 
       {/* Background ambient light */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[600px] bg-violet-600/[0.02] blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(99,102,241,0.11),transparent_64%)] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[600px] bg-violet-600/[0.08] blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10">
 
@@ -61,13 +62,13 @@ export default function Timeline() {
           transition={{ duration: 0.6 }}
           className="text-center mb-24"
         >
-          <p className="inline-flex px-3 py-1 bg-white/5 text-gray-300 rounded-full text-xs font-semibold uppercase tracking-widest mb-6 border border-white/10">
+          <p className="inline-flex px-3 py-1 bg-white/[0.07] text-gray-200 rounded-full text-xs font-semibold uppercase tracking-widest mb-6 border border-white/[0.14]">
             How It Works
           </p>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-6">
             Seamless workflow integration
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-zinc-300/85 max-w-2xl mx-auto leading-relaxed">
             A clean four-step flow that keeps your process intentional, focused, and continuously reviewable.
           </p>
         </motion.div>
@@ -76,7 +77,7 @@ export default function Timeline() {
         <div className="relative max-w-4xl mx-auto">
 
           {/* Central Line */}
-          <div className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent md:-translate-x-1/2" />
+          <div className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent md:-translate-x-1/2" />
 
           <div className="space-y-12 md:space-y-24">
             {steps.map((step, index) => {
@@ -86,7 +87,7 @@ export default function Timeline() {
                 <div key={step.title} className={`relative flex flex-col md:flex-row items-start md:items-center ${isEven ? '' : 'md:flex-row-reverse'}`}>
 
                   {/* Timeline Dot */}
-                  <div className="absolute left-[28px] md:left-1/2 w-4 h-4 rounded-full bg-[#0A0B0E] border-2 border-white/20 md:-translate-x-1/2 shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10 mt-6 md:mt-0" />
+                  <div className="absolute left-[28px] md:left-1/2 w-4 h-4 rounded-full bg-[#101017] border-2 border-white/30 md:-translate-x-1/2 shadow-[0_0_22px_rgba(139,92,246,0.28)] z-10 mt-6 md:mt-0" />
 
                   {/* Spacer for alternating layout */}
                   <div className="hidden md:block md:w-1/2" />
@@ -99,7 +100,7 @@ export default function Timeline() {
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className={`w-full md:w-1/2 pl-16 pr-4 md:px-12 mt-2 md:mt-0 ${isEven ? 'md:text-right' : 'md:text-left'}`}
                   >
-                    <div className="glass-card p-8 rounded-[24px] bg-white/[0.02] border border-white/5 hover:bg-white/[0.03] transition-all group relative overflow-hidden text-left">
+                    <div className="glass-card p-8 rounded-[24px] bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.07] transition-all group relative overflow-hidden text-left shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
 
                       <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${step.gradient} border ${step.borderColor} flex items-center justify-center mb-6`}>
                         <Icon icon={step.icon} width="24" className={step.iconColor} />
@@ -118,7 +119,7 @@ export default function Timeline() {
                         {step.title}
                       </h4>
 
-                      <p className="text-gray-400 leading-relaxed">
+                      <p className="text-zinc-300/82 leading-relaxed">
                         {step.desc}
                       </p>
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Icon } from '@iconify/react';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
+import DeepFocusLoader from '../components/DeepFocusLoader';
 
 const ICON_CHOICES = [
   'lucide:brain',
@@ -736,15 +736,8 @@ export default function AiPlanner() {
       <AnimatePresence>
         {isGenerating && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
-            style={{ background: 'rgba(9,9,11,0.95)', backdropFilter: 'blur(24px)' }}>
-            <div className="w-60 h-60">
-              <DotLottieReact src="https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie" loop autoplay />
-            </div>
-            <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="text-violet-400 text-xs font-mono tracking-[0.25em] uppercase mt-4 animate-pulse">
-              Structuring verified curriculum...
-            </motion.p>
+            className="fixed inset-0 z-[100]">
+            <DeepFocusLoader message="Structuring verified curriculum..." />
           </motion.div>
         )}
       </AnimatePresence>

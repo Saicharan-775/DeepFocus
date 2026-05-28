@@ -4,6 +4,7 @@ import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart,
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
+import DeepFocusLogo from '../DeepFocusLogo';
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -34,9 +35,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className={`p-6 flex items-center justify-between ${isOpen ? '' : 'justify-center'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] shrink-0">
-            DF
-          </div>
+          <DeepFocusLogo showText={false} markClassName="h-9 w-10 rounded-xl border-white/[0.1]" />
           {isOpen && (
             <motion.span
               initial={{ opacity: 0 }}

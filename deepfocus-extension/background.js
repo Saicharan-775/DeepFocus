@@ -49,7 +49,20 @@ async function readProviderError(provider, response) {
   } catch (_) {
     message = '';
   }
+
+  if (response.status === 429) {
+    if (provider.startsWith('OpenRouter')) {
+      return 'OpenRouter is rate-limiting the free model right now. Try again in a minute, or add a Groq/OpenAI key in Settings for a backup provider.';
+    }
+    return `${provider} is rate-limited right now. Try again in a minute, or add another AI key in Settings.`;
+  }
+
   return `${provider} rejected the request (${response.status}): ${String(message || 'Request failed').slice(0, 220)}`;
+}
+
+function formatProviderErrors(errors, fallback) {
+  const uniqueErrors = [...new Set(errors.filter(Boolean))];
+  return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
 }
 
 async function callDemoAiFromExtension({ title, difficulty, code }) {
@@ -703,9 +716,10 @@ ${code || "No code or notes provided yet."}`;
     }
   }
 
-  throw new Error(providerErrors.length
-    ? providerErrors.join("\n")
-    : "AI Analysis failed. No configured provider returned a response.");
+  throw new Error(formatProviderErrors(
+    providerErrors,
+    "AI Analysis failed. No configured provider returned a response."
+  ));
 }
 
 async function queuePendingEvent(problemObject) {

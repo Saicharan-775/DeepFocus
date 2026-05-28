@@ -40,11 +40,24 @@ async function readProviderError(provider: string, response: Response) {
     message = data?.error?.message || data?.error || data?.message || text;
       } catch (_) {
       }
+
+  if (response.status === 429) {
+    if (provider.startsWith("OpenRouter")) {
+      return "OpenRouter is rate-limiting the free model right now. Try again in a minute, or add your own Groq/OpenAI key in Settings for a backup provider.";
+    }
+    return `${provider} is rate-limited right now. Try again in a minute, or add another AI key in Settings.`;
+  }
+
   return `${provider} rejected the request (${response.status}): ${String(message).slice(0, 220)}`;
 }
 
 function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : String(err);
+}
+
+function formatProviderErrors(errors: string[], fallback: string) {
+  const uniqueErrors = [...new Set(errors.filter(Boolean))];
+  return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
 }
 
 async function resolveUserId(req: Request, supabase: ReturnType<typeof createClient>) {
@@ -197,7 +210,7 @@ async function callOpenRouter(apiKey: string, prompts: ReturnType<typeof buildPr
     }
   }
 
-  throw new Error(errors.join("\n") || "OpenRouter did not return a response.");
+  throw new Error(formatProviderErrors(errors, "OpenRouter did not return a response."));
 }
 
 async function callGroq(apiKey: string, prompts: ReturnType<typeof buildPrompts>) {
@@ -294,7 +307,7 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
-      error: errors.length ? errors.join("\n") : "No demo AI provider is configured on the server.",
+      error: formatProviderErrors(errors, "No demo AI provider is configured on the server."),
     }, 502);
   } catch (err) {
     const message = errorMessage(err);

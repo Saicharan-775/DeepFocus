@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabaseClient";
 import { LogOut, ClipboardList, BarChart3, Binary, BookOpen, User } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import DeepFocusLogo from "./DeepFocusLogo";
 
 export default function DashboardNav() {
   const location = useLocation();
@@ -32,9 +33,7 @@ export default function DashboardNav() {
         
         {/* BRAND LOGO */}
         <Link to="/" className="px-3 mr-1 border-r border-white/10 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 bg-white text-black rounded-[10px] flex items-center justify-center font-black text-xs tracking-tighter shadow-[0_0_15px_rgba(255,255,255,0.15)]">
-            DF
-          </div>
+          <DeepFocusLogo showText={false} markClassName="h-8 w-10 rounded-[10px] border-white/10" />
         </Link>
 
         {navItems.map((item) => {

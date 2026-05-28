@@ -17,8 +17,9 @@ function ArrowIcon() {
 
 export default function FinalCTA() {
   return (
-    <section id="final-cta" className="px-6 py-10 md:py-16 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-900/10 pointer-events-none" />
+    <section id="final-cta" className="px-6 py-10 md:py-16 relative overflow-hidden bg-[#07070b]">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-900/10 to-indigo-900/16 pointer-events-none" />
+      <div className="absolute bottom-[-25%] left-1/2 -translate-x-1/2 w-[760px] h-[420px] bg-violet-500/12 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-5xl mx-auto relative z-10">
         <motion.div
@@ -26,7 +27,7 @@ export default function FinalCTA() {
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-card rounded-[40px] p-10 md:p-16 lg:p-20 text-center relative overflow-hidden bg-gradient-to-b from-white/[0.03] to-white/[0.01]"
+          className="glass-card rounded-[40px] p-10 md:p-16 lg:p-20 text-center relative overflow-hidden border border-white/[0.12] bg-gradient-to-b from-white/[0.07] to-white/[0.025] shadow-[0_28px_90px_rgba(0,0,0,0.38)]"
         >
           {/* Internal Glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-500/20 blur-[100px] rounded-full pointer-events-none" />
@@ -41,7 +42,7 @@ export default function FinalCTA() {
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-600 mt-2">Before your next interview.</span>
           </h2>
 
-          <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="text-lg md:text-xl text-zinc-300/85 max-w-2xl mx-auto leading-relaxed mb-12">
             Install DeepFocus, start a problem, and force your brain to solve it before looking up answers.
             Real engineering growth starts where the shortcuts end.
           </p>
@@ -53,10 +54,10 @@ export default function FinalCTA() {
             </a>
           </div>
 
-          <div className="mt-16 flex flex-wrap justify-center gap-6 text-sm text-gray-500 font-medium border-t border-white/5 pt-8">
-            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> No solution peeking</span>
-            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> Auto revision queue</span>
-            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> Focus-first workflow</span>
+          <div className="mt-16 flex flex-wrap justify-center gap-6 text-sm text-zinc-400 font-medium border-t border-white/10 pt-8">
+            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> No solution peeking</span>
+            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> Auto revision queue</span>
+            <span className="flex items-center gap-2"><svg className="w-4 h-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> Focus-first workflow</span>
           </div>
         </motion.div>
       </div>

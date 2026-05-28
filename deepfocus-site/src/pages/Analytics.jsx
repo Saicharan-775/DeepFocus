@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Icon } from '@iconify/react';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import DeepFocusLoader from "../components/DeepFocusLoader";
 
 /* ==========================================
    PREMIUM 3D-FEEL METALLIC SVG BADGES
@@ -365,25 +365,7 @@ export default function Analytics() {
    const medLength = medRatio * circumference;
    const hardLength = hardRatio * circumference;
 
-    if (loading) return (
-       <div className="fixed inset-0 bg-[#000000] flex flex-col items-center justify-center z-50">
-          <div className="w-64 h-64">
-             <DotLottieReact
-                src="https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie"
-                loop
-                autoplay
-             />
-          </div>
-          <motion.p 
-             initial={{ opacity: 0, y: 10 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.5 }}
-             className="text-emerald-400 font-medium tracking-widest text-xs uppercase mt-4 animate-pulse animate-duration-1000"
-          >
-             Rendering Gamification Profile...
-          </motion.p>
-       </div>
-    );
+    if (loading) return <DeepFocusLoader message="Rendering gamification profile..." />;
 
    return (
       <div className="max-w-[1400px] mx-auto space-y-8 text-zinc-100 font-['Inter',sans-serif] pb-20">

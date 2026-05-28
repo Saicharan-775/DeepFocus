@@ -104,6 +104,13 @@ async function readProviderError(provider, response) {
   }
 
   const cleanMessage = String(message || "Request failed").slice(0, 220);
+  if (response.status === 429) {
+    if (provider.startsWith("OpenRouter")) {
+      return "OpenRouter is rate-limiting the free model right now. Try again in a minute, or add a Groq/OpenAI key in Settings for a backup provider.";
+    }
+    return `${provider} is rate-limited right now. Try again in a minute, or add another AI key in Settings.`;
+  }
+
   return `${provider} rejected the request (${response.status}): ${cleanMessage}`;
 }
 
@@ -113,6 +120,11 @@ function formatNetworkError(provider, err) {
     return "OpenAI request failed from the browser. If the key is valid, use OpenRouter/Groq or route OpenAI through a server proxy.";
   }
   return `${provider} request failed: ${raw}`;
+}
+
+function formatProviderErrors(errors, fallback) {
+  const uniqueErrors = [...new Set(errors.filter(Boolean))];
+  return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
 }
 
 async function callDemoAi(kind, payload) {
@@ -299,9 +311,10 @@ ${codeOrNotes || "No code or notes provided yet."}`;
     }
   }
 
-  throw new Error(providerErrors.length
-    ? providerErrors.join("\n")
-    : "AI Analysis failed. No configured provider returned a response.");
+  throw new Error(formatProviderErrors(
+    providerErrors,
+    "AI Analysis failed. No configured provider returned a response."
+  ));
 }
 
 export async function getAiPseudoCode({ title, difficulty, code }) {
@@ -458,7 +471,8 @@ ${code || "No code provided yet."}`;
     }
   }
 
-  throw new Error(providerErrors.length
-    ? providerErrors.join("\n")
-    : "AI Pseudocode generation failed. No configured provider returned a response.");
+  throw new Error(formatProviderErrors(
+    providerErrors,
+    "AI Pseudocode generation failed. No configured provider returned a response."
+  ));
 }

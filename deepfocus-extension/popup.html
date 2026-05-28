@@ -47,7 +47,16 @@
       color: #fff;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+    }
+    .logo img {
+      width: 42px;
+      height: 30px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #000;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
     }
 
     .status-badge {
@@ -368,7 +377,10 @@
 
   <!-- HEADER -->
   <div class="header">
-    <div class="logo">DeepFocus</div>
+    <div class="logo">
+      <img src="assets/deepfocus-logo.png" alt="DeepFocus">
+      <span>DeepFocus</span>
+    </div>
     <div class="status-badge inactive" id="status-badge">
       <div class="dot"></div>
       <span id="status-text">Inactive</span>

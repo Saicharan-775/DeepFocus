@@ -7,16 +7,53 @@ import {
   Clock,
   Flame,
   History,
-  Loader2,
   RotateCcw,
   Target,
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { getRevisionProblems, getSuggestedProblems } from '../services/revisionService';
+import { getRevisionProblems } from '../services/revisionService';
+import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
+import DeepFocusLoader from '../components/DeepFocusLoader';
+
+function scoreSuggestedProblem(problem) {
+  let score = 0;
+  let reason = 'Recommended for reinforcement based on your recent attempts.';
+  let priority = 4;
+
+  if (problem.focus_status === 'Cheated') {
+    score += 100;
+    reason = 'Rebuild this one from first principles before the copied path becomes memory.';
+    priority = 1;
+  } else if (problem.focus_status === 'Give Up') {
+    score += 90;
+    reason = 'You stopped before closure. Revisit the missing transition while it is still useful.';
+    priority = 1;
+  } else if ((problem.focus_score ?? 100) < 50) {
+    score += 80;
+    reason = 'Low focus score. Review the invariant and the final implementation together.';
+    priority = 2;
+  } else if ((problem.focus_score ?? 100) < 75) {
+    score += 55;
+    reason = 'Good candidate for a short recall pass before the pattern fades.';
+    priority = 3;
+  }
+
+  if (problem.revision_needed !== false) score += 20;
+  if (problem.difficulty === 'Hard') score += 15;
+  if (problem.difficulty === 'Medium') score += 5;
+
+  return { ...problem, priorityScore: score, suggestionReason: reason, priorityLevel: priority };
+}
+
+function getTopSuggestedProblem(problems) {
+  return [...problems]
+    .map(scoreSuggestedProblem)
+    .sort((a, b) => b.priorityScore - a.priorityScore || a.priorityLevel - b.priorityLevel)[0] || null;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -31,14 +68,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const data = await getRevisionProblems();
+      const [data, authResult] = await Promise.all([
+        getRevisionProblems(),
+        supabase.auth.getUser()
+      ]);
       setProblems(data);
+      setSuggestedProblem(getTopSuggestedProblem(data));
 
-      const suggested = await getSuggestedProblems(1);
-      setSuggestedProblem(suggested?.[0] || null);
-
-      const { supabase } = await import('../lib/supabaseClient');
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const authUser = authResult?.data?.user;
       if (authUser) {
         const { data: sData } = await supabase
           .from('focus_sessions')
@@ -55,19 +92,14 @@ export default function Dashboard() {
     }
     init();
 
-    let channel;
-    import('../lib/supabaseClient').then(({ supabase }) => {
-      channel = supabase
-        .channel('dashboard_sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadData())
-        .subscribe();
-    });
+    const channel = supabase
+      .channel('dashboard_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadData())
+      .subscribe();
 
     return () => {
-      if (channel) {
-        import('../lib/supabaseClient').then(({ supabase }) => supabase.removeChannel(channel));
-      }
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -193,11 +225,7 @@ export default function Dashboard() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-8rem)] flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-      </div>
-    );
+    return <DeepFocusLoader message="Loading dashboard..." fullScreen={false} />;
   }
 
   const CircleProgress = ({ progress, size = 112, strokeWidth = 8, color = 'text-violet-300', label, value }) => {

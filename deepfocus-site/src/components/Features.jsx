@@ -57,11 +57,12 @@ export default function Features() {
     };
 
     return (
-        <section id="features" className="py-16 md:py-24 px-6 relative z-10 overflow-hidden bg-[#030305]">
+        <section id="features" className="py-16 md:py-24 px-6 relative z-10 overflow-hidden bg-[#07070b]">
             {/* Ambient Lighting & Grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_20%,transparent_100%)] pointer-events-none" />
-            <div className="absolute top-1/4 left-1/4 w-[800px] h-[500px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] opacity-60 [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_18%,transparent_100%)] pointer-events-none" />
+            <div className="absolute top-1/4 left-1/4 w-[800px] h-[500px] bg-violet-600/16 blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[400px] bg-indigo-600/16 blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute top-[12%] right-[8%] w-[420px] h-[300px] bg-cyan-500/8 blur-[100px] rounded-full pointer-events-none" />
 
             <div className="max-w-[1200px] mx-auto relative z-10">
                 <motion.div
@@ -72,7 +73,7 @@ export default function Features() {
                 >
                     {/* Header */}
                     <motion.div variants={itemVariants} className="mb-20 text-center max-w-3xl mx-auto">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-md mb-8">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.055] border border-white/[0.12] backdrop-blur-md mb-8">
                             <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
                             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-300">
                                 Premium Tooling
@@ -81,7 +82,7 @@ export default function Features() {
                         <h2 className="text-5xl md:text-7xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6 leading-[1.1]">
                             Engineered for focus.
                         </h2>
-                        <p className="text-lg md:text-xl text-zinc-400 leading-relaxed font-light">
+                        <p className="text-lg md:text-xl text-zinc-300/85 leading-relaxed font-light">
                             DeepFocus forces deep work by stripping away shortcuts. A disciplined environment built for real problem solvers.
                         </p>
                     </motion.div>
@@ -92,7 +93,7 @@ export default function Features() {
                         {/* 1. HERO CARD — Total Solution Lockdown */}
                         <motion.div 
                             variants={itemVariants} 
-                            className="md:col-span-12 lg:col-span-8 min-h-[24rem] rounded-[32px] p-8 md:p-10 relative overflow-hidden group border border-white/[0.08] hover:border-violet-500/30 transition-all duration-500 bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col md:flex-row gap-10 shadow-2xl"
+                            className="md:col-span-12 lg:col-span-8 min-h-[24rem] rounded-[32px] p-8 md:p-10 relative overflow-hidden group border border-white/[0.1] hover:border-violet-400/35 transition-all duration-500 bg-gradient-to-b from-white/[0.055] to-white/[0.025] backdrop-blur-xl flex flex-col md:flex-row gap-10 shadow-2xl"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             
@@ -103,7 +104,7 @@ export default function Features() {
                                 <h3 className="text-3xl font-medium text-white mb-4 tracking-tight">
                                     Total Solution Lockdown
                                 </h3>
-                                <p className="text-zinc-400 text-lg leading-relaxed font-light">
+                                <p className="text-zinc-300/82 text-lg leading-relaxed font-light">
                                     The Solutions tab is physically removed and visually blocked until the timer expires. You have no choice but to think.
                                 </p>
                             </div>
@@ -146,7 +147,7 @@ export default function Features() {
                         {/* 2. Paste Protection */}
                         <motion.div 
                             variants={itemVariants} 
-                            className="md:col-span-6 lg:col-span-4 min-h-[24rem] rounded-[32px] p-8 md:p-10 border border-white/[0.08] hover:border-amber-500/30 transition-all duration-500 bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col relative overflow-hidden group shadow-2xl"
+                            className="md:col-span-6 lg:col-span-4 min-h-[24rem] rounded-[32px] p-8 md:p-10 border border-white/[0.1] hover:border-amber-400/35 transition-all duration-500 bg-gradient-to-b from-white/[0.055] to-white/[0.025] backdrop-blur-xl flex flex-col relative overflow-hidden group shadow-2xl"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             
@@ -156,7 +157,7 @@ export default function Features() {
                             <h3 className="text-3xl font-medium text-white mb-4 tracking-tight relative z-10">
                                 Paste Protection
                             </h3>
-                            <p className="text-zinc-400 text-lg leading-relaxed font-light relative z-10 mb-8">
+                            <p className="text-zinc-300/82 text-lg leading-relaxed font-light relative z-10 mb-8">
                                 Block copy-pasting of large code blocks. Build pure muscle memory.
                             </p>
 
@@ -180,7 +181,7 @@ export default function Features() {
                         {/* 3. Roast Mode */}
                         <motion.div 
                             variants={itemVariants} 
-                            className="md:col-span-6 lg:col-span-4 min-h-[24rem] rounded-[32px] p-8 md:p-10 border border-white/[0.08] hover:border-purple-500/30 transition-all duration-500 bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col relative overflow-hidden group shadow-2xl"
+                            className="md:col-span-6 lg:col-span-4 min-h-[24rem] rounded-[32px] p-8 md:p-10 border border-white/[0.1] hover:border-purple-400/35 transition-all duration-500 bg-gradient-to-b from-white/[0.055] to-white/[0.025] backdrop-blur-xl flex flex-col relative overflow-hidden group shadow-2xl"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             
@@ -190,7 +191,7 @@ export default function Features() {
                             <h3 className="text-3xl font-medium text-white mb-4 tracking-tight relative z-10">
                                 AI Roast Mode
                             </h3>
-                            <p className="text-zinc-400 text-lg leading-relaxed font-light relative z-10 mb-8">
+                            <p className="text-zinc-300/82 text-lg leading-relaxed font-light relative z-10 mb-8">
                                 Tab out to ChatGPT? Get instantly hit with a sarcastic reality check.
                             </p>
 
@@ -220,7 +221,7 @@ export default function Features() {
                         {/* 4. Automated Spaced Repetition */}
                         <motion.div 
                             variants={itemVariants} 
-                            className="md:col-span-12 lg:col-span-8 min-h-[24rem] rounded-[32px] p-8 md:p-10 relative overflow-hidden group border border-white/[0.08] hover:border-emerald-500/30 transition-all duration-500 bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-xl flex flex-col md:flex-row gap-10 shadow-2xl"
+                            className="md:col-span-12 lg:col-span-8 min-h-[24rem] rounded-[32px] p-8 md:p-10 relative overflow-hidden group border border-white/[0.1] hover:border-emerald-400/35 transition-all duration-500 bg-gradient-to-b from-white/[0.055] to-white/[0.025] backdrop-blur-xl flex flex-col md:flex-row gap-10 shadow-2xl"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             
@@ -231,7 +232,7 @@ export default function Features() {
                                 <h3 className="text-3xl font-medium text-white mb-4 tracking-tight">
                                     The Core Learning Engine
                                 </h3>
-                                <p className="text-zinc-400 text-[17px] leading-relaxed font-light mb-8">
+                                <p className="text-zinc-300/82 text-[17px] leading-relaxed font-light mb-8">
                                     Blocking solutions is only half the battle. DeepFocus analyzes your failures, automatically categorizes them by pattern, and schedules precise revisions to build genuine intuition.
                                 </p>
 

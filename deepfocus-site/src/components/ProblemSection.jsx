@@ -65,27 +65,29 @@ const icons = [EyeIcon, TabIcon, ClipboardIcon, SadIcon];
 
 export default function ProblemSection() {
   return (
-    <section id="problem-section" className="py-10 md:py-16 px-6 border-t border-white/5 relative overflow-hidden">
+    <section id="problem-section" className="py-10 md:py-16 px-6 relative overflow-hidden bg-[#07070b]">
 
       {/* Background elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[500px] bg-violet-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(139,92,246,0.08),transparent_64%)] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[500px] bg-violet-600/[0.055] blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 right-[-10%] w-[40vw] h-[400px] bg-fuchsia-600/[0.035] blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto relative z-10">
+      <div className="max-w-5xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-20"
+          className="text-center mb-12 md:mb-16"
         >
-          <p className="inline-flex px-3 py-1 bg-red-500/10 text-red-400 rounded-full text-xs font-semibold uppercase tracking-widest mb-6 border border-red-500/20">
+          <p className="inline-flex px-3 py-1 bg-red-500/10 text-red-400 rounded-full text-xs font-semibold uppercase tracking-widest mb-6 border border-red-500/20 backdrop-blur-md">
             The Illusion of Progress
           </p>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-6 leading-tight">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
             You aren't learning. <br className="hidden md:block" />
             You are just reading solutions.
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-zinc-300/85 max-w-2xl mx-auto leading-relaxed">
             Most developers fall into silent discipline traps. You think you are studying, but you are actively sabotaging your ability to recall information under interview pressure.
           </p>
         </motion.div>
@@ -100,22 +102,22 @@ export default function ProblemSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex flex-col h-full glass-card p-8 rounded-[24px] hover:-translate-y-1 transition-transform group bg-white/[0.02] border border-white/5 hover:border-violet-500/20 hover:bg-white/[0.04]"
+                className="flex flex-col h-full glass-card p-6 rounded-[24px] hover:-translate-y-1 transition-transform group bg-white/[0.035] border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.35)] hover:border-violet-400/30 hover:bg-white/[0.055]"
               >
-                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:bg-white/10 transition-colors shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-white/[0.08] border border-white/[0.14] flex items-center justify-center mb-6 group-hover:bg-white/[0.12] transition-colors shrink-0">
                   <TrapIcon />
                 </div>
 
-                <h3 className="text-xl font-medium text-white mb-3 tracking-tight shrink-0">
+                <h3 className="text-lg font-semibold text-white mb-3 tracking-tight shrink-0">
                   {trap.title}
                 </h3>
 
-                <p className="text-sm text-gray-400 leading-relaxed mb-8 grow">
+                <p className="text-sm text-zinc-300/80 leading-relaxed mb-7 grow">
                   {trap.desc}
                 </p>
 
-                <div className="mt-auto pt-5 border-t border-white/10 shrink-0 min-h-[64px]">
-                  <div className="text-[10px] md:text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em] flex flex-wrap gap-1">
+                <div className="mt-auto pt-5 border-t border-white/[0.14] shrink-0 min-h-[64px]">
+                  <div className="text-[10px] md:text-[11px] font-bold text-zinc-400 uppercase tracking-[0.15em] flex flex-wrap gap-1">
                     RESULT: <span className="text-gray-200">{trap.tone}</span>
                   </div>
                 </div>

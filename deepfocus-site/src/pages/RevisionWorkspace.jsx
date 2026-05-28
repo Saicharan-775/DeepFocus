@@ -13,6 +13,7 @@ import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink 
 import { getAiSummary, getAiPseudoCode } from "../services/aiService";
 import ReactMarkdown from "react-markdown";
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
+import DeepFocusLoader from "../components/DeepFocusLoader";
 
 // Helper function to parse notes from database string format
 function parseDbNotes(dbNotes) {
@@ -140,6 +141,30 @@ function parseAiSummary(text) {
   };
 }
 
+const curatedQuestionLookup = (() => {
+  const byTitle = new Map();
+  const bySlug = new Map();
+
+  curatedQuestions.forEach((question) => {
+    const titleKey = normalizeTitle(question.title);
+    const slug = question.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const slugKey = getSlugFromLink(`/problems/${slug}/`);
+
+    if (titleKey) byTitle.set(titleKey, question);
+    if (slugKey) bySlug.set(slugKey, question);
+  });
+
+  return { byTitle, bySlug };
+})();
+
+function findCuratedQuestion(title, link) {
+  return (
+    curatedQuestionLookup.byTitle.get(normalizeTitle(title)) ||
+    curatedQuestionLookup.bySlug.get(getSlugFromLink(link)) ||
+    null
+  );
+}
+
 export default function RevisionWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -252,19 +277,7 @@ export default function RevisionWorkspace() {
       const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
       
       const mapped = dbProblems.map(p => {
-        const normTitle = normalizeTitle(p.title);
-        const normSlug = getSlugFromLink(p.link);
-        
-        let cqMatch = null;
-        for (const cq of curatedQuestions) {
-          const normCqTitle = normalizeTitle(cq.title);
-          const cqSlug = cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          const normCqSlug = getSlugFromLink(`/problems/${cqSlug}/`);
-          if (normTitle === normCqTitle || normSlug === normCqSlug) {
-            cqMatch = cq;
-            break;
-          }
-        }
+        const cqMatch = findCuratedQuestion(p.title, p.link);
 
         return {
           ...p,
@@ -681,12 +694,7 @@ export default function RevisionWorkspace() {
 
   // Render empty state if loading or no problems
   if (loading && problems.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] text-zinc-400">
-        <RefreshCw className="animate-spin text-violet-500 mb-4" size={32} />
-        <p className="font-mono text-sm tracking-wider uppercase">Initializing Personal DSA Workspace...</p>
-      </div>
-    );
+    return <DeepFocusLoader message="Initializing personal DSA workspace..." fullScreen={false} />;
   }
 
   return (
@@ -1077,7 +1085,7 @@ export default function RevisionWorkspace() {
                     disabled={pseudoCodeLoading}
                     className="flex h-8 items-center gap-1.5 rounded-md bg-indigo-400/[0.12] px-2.5 text-xs font-medium text-indigo-100 transition-colors hover:bg-indigo-400/[0.18] disabled:text-zinc-600"
                   >
-                    {pseudoCodeLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                    {pseudoCodeLoading ? <Sparkles size={13} /> : <Sparkles size={13} />}
                     <span>{pseudoCodeLoading ? 'Drafting' : 'AI Draft'}</span>
                   </button>
                 </div>
@@ -1132,7 +1140,7 @@ export default function RevisionWorkspace() {
                   disabled={aiLoading}
                   className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-100 disabled:text-zinc-600"
                 >
-                  <RefreshCw size={13} className={aiLoading ? 'animate-spin' : ''} />
+                  <RefreshCw size={13} />
                   <span>{aiLoading ? 'Reviewing' : 'Analyze'}</span>
                 </button>
                 <button
@@ -1164,10 +1172,7 @@ export default function RevisionWorkspace() {
                         <span>{insightTab === 'mistake' ? 'Where thinking drifted' : 'Corrected transition'}</span>
                       </div>
                       {aiLoading ? (
-                        <div className="space-y-2 pt-1">
-                          <div className="h-3 w-4/5 rounded bg-white/[0.06] animate-pulse" />
-                          <div className="h-3 w-3/5 rounded bg-white/[0.05] animate-pulse" />
-                        </div>
+                        <DeepFocusLoader message="Reviewing approach..." fullScreen={false} size="sm" className="min-h-[8rem] bg-transparent" />
                       ) : insightBody ? (
                         <div className="max-w-5xl space-y-1 text-sm leading-6 text-zinc-200">
                           {insightBody.split('\n').map((line, idx) => renderParagraph(line, idx))}

@@ -6,8 +6,8 @@ import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink 
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import subpatternFilters from '../constants/Patterns/subpattern_filters.json';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Search, ChevronDown, Check, X, FileText, Sparkles } from 'lucide-react';
+import DeepFocusLoader from "../components/DeepFocusLoader";
 
 function parseDbNotes(dbNotes) {
   if (!dbNotes || typeof dbNotes !== 'string') {
@@ -279,25 +279,7 @@ export default function Sheet() {
   }
 
   if (loading) {
-    return (
-      <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center z-50">
-        <div className="w-48 h-48 opacity-60">
-          <DotLottieReact
-            src="https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie"
-            loop
-            autoplay
-          />
-        </div>
-        <motion.p 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-zinc-400 font-medium tracking-widest text-xs uppercase mt-2"
-        >
-          Loading curriculum...
-        </motion.p>
-      </div>
-    );
+    return <DeepFocusLoader message="Loading curriculum..." />;
   }
 
   const totalProblems = mergedData.length;

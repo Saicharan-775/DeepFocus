@@ -5,8 +5,8 @@ import {
   FolderOpen, ShieldAlert, Target, CheckSquare, Search, ExternalLink, FileText, ChevronLeft, ChevronRight, X, Link as LinkIcon, CheckCircle2, ChevronDown, Sparkles,
   Brain, Code, Lightbulb, AlertTriangle, Clock, Database, Zap
 } from "lucide-react";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { motion, AnimatePresence } from "framer-motion";
+import DeepFocusLoader from "../components/DeepFocusLoader";
 import { refreshRevisionProblems, subscribeRevisionStore, updateRevisionProblem } from "../store/revisionStore";
 import { setProblemRevisionNeeded } from "../services/revisionService";
 import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from "../utils/patternMatcher";
@@ -464,25 +464,7 @@ export default function Revision() {
   };
 
   if (dataLoading) {
-    return (
-      <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center z-50">
-        <div className="w-64 h-64">
-          <DotLottieReact
-            src="https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie"
-            loop
-            autoplay
-          />
-        </div>
-        <motion.p 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="text-violet-400 font-medium tracking-widest text-xs uppercase mt-4 animate-pulse"
-        >
-          Loading your revision list...
-        </motion.p>
-      </div>
-    );
+    return <DeepFocusLoader message="Loading your revision list..." />;
   }
 
   return (

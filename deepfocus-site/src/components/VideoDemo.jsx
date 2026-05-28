@@ -6,10 +6,11 @@ export default function VideoDemo() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
-    <section id="demo" className="py-10 md:py-16 px-6 relative z-20">
+    <section id="demo" className="py-10 md:py-16 px-6 relative z-20 overflow-hidden bg-[#07070b]">
       {/* Ambient Background Glows */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[500px] bg-violet-600/[0.04] blur-[120px] rounded-full pointer-events-none z-0" />
-      <div className="absolute top-0 right-[-10%] w-[40vw] h-[400px] bg-fuchsia-600/[0.03] blur-[120px] rounded-full pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(139,92,246,0.09),transparent_64%)] pointer-events-none z-0" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[500px] bg-violet-600/[0.09] blur-[120px] rounded-full pointer-events-none z-0" />
+      <div className="absolute top-0 right-[-10%] w-[40vw] h-[400px] bg-fuchsia-600/[0.07] blur-[120px] rounded-full pointer-events-none z-0" />
 
       <div className="max-w-5xl mx-auto relative z-10">
         
@@ -31,7 +32,7 @@ export default function VideoDemo() {
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6">
             Watch the workflow in action.
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-zinc-300/85 max-w-2xl mx-auto leading-relaxed">
             See exactly how DeepFocus integrates into your daily LeetCode grind to prevent cheating and force you to think critically.
           </p>
         </motion.div>
@@ -41,13 +42,13 @@ export default function VideoDemo() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative rounded-[32px] md:rounded-[40px] p-2 bg-white/[0.02] border border-white/5 shadow-[0_0_80px_rgba(139,92,246,0.05)] backdrop-blur-2xl"
+          className="relative rounded-[32px] md:rounded-[40px] p-2 bg-white/[0.045] border border-white/10 shadow-[0_0_90px_rgba(139,92,246,0.12)] backdrop-blur-2xl"
         >
           {/* Inner Glow to make the border pop */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 via-transparent to-fuchsia-500/10 rounded-[32px] md:rounded-[40px] pointer-events-none opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/16 via-transparent to-fuchsia-500/14 rounded-[32px] md:rounded-[40px] pointer-events-none opacity-70" />
 
           {/* Aspect Ratio Video Container */}
-          <div className="relative aspect-video rounded-[28px] md:rounded-[36px] overflow-hidden bg-violet-950/30 border border-violet-500/20 shadow-2xl">
+          <div className="relative aspect-video rounded-[28px] md:rounded-[36px] overflow-hidden bg-violet-950/40 border border-violet-400/30 shadow-2xl">
 
             <AnimatePresence mode="wait">
               {!isPlaying ? (

@@ -67,14 +67,14 @@ export default function Hero() {
   const titleWordsLine1 = "Build real intuition.".split(" ");
 
   return (
-    <section className="relative w-full min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden bg-[#030305] select-none">
+    <section className="relative w-full min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden bg-[#07070b] select-none">
       
       <div className="absolute inset-0 w-full h-full z-10 overflow-hidden pointer-events-none">
         <div
           className={`absolute inset-0 transition-opacity duration-500 ${videoReady ? "opacity-0" : "opacity-100"}`}
           style={{
             background:
-              "radial-gradient(circle at 50% 28%, rgba(30, 100, 130, 0.42), transparent 34%), linear-gradient(180deg, #07151c 0%, #051014 42%, #030305 100%)",
+              "radial-gradient(circle at 50% 28%, rgba(45, 135, 170, 0.5), transparent 36%), linear-gradient(180deg, #0a1a22 0%, #07141a 42%, #07070b 100%)",
           }}
         />
         <div
@@ -95,21 +95,21 @@ export default function Hero() {
           preload="auto"
           onCanPlay={() => setVideoReady(true)}
           onLoadedData={() => setVideoReady(true)}
-          className={`relative z-10 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-95" : "opacity-0"}`}
+          className={`relative z-10 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100 brightness-[1.12] saturate-[1.08]" : "opacity-0"}`}
         >
           <source src={HERO_VIDEO_SRC} type="video/mp4" />
         </video>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#030305] to-transparent z-20 pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#07070b] to-transparent z-20 pointer-events-none" />
       
-      <div className="absolute bottom-0 left-0 right-0 h-80 bg-gradient-to-t from-[#030305] via-[#030305]/30 to-transparent z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-80 bg-gradient-to-t from-[#07070b] via-[#07070b]/22 to-transparent z-20 pointer-events-none" />
       
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(3,3,5,0)_45%,rgba(3,3,5,0.45)_95%)] z-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,7,11,0)_45%,rgba(7,7,11,0.34)_95%)] z-20 pointer-events-none" />
 
       <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-        <div className="absolute top-[20%] left-[-15%] w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[-15%] w-[500px] h-[500px] bg-indigo-500/6 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] left-[-15%] w-[500px] h-[500px] bg-violet-600/14 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-15%] w-[500px] h-[500px] bg-indigo-500/12 rounded-full blur-[120px]" />
       </div>
 
       <div className="relative w-full max-w-[1200px] mx-auto flex items-center justify-center z-30">

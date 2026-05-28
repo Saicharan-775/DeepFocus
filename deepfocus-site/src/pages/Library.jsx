@@ -5,6 +5,7 @@ import {
   MessageSquare, CheckCircle2, Bookmark, Clock, Star, ArrowRight 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import DeepFocusLoader from "../components/DeepFocusLoader";
 
 // --- SERVICES ---
 // In the future, this module interacts with `/api` instead. None of this UI needs to know about it.
@@ -402,7 +403,7 @@ export default function Library() {
     <div className="max-w-[1200px] mx-auto p-8 space-y-8 animate-fade-in">
       <main className="w-full">
         {isLoading ? (
-          <div className="text-center text-neutral-500 py-32 animate-pulse">Loading core concepts, patterns, and topics...</div>
+          <DeepFocusLoader message="Loading core concepts..." fullScreen={false} size="md" />
         ) : (
           <>
             <WeeklyFocus focusData={focusData} />
