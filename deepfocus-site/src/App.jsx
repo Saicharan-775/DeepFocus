@@ -20,6 +20,7 @@ const Library = lazy(() => import("./pages/Library.jsx"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
+const AuthCallback = lazy(() => import("./components/AuthCallback.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
 
@@ -56,6 +57,8 @@ function App() {
               </Route>
             </Route>
             {/* Auth routes */}
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/update-password" element={<UpdatePassword />} />
             <Route path="*" element={<NotFound />} />

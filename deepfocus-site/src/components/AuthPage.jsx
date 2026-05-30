@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Mail, Lock, User, X, ChevronDown, Github, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, X, Github, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+
+// Changed: all successful auth flows now land on the revision sheet.
+const getAuthRedirectUrl = (path = '/revision') => new URL(path, window.location.origin).toString();
 
 export default function AuthPage() {
   const [mode, setMode] = useState('signup'); // 'signup', 'signin', 'forgot_password', 'magic_link'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoadingProvider, setOauthLoadingProvider] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      // Changed: authenticated visitors are sent to /revision instead of /dashboard.
+      navigate('/revision', { replace: true });
+    }
+  }, [navigate, user]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -26,7 +39,8 @@ export default function AuthPage() {
           email, 
           password,
           options: {
-            emailRedirectTo: window.location.origin + '/revision',
+            // Changed: email verification redirects to /revision.
+            emailRedirectTo: getAuthRedirectUrl('/revision'),
             data: {
               full_name: '', // Optional: Add default metadata if needed
             }
@@ -50,11 +64,12 @@ export default function AuthPage() {
             throw error;
           }
         } else {
-          navigate('/dashboard');
+          // Changed: password sign-in redirects to /revision.
+          navigate('/revision');
         }
       } else if (mode === 'forgot_password') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/update-password`,
+          redirectTo: getAuthRedirectUrl('/update-password'),
         });
         if (error) throw error;
         setSuccessMessage('Password reset instructions sent to your email.');
@@ -62,7 +77,8 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            emailRedirectTo: window.location.origin + '/revision',
+            // Changed: magic link redirects to /revision.
+            emailRedirectTo: getAuthRedirectUrl('/revision'),
           }
         });
         if (error) throw error;
@@ -75,18 +91,22 @@ export default function AuthPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-     await supabase.auth.signInWithOAuth({ 
-       provider: 'google',
-       options: { redirectTo: window.location.origin + '/dashboard' }
-     });
-  };
- 
-  const handleGithubLogin = async () => {
-     await supabase.auth.signInWithOAuth({ 
-       provider: 'github',
-       options: { redirectTo: window.location.origin + '/dashboard' }
-     });
+  const handleOAuthLogin = async (provider) => {
+    setError(null);
+    setSuccessMessage(null);
+    setOauthLoadingProvider(provider);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setOauthLoadingProvider(null);
+    }
   };
 
   return (
@@ -246,7 +266,7 @@ export default function AuthPage() {
                 onClick={() => setSuccessMessage(null)}
                 className="mt-8 text-xs text-gray-500 hover:text-white transition font-medium"
               >
-                ← Back to login
+                Back to login
               </button>
             </motion.div>
           )}
@@ -259,9 +279,12 @@ export default function AuthPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <button 
-            onClick={handleGoogleLogin}
+            onClick={() => handleOAuthLogin('google')}
             type="button"
-            className="flex items-center justify-center py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group"
+            disabled={Boolean(oauthLoadingProvider)}
+            aria-label="Sign in with Google"
+            title="Sign in with Google"
+            className="flex items-center justify-center gap-2 py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group disabled:opacity-50"
           >
             <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -269,13 +292,22 @@ export default function AuthPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
+            <span className="text-xs font-semibold text-zinc-300">
+              {oauthLoadingProvider === 'google' ? 'Opening...' : 'Google'}
+            </span>
           </button>
           <button 
-            onClick={handleGithubLogin}
+            onClick={() => handleOAuthLogin('github')}
             type="button"
-            className="flex items-center justify-center py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group"
+            disabled={Boolean(oauthLoadingProvider)}
+            aria-label="Sign in with GitHub"
+            title="Sign in with GitHub"
+            className="flex items-center justify-center gap-2 py-4 bg-[#181818] border border-white/5 rounded-2xl hover:bg-[#222222] transition group disabled:opacity-50"
           >
             <Github size={20} className="text-white group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold text-zinc-300">
+              {oauthLoadingProvider === 'github' ? 'Opening...' : 'GitHub'}
+            </span>
           </button>
         </div>
 

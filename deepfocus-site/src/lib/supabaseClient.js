@@ -12,5 +12,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Only the publishable anon key is used here — never the service_role key.
+// Only the publishable anon key is used here, never the service_role key.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
