@@ -13,4 +13,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Only the publishable anon key is used here, never the service_role key.
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    persistSession: true,
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 8,
+    },
+  },
+  global: {
+    headers: {
+      'x-client-info': 'deepfocus-site',
+    },
+  },
+});

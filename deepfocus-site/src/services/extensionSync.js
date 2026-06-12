@@ -17,13 +17,13 @@ export function startExtensionSync() {
       groqApiKey: hasUserKey ? userGroqApiKey : "",
       openAiApiKey: hasUserKey ? userOpenAiKey : "",
       aiKeyMode: hasUserKey ? "byok" : "demo"
-    }, "*");
+    }, window.location.origin);
   }
 
   sendKeys();
 
   setTimeout(() => {
-    window.postMessage({ type: "DEEPFOCUS_GET_PENDING_NOTES" }, "*");
+    window.postMessage({ type: "DEEPFOCUS_GET_PENDING_NOTES" }, window.location.origin);
   }, 1000);
 
   let pongReceived = false;
@@ -32,11 +32,11 @@ export function startExtensionSync() {
     if (!session?.user) return;
 
     pongReceived = false;
-    window.postMessage({ type: "DEEPFOCUS_PING_EXTENSION" }, "*");
+    window.postMessage({ type: "DEEPFOCUS_PING_EXTENSION" }, window.location.origin);
 
     setTimeout(async () => {
       if (!pongReceived) {
-        console.log("[DeepFocus] Extension ping timed out. Extension might not be installed or active.");
+        window.dispatchEvent(new CustomEvent('deepfocus_connection_changed', { detail: { connected: false } }));
       }
     }, 2000);
   }
@@ -55,7 +55,7 @@ export function startExtensionSync() {
 
     if (event.data.type === "DEEPFOCUS_GET_AI_KEYS") {
       sendKeys();
-      window.postMessage({ type: "DEEPFOCUS_GET_PENDING_NOTES" }, "*");
+      window.postMessage({ type: "DEEPFOCUS_GET_PENDING_NOTES" }, window.location.origin);
     }
     
     if (event.data.type === "DEEPFOCUS_SET_PENDING_NOTES") {
@@ -67,52 +67,38 @@ export function startExtensionSync() {
           }
         }
         refreshRevisionProblems();
-        window.postMessage({ type: "DEEPFOCUS_CLEAR_PENDING_NOTES" }, "*");
+        window.postMessage({ type: "DEEPFOCUS_CLEAR_PENDING_NOTES" }, window.location.origin);
       }
     }
 
     if (event.data.type === "DEEPFOCUS_PONG_EXTENSION") {
       pongReceived = true;
-      const currentToken = event.data.token;
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      let isTokenValid = false;
-
-      if (currentToken) {
-        try {
-          const { data, error } = await supabase.rpc('verify_extension_token', { p_raw_token: currentToken });
-          if (!error && data && data.success) {
-            isTokenValid = true;
-            console.log("[DeepFocus] Stored extension token is valid.");
-            window.dispatchEvent(new CustomEvent('deepfocus_connection_changed', { detail: { connected: true } }));
-          } else {
-            console.warn("[DeepFocus] Stored extension token is invalid or expired. Generating a new one...");
-          }
-        } catch (e) {
-          console.error("[DeepFocus] Verification RPC failed:", e);
-        }
+      if (event.data.connected) {
+        window.dispatchEvent(new CustomEvent('deepfocus_connection_changed', { detail: { connected: true } }));
+        return;
       }
 
-      if (!isTokenValid) {
-        try {
-          const rawToken = 'dfx_' + crypto.randomUUID().replace(/-/g, '');
-          const encoder = new TextEncoder();
-          const encodedData = encoder.encode(rawToken.trim());
-          const hashBuffer = await crypto.subtle.digest('SHA-256', encodedData);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const tokenHash = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+      try {
+        const rawToken = 'dfx_' + crypto.randomUUID().replace(/-/g, '');
+        const encoder = new TextEncoder();
+        const encodedData = encoder.encode(rawToken.trim());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encodedData);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const tokenHash = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
 
-          const { error: rpcError } = await supabase.rpc('upsert_extension_token', {
-            p_token_hash: tokenHash
-          });
+        const { error: rpcError } = await supabase.rpc('upsert_extension_token', {
+          p_token_hash: tokenHash
+        });
 
-          if (rpcError) throw rpcError;
+        if (rpcError) throw rpcError;
 
-          console.log("[DeepFocus] Auto-generated and upserted new token successfully.");
-          window.postMessage({ type: "DEEPFOCUS_CONNECT", token: rawToken }, "*");
-          window.dispatchEvent(new CustomEvent('deepfocus_connection_changed', { detail: { connected: true } }));
-        } catch (err) {
+        window.postMessage({ type: "DEEPFOCUS_CONNECT", token: rawToken }, window.location.origin);
+        window.dispatchEvent(new CustomEvent('deepfocus_connection_changed', { detail: { connected: true } }));
+      } catch (err) {
+        if (import.meta.env.DEV) {
           console.error("[DeepFocus] Failed to auto-generate/upsert new extension token:", err);
         }
       }

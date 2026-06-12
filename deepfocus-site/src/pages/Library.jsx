@@ -403,7 +403,7 @@ export default function Library() {
     <div className="max-w-[1200px] mx-auto p-8 space-y-8 animate-fade-in">
       <main className="w-full">
         {isLoading ? (
-          <DeepFocusLoader message="Loading core concepts..." fullScreen={false} size="md" />
+          <DeepFocusLoader message="" fullScreen={false} size="md" />
         ) : (
           <>
             <WeeklyFocus focusData={focusData} />

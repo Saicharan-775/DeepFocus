@@ -172,7 +172,7 @@ function focusTabIfAvailable(tabId) {
 }
 
 function isDashboardUrl(url = '') {
-  return /^(http:\/\/localhost|http:\/\/127\.0\.0\.1|https:\/\/[^/]+\.vercel\.app|https:\/\/[^/]+\.netlify\.app)/.test(url);
+  return /^(https:\/\/deepfocus\.app|https:\/\/www\.deepfocus\.app|http:\/\/localhost(?::\d+)?|http:\/\/127\.0\.0\.1(?::\d+)?)(\/|$)/.test(url);
 }
 
 function broadcastRevisionUpdate(problem, syncState = 'optimistic') {
@@ -312,6 +312,19 @@ async function getFocusState() {
   return sanitizeFocusState();
 }
 
+function scopeFocusStateToSender(state, sender) {
+  if (!state?.focusActive) return state;
+
+  // Content scripts run on every matched tab, but focus mode should only arm
+  // the LeetCode problem tab that started the session. Extension pages like the
+  // popup do not have sender.tab, so they still receive the global state.
+  if (sender?.tab?.id && sender.tab.id !== state.focusTabId) {
+    return { ...defaultState };
+  }
+
+  return state;
+}
+
 // Helper to save state
 async function updateFocusState(newState) {
   await chrome.storage.local.set({ focusState: newState });
@@ -323,7 +336,7 @@ async function updateFocusState(newState) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_FOCUS_STATE') {
     getFocusState()
-      .then((state) => sendResponse({ success: true, state }))
+      .then((state) => sendResponse({ success: true, state: scopeFocusStateToSender(state, sender) }))
       .catch((err) => sendResponse({ success: false, error: err?.message || "Failed to read focus state", state: defaultState }));
     return true;
   }
@@ -337,11 +350,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'EXTEND_FOCUS') {
     getFocusState().then(state => {
-      if (!state.focusActive) return;
+      if (!state.focusActive) {
+        sendResponse({ success: false, error: 'No active focus session.', state: defaultState });
+        return;
+      }
       const newState = { ...state, durationSeconds: state.durationSeconds + 300 };
       updateFocusState(newState).then(() => {
         sendResponse({ success: true, state: newState });
       });
+    }).catch((err) => {
+      sendResponse({ success: false, error: err?.message || 'Failed to extend focus.' });
     });
     return true;
   }
@@ -486,13 +504,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({}, (tabs) => {
       if (tabs) {
         tabs.forEach((t) => {
-          if (t.id && t.url && (t.url.includes('leetcode.com') || t.url.includes('localhost') || t.url.includes('127.0.0.1') || t.url.includes('vercel.app') || t.url.includes('netlify.app'))) {
-      sendTabMessage(t.id, { type: 'SYNC_INTERNAL_COPY', text: message.text });
+          if (t.id && t.url && /^https:\/\/(?:www\.)?leetcode\.com\//.test(t.url)) {
+            sendTabMessage(t.id, { type: 'SYNC_INTERNAL_COPY', text: message.text });
           }
         });
       }
     });
-    return true;
+    sendResponse({ success: true });
+    return false;
   }
 
   if (message.type === 'ANALYZE_MISTAKE') {
@@ -724,7 +743,7 @@ ${code || "No code or notes provided yet."}`;
 
 async function queuePendingEvent(problemObject) {
   if (!isValidProblemEvent(problemObject)) {
-    console.warn("[DeepFocus] Skipping invalid pending event:", problemObject);
+    console.warn("[DeepFocus] Skipping invalid pending event.");
     return;
   }
   problemObject = { ...problemObject, link: normalizeProblemUrl(problemObject.link) };
@@ -940,7 +959,7 @@ async function syncProblemEvent(problemObject, token) {
       return { success: false, error: 'Missing connection token.' };
     }
     if (!token.startsWith('dfx_')) {
-      console.warn('[DeepFocus] Invalid token format for sync:', token);
+      console.warn('[DeepFocus] Invalid token format for sync.');
       return { success: false, error: 'Invalid token format.' };
     }
 
@@ -1071,7 +1090,7 @@ async function handleStopFocus(customStatus = null, skipSync = false) {
     let token = (tokenData.deepfocus_connection_token || '').trim();
     if (token) {
       // Attempt sync; if it fails, queue the event for later retry
-      console.log("[DeepFocus] Syncing event directly from background.js:", problemObject);
+      console.log("[DeepFocus] Syncing event directly from background.js:", problemObject.link);
       const syncRes = await syncProblemEvent(problemObject, token);
       if (syncRes && syncRes.success) {
         syncResult = { saved: true, queued: false, error: null };

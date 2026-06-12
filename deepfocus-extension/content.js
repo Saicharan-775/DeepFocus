@@ -13,6 +13,26 @@ window.__DEEPFOCUS_CONTENT_LOADED__ = true;
 // overlay at the style level if we're on a forbidden URL.
 // =============================================
 const isDashboard = !window.location.hostname.includes('leetcode.com');
+const EXTENSION_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
+const TRUSTED_DASHBOARD_ORIGINS = new Set([
+  'https://deepfocus.app',
+  'https://www.deepfocus.app'
+]);
+
+function isSameWindowMessage(event) {
+  return event.source === window && event.origin === window.location.origin;
+}
+
+function isTrustedDashboardMessage(event) {
+  return isSameWindowMessage(event) && (
+    TRUSTED_DASHBOARD_ORIGINS.has(event.origin) ||
+    /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(event.origin)
+  );
+}
+
+function isExtensionFrameMessage(event) {
+  return event.origin === EXTENSION_ORIGIN;
+}
 
 function removeFocusUIArtifacts() {
   document.getElementById('df-widget-container')?.remove();
@@ -89,6 +109,7 @@ let blockingObserver = null;  // Fixed: Persistent singleton observer
 let acceptedObserverInterval = null;
 let difficulty = "Medium"; // default
 let lastInterceptedCode = "";
+let pendingAISummaryTimer = null;
 
 function isUsableFocusState(state) {
   return !!(state && state.focusActive && state.sessionId && state.sessionStartAt && state.durationSeconds && state.focusTabId);
@@ -121,7 +142,7 @@ function syncStateToPage() {
   window.postMessage({
     type: '__DEEPFOCUS_STATE_UPDATE__',
     focusActive: focusState.focusActive
-  }, '*');
+  }, window.location.origin);
 }
 
 function appendToBodyWhenReady(node) {
@@ -146,7 +167,7 @@ requestValidatedFocusState((state) => {
   }
   // Request AI keys if we are on the dashboard
   if (isDashboard) {
-    window.postMessage({ type: "DEEPFOCUS_GET_AI_KEYS" }, "*");
+    window.postMessage({ type: "DEEPFOCUS_GET_AI_KEYS" }, window.location.origin);
   }
 });
 
@@ -162,13 +183,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         type: 'DEEPFOCUS_REVISION_UPSERT',
         problem: message.problem,
         syncState: message.syncState || 'optimistic'
-      }, '*');
+      }, window.location.origin);
     }
     return;
   }
   if (message.type === 'REVISION_REFRESH') {
     if (isDashboard) {
-      window.postMessage({ type: 'DEEPFOCUS_REVISION_REFRESH' }, '*');
+      window.postMessage({ type: 'DEEPFOCUS_REVISION_REFRESH' }, window.location.origin);
     }
     return;
   }
@@ -216,14 +237,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
   if (message.type === 'FOCUS_STATE_UPDATED') {
-    if (isUsableFocusState(message.state)) {
-      focusState = message.state;
-      updateWidgetUI();
-    } else {
-      focusState = { focusActive: false };
-      cleanupFocusEnvironment();
-      syncStateToPage();
-    }
+    requestValidatedFocusState((state) => {
+      if (isUsableFocusState(state)) {
+        focusState = state;
+        updateWidgetUI();
+      } else {
+        focusState = { focusActive: false };
+        cleanupFocusEnvironment();
+        syncStateToPage();
+      }
+    });
     return;
   }
   if (message.type === 'GET_FINAL_SYNC_DATA') {
@@ -541,7 +564,7 @@ function setupMouseLeaveWarning() {
 
 // Tab Switch Guard removed - now handled exclusively by background.js for stability.
 
-function initFocusEnvironment(initialCollapsed = false, initialPos = null) {
+function initFocusEnvironment(initialCollapsed = null, initialPos = null) {
   // Don't run on dashboard
   if (isDashboard) return;
 
@@ -771,99 +794,126 @@ window.addEventListener('message', (e) => {
   if (!e.data) return;
 
   if (e.data.type === '__DEEPFOCUS_EXTRACTED_CODE__') {
+    if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(e)) return;
     if (e.data.code && e.data.code.trim()) {
       lastInterceptedCode = e.data.code;
     }
   }
 
   if (e.data.type === '__DEEPFOCUS_SUBMITTED_CODE__') {
+    if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(e)) return;
     if (e.data.code && e.data.code.trim()) {
       lastInterceptedCode = e.data.code;
     }
   }
 
   if (e.data.type === 'DEEPFOCUS_SET_AI_KEYS') {
+    if (!isTrustedDashboardMessage(e)) return;
     const { openrouterApiKey, groqApiKey, openAiApiKey, aiKeyMode } = e.data;
     safeStorageSet({
       df_openrouter_api_key: openrouterApiKey || "",
       df_groq_api_key: groqApiKey || "",
       df_openai_api_key: openAiApiKey || "",
       df_ai_key_mode: aiKeyMode === "byok" ? "byok" : "demo"
-    }, () => {
-      console.log("DeepFocus AI keys updated in storage.");
     });
   }
 
   if (e.data.type === 'DEEPFOCUS_CONNECT') {
+    if (!isTrustedDashboardMessage(e)) return;
     const token = e.data.token;
-    safeStorageSet({ deepfocus_connection_token: token }, () => {
-      console.log("[DeepFocus] Connection token saved automatically:", token);
-    });
+    if (typeof token === 'string' && token.trim().startsWith('dfx_')) {
+      safeStorageSet({ deepfocus_connection_token: token.trim() });
+    }
   }
 
   if (e.data.type === 'DEEPFOCUS_PING_EXTENSION') {
+    if (!isTrustedDashboardMessage(e)) return;
     safeStorageGet(['deepfocus_connection_token'], (res) => {
       window.postMessage({
         type: 'DEEPFOCUS_PONG_EXTENSION',
-        token: res?.deepfocus_connection_token || null
-      }, '*');
+        connected: !!(res?.deepfocus_connection_token || '').trim().startsWith('dfx_')
+      }, window.location.origin);
     });
   }
 
   if (e.data.type === 'DEEPFOCUS_GET_PENDING_NOTES') {
+    if (!isTrustedDashboardMessage(e)) return;
     safeStorageGet(['df_pending_ai_notes'], (res) => {
       if (res.df_pending_ai_notes && res.df_pending_ai_notes.length > 0) {
         window.postMessage({
           type: 'DEEPFOCUS_SET_PENDING_NOTES',
           notes: res.df_pending_ai_notes
-        }, '*');
+        }, window.location.origin);
       }
     });
   }
 
   if (e.data.type === 'DEEPFOCUS_CLEAR_PENDING_NOTES') {
+    if (!isTrustedDashboardMessage(e)) return;
     safeStorageSet({ df_pending_ai_notes: [] });
   }
 
   if (e.data.type === 'DEEPFOCUS_BACK_TO_PROBLEM') {
+    if (!isExtensionFrameMessage(e)) return;
     // Hide overlay immediately feeling responsive
     const frame = document.getElementById('df-blocked-frame');
     if (frame) frame.style.display = 'none';
     if (document.body) document.body.style.display = '';
     isCurrentlyBlocked = false;
 
-    // First try the SPA way: find the "Description" tab element and click it
-    const descTab = document.querySelector('a[href*="/description"]');
-    if (descTab) {
-      descTab.click(); // Should smoothly switch tabs via SPA without reloading
-    } else {
-      // Fallback: hard URL redirect to the root problem page
-      const currentUrl = window.location.href;
-      const match = currentUrl.match(/(https?:\/\/[^\/]+\/problems\/[^\/]+)/i);
-      if (match) {
-        window.location.href = match[1] + '/description/';
-      }
+    const currentUrl = window.location.href;
+    const match = currentUrl.match(/^(https?:\/\/(?:www\.)?leetcode\.com\/problems\/[^/?#]+)/i);
+    if (match) {
+      window.location.assign(`${match[1]}/description/`);
     }
   }
 });
 
 // Widget UI
-function injectWidget(initialCollapsed = false, initialPos = null) {
+function injectWidget(initialCollapsed = null, initialPos = null) {
   if (document.getElementById('df-widget-container')) return;
 
   widgetContainer = document.createElement('div');
   widgetContainer.id = 'df-widget-container';
 
-  // Apply collapsed class immediately if needed
-  if (initialCollapsed) {
-    widgetContainer.classList.add('df-collapsed');
-  }
+  const applyCollapsedState = (collapsed) => {
+    if (collapsed === true) {
+      widgetContainer.classList.add('df-collapsed');
+      return;
+    }
+    if (collapsed === false) {
+      widgetContainer.classList.remove('df-collapsed');
+    }
+  };
 
-  // Apply position immediately if needed
-  if (initialPos && initialPos.top) {
-    widgetContainer.style.top = initialPos.top;
-    widgetContainer.style.left = initialPos.left;
+  applyCollapsedState(initialCollapsed);
+
+  const applyStoredPosition = (pos) => {
+    if (!pos || !pos.top || !pos.left) return;
+    const top = parseInt(pos.top, 10);
+    const left = parseInt(pos.left, 10);
+    if (!Number.isFinite(top) || !Number.isFinite(left)) return;
+    const width = widgetContainer.offsetWidth || 314;
+    const height = widgetContainer.offsetHeight || 240;
+    const maxTop = Math.max(8, window.innerHeight - height - 8);
+    const maxLeft = Math.max(8, window.innerWidth - width - 8);
+    widgetContainer.style.top = Math.min(Math.max(8, top), maxTop) + "px";
+    widgetContainer.style.left = Math.min(Math.max(8, left), maxLeft) + "px";
     widgetContainer.style.right = 'auto';
+  };
+
+  if (initialPos && initialPos.top && initialPos.left) {
+    applyStoredPosition(initialPos);
+  } else {
+    try {
+      chrome.storage.local.get(['widgetPos', 'widgetCollapsed'], (res) => {
+        if (chrome.runtime.lastError || !widgetContainer?.isConnected) return;
+        if (initialCollapsed === null || typeof initialCollapsed === 'undefined') {
+          applyCollapsedState(res.widgetCollapsed === true);
+        }
+        applyStoredPosition(res.widgetPos);
+      });
+    } catch (_) {}
   }
 
   widgetContainer.innerHTML = `
@@ -951,13 +1001,7 @@ function injectWidget(initialCollapsed = false, initialPos = null) {
   if (btnStop) {
     btnStop.addEventListener('click', (e) => {
       e.stopPropagation();
-      btnStop.disabled = true;
-      btnStop.textContent = "Stopping...";
-      let finalStatus = "Give Up";
-      if (focusState.tabSwitches > 8) {
-        finalStatus = "Cheated";
-      }
-      stopFocusRequest(false, finalStatus, true);
+      finishFocusFromWidget({ analyzeAfterStop: true });
     });
   }
   
@@ -965,15 +1009,37 @@ function injectWidget(initialCollapsed = false, initialPos = null) {
   if (btnAnalyze) {
     btnAnalyze.addEventListener('click', (e) => {
       e.stopPropagation();
-      btnAnalyze.disabled = true;
-      btnAnalyze.textContent = "Stopping...";
-      let finalStatus = "Give Up";
-      if (focusState.tabSwitches > 8) {
-        finalStatus = "Cheated";
-      }
-      stopFocusRequest(false, finalStatus, true);
+      finishFocusFromWidget({ analyzeAfterStop: true });
     });
   }
+}
+
+function finishFocusFromWidget({ analyzeAfterStop = true } = {}) {
+  if (!focusState.focusActive || stopFocusInProgress) return;
+
+  const btnStop = widgetContainer?.querySelector('#df-btn-stop-focus');
+  const btnAnalyze = widgetContainer?.querySelector('#df-btn-analyze-mistake');
+  [btnStop, btnAnalyze].forEach((button) => {
+    if (!button) return;
+    button.disabled = true;
+    button.classList.add('df-btn-loading');
+  });
+
+  if (btnStop) {
+    btnStop.innerHTML = `
+      <span class="df-mini-spinner"></span>
+      Stopping Focus
+    `;
+  }
+  if (btnAnalyze) {
+    btnAnalyze.innerHTML = `
+      <span class="df-mini-spinner"></span>
+      Preparing AI
+    `;
+  }
+
+  const finalStatus = focusState.tabSwitches > 8 ? "Cheated" : "Give Up";
+  stopFocusRequest(false, finalStatus, analyzeAfterStop);
 }
 
 function getAISummarySnapshot(finalStatus) {
@@ -997,17 +1063,28 @@ function getAISummarySnapshot(finalStatus) {
 }
 
 function promptAISummaryAfterStop(snapshot) {
-  if (document.getElementById('df-ai-modal-overlay')) return;
+  closeManagedOverlays({ keepAI: false });
 
   const overlay = document.createElement('div');
   overlay.id = 'df-ai-modal-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML = `
       <div class="df-modal-content df-ai-modal-content">
         <div class="df-modal-header">
-          <h2 class="df-modal-title" style="margin:0;">Session Ended</h2>
+          <div class="df-ai-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3.5 14.25 9 20 11.25 14.25 13.5 12 19 9.75 13.5 4 11.25 9.75 9 12 3.5Z"></path>
+              <path d="M18.5 4.75 19.25 6.5 21 7.25 19.25 8 18.5 9.75 17.75 8 16 7.25 17.75 6.5 18.5 4.75Z"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="df-ai-kicker">AI Explanation</div>
+            <h2 class="df-modal-title" style="margin:0;">Session Ended</h2>
+          </div>
         </div>
         <div class="df-ai-modal-body">
-          Would you like a quick AI summary of your approach, highlighting mistakes and providing a better direction?
+          DeepFocus can turn this attempt into a concise revision note with the mistake, a better direction, and the next pattern to practice.
         </div>
         <div class="df-summary-prompt-actions">
           <button class="df-summary-prompt-btn-yes" id="df-prompt-yes">Yes, analyze my code</button>
@@ -1050,12 +1127,12 @@ function promptAISummaryAfterStop(snapshot) {
         queuePendingNote(snapshot, res.summary);
 
         bodyEl.innerHTML = `
-            <div style="color: #10b981; font-weight:600; margin-bottom:12px;">Analysis Complete! (Saved to Notes)</div>
-            <div class="df-ai-summary-text">${res.summary}</div>
+            <div class="df-ai-complete">Analysis complete. Saved to Notes.</div>
+            <div class="df-ai-summary-text">${escapeHtml(res.summary)}</div>
           `;
           
         actionsEl.style.display = 'flex';
-        actionsEl.innerHTML = `<button class="df-btn-fight" id="df-prompt-close" style="background:#a78bfa;color:#000;width:100%;">Close & Finish</button>`;
+        actionsEl.innerHTML = `<button class="df-btn-fight" id="df-prompt-close" style="width:100%;">Close & Finish</button>`;
         document.getElementById('df-prompt-close').onclick = () => {
           overlay.remove();
         };
@@ -1065,6 +1142,14 @@ function promptAISummaryAfterStop(snapshot) {
       }
     });
   };
+}
+
+function closeManagedOverlays({ keepAI = false } = {}) {
+  document.getElementById('df-modal-overlay')?.remove();
+  document.getElementById('df-extend-overlay')?.remove();
+  if (!keepAI) {
+    document.getElementById('df-ai-modal-overlay')?.remove();
+  }
 }
 
 function queuePendingNote(snapshot, summary) {
@@ -1253,12 +1338,13 @@ function showExtendPrompt() {
 // }
 
 // Widget Persist & Draggable
-function setupPersistObserver(initialCollapsed = false, initialPos = null) {
+function setupPersistObserver(initialCollapsed = null, initialPos = null) {
   if (observer) observer.disconnect();
   observer = new MutationObserver(() => {
     if (focusState.focusActive && !document.getElementById('df-widget-container')) {
-      // Re-inject if removed by LeetCode SPA changes
-      injectWidget(initialCollapsed, initialPos);
+      // Re-inject if removed by LeetCode SPA changes, reading the latest
+      // saved open/closed state and position from storage.
+      injectWidget();
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -1287,8 +1373,12 @@ function makeWidgetDraggable(el) {
     pos2 = pos4 - e.clientY;
     pos3 = e.clientX;
     pos4 = e.clientY;
-    el.style.top = (el.offsetTop - pos2) + "px";
-    el.style.left = (el.offsetLeft - pos1) + "px";
+    const nextTop = el.offsetTop - pos2;
+    const nextLeft = el.offsetLeft - pos1;
+    const maxTop = Math.max(8, window.innerHeight - el.offsetHeight - 8);
+    const maxLeft = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+    el.style.top = Math.min(Math.max(8, nextTop), maxTop) + "px";
+    el.style.left = Math.min(Math.max(8, nextLeft), maxLeft) + "px";
     el.style.right = "auto";
   }
 
@@ -1327,7 +1417,7 @@ function handleClipboardEvent(e) {
     if (selection) {
       lastLocalCopy = selection;
       chrome.runtime.sendMessage({ type: 'INTERNAL_COPY', text: selection });
-      window.postMessage({ type: '__DEEPFOCUS_INTERNAL_COPY__', text: selection }, '*');
+      window.postMessage({ type: '__DEEPFOCUS_INTERNAL_COPY__', text: selection }, window.location.origin);
     }
     return;
   }
@@ -1599,6 +1689,7 @@ function setupAcceptedDetection() {
 
     window.addEventListener('message', (event) => {
       if (event.data?.type !== '__DEEPFOCUS_SUBMISSION_RESULT__') return;
+      if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(event)) return;
       if (!waitingForSubmit) return;
 
       const msg = event.data.status_msg || '';
@@ -1611,6 +1702,7 @@ function setupAcceptedDetection() {
 
     window.addEventListener('message', (event) => {
       if (event.data?.type !== '__DEEPFOCUS_INTERNAL_COPY__') return;
+      if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(event)) return;
       lastLocalCopy = event.data.text;
     });
 
@@ -1745,6 +1837,10 @@ let stopFocusInProgress = false;
 function stopFocusRequest(skipSync = false, customStatus = null, offerAISummary = false) {
   if (!focusState.focusActive) return;
   if (stopFocusInProgress) return;
+  if (pendingAISummaryTimer) {
+    clearTimeout(pendingAISummaryTimer);
+    pendingAISummaryTimer = null;
+  }
   // Determine final status based on tab switches or custom status
   let finalStatus = customStatus || "Give Up";
   if (!customStatus && focusState.tabSwitches > 8) {
@@ -1754,7 +1850,10 @@ function stopFocusRequest(skipSync = false, customStatus = null, offerAISummary 
   const aiSnapshot = offerAISummary ? getAISummarySnapshot(finalStatus) : null;
   stopFocusInProgress = true;
   if (aiSnapshot) {
-    setTimeout(() => promptAISummaryAfterStop(aiSnapshot), 650);
+    pendingAISummaryTimer = setTimeout(() => {
+      pendingAISummaryTimer = null;
+      promptAISummaryAfterStop(aiSnapshot);
+    }, 650);
   }
   executeStopFocus(skipSync, finalStatus, () => {
     stopFocusInProgress = false;

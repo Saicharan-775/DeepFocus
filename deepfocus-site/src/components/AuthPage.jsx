@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-// Changed: all successful auth flows now land on the revision sheet.
 const getAuthRedirectUrl = (path = '/revision') => new URL(path, window.location.origin).toString();
 
 export default function AuthPage() {
@@ -22,7 +21,6 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      // Changed: authenticated visitors are sent to /revision instead of /dashboard.
       navigate('/revision', { replace: true });
     }
   }, [navigate, user]);
@@ -39,10 +37,9 @@ export default function AuthPage() {
           email, 
           password,
           options: {
-            // Changed: email verification redirects to /revision.
             emailRedirectTo: getAuthRedirectUrl('/revision'),
             data: {
-              full_name: '', // Optional: Add default metadata if needed
+              full_name: '',
             }
           }
         });
@@ -64,7 +61,6 @@ export default function AuthPage() {
             throw error;
           }
         } else {
-          // Changed: password sign-in redirects to /revision.
           navigate('/revision');
         }
       } else if (mode === 'forgot_password') {
@@ -77,7 +73,6 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            // Changed: magic link redirects to /revision.
             emailRedirectTo: getAuthRedirectUrl('/revision'),
           }
         });
@@ -112,8 +107,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-6 relative overflow-hidden">
       {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-300/8 blur-[120px] rounded-full" />
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -205,7 +200,7 @@ export default function AuthPage() {
                     <button 
                       type="button" 
                       onClick={() => setMode('forgot_password')}
-                      className="text-[11px] text-blue-400 hover:text-blue-300 transition"
+                      className="text-[11px] text-violet-300 hover:text-violet-200 transition"
                     >
                       Forgot password?
                     </button>

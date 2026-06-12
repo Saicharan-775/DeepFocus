@@ -231,7 +231,7 @@ export default function Settings() {
       groqApiKey: hasUserKey ? selectedGroqKey : "",
       openAiApiKey: hasUserKey ? selectedOpenAiKey : "",
       aiKeyMode: hasUserKey ? "byok" : "demo"
-    }, "*");
+    }, window.location.origin);
 
     setSaveState("saved");
   };
@@ -276,7 +276,7 @@ export default function Settings() {
           type: "DEEPFOCUS_CONNECT",
           token: rawToken,
         },
-        "*"
+        window.location.origin
       );
 
       setTimeout(() => {

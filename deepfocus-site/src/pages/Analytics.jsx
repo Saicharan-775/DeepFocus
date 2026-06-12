@@ -365,10 +365,10 @@ export default function Analytics() {
    const medLength = medRatio * circumference;
    const hardLength = hardRatio * circumference;
 
-    if (loading) return <DeepFocusLoader message="Rendering gamification profile..." />;
+    if (loading) return <DeepFocusLoader message="" />;
 
    return (
-      <div className="max-w-[1400px] mx-auto space-y-8 text-zinc-100 font-['Inter',sans-serif] pb-20">
+      <div className="max-w-[1400px] mx-auto space-y-8 text-zinc-100 pb-20">
          
          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             

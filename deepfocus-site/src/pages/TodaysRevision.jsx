@@ -259,7 +259,7 @@ export default function TodaysRevision() {
   };
 
   if (loading) {
-    return <DeepFocusLoader message="Loading your problems..." />;
+    return <DeepFocusLoader message="" />;
   }
 
   const progressPercent = stats.todayTarget > 0 ? Math.min((stats.todayCompleted / stats.todayTarget) * 100, 100) : 0;

@@ -30,20 +30,34 @@ const HERO_VIDEO_SRC = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJO
 
 export default function Hero() {
   const videoRef = useRef(null);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current) {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return undefined;
+
+    const loadVideo = () => setShouldLoadVideo(true);
+    const events = ["pointerdown", "pointermove", "scroll", "keydown"];
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, loadVideo, { once: true, passive: true });
+    });
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, loadVideo));
+    };
+  }, []);
+
+  useEffect(() => {
+    if (shouldLoadVideo && videoRef.current) {
       videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.warn("Video autoplay failed or was blocked by browser policies:", error);
-        });
+        playPromise.catch(() => {});
       }
     }
-  }, []);
+  }, [shouldLoadVideo]);
 
   const containerVariants = {
     hidden: {},
@@ -92,12 +106,12 @@ export default function Hero() {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           onCanPlay={() => setVideoReady(true)}
           onLoadedData={() => setVideoReady(true)}
           className={`relative z-10 w-full h-full object-cover transition-opacity duration-500 ${videoReady ? "opacity-100 brightness-[1.12] saturate-[1.08]" : "opacity-0"}`}
         >
-          <source src={HERO_VIDEO_SRC} type="video/mp4" />
+          {shouldLoadVideo && <source src={HERO_VIDEO_SRC} type="video/mp4" />}
         </video>
       </div>
 
@@ -108,8 +122,8 @@ export default function Hero() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(7,7,11,0)_45%,rgba(7,7,11,0.34)_95%)] z-20 pointer-events-none" />
 
       <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-        <div className="absolute top-[20%] left-[-15%] w-[500px] h-[500px] bg-violet-600/14 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[-15%] w-[500px] h-[500px] bg-indigo-500/12 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] left-[-15%] w-[500px] h-[500px] rounded-full bg-white/[0.035] blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-15%] w-[500px] h-[500px] rounded-full bg-slate-200/[0.025] blur-[120px]" />
       </div>
 
       <div className="relative w-full max-w-[1200px] mx-auto flex items-center justify-center z-30">
@@ -125,11 +139,11 @@ export default function Hero() {
 
             <div className="w-full flex flex-col items-center justify-center text-center">
               
-              <h1 className="font-['Plus_Jakarta_Sans'] text-5xl sm:text-7xl md:text-8xl font-extrabold tracking-tight text-white leading-none flex flex-wrap justify-center select-none filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.7)]">
+              <h1 className="landing-display landing-word-glow text-5xl sm:text-7xl md:text-8xl text-white leading-none flex flex-wrap justify-center select-none">
                 {titleWordsLine1.map((word, wIdx, arr) => (
                   <span key={wIdx} className="inline-flex overflow-hidden pb-2 mr-[0.25em]">
                     <motion.span
-                      className="inline-block origin-bottom text-white"
+                      className="landing-gradient-text inline-block origin-bottom"
                       variants={{
                         hidden: { y: "120%", opacity: 0, skewY: 4 },
                         visible: { 
@@ -148,13 +162,13 @@ export default function Hero() {
 
               <motion.h2 
                 variants={itemVariants}
-                className="font-['Plus_Jakarta_Sans'] font-light text-zinc-300 text-xl sm:text-3xl md:text-4xl tracking-wide leading-tight select-none mt-2 text-center flex flex-wrap items-center justify-center gap-x-2 filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+                className="landing-display text-zinc-300 text-xl sm:text-3xl md:text-4xl leading-tight select-none mt-3 text-center flex flex-wrap items-center justify-center gap-x-2"
               >
                 <span className="text-zinc-300">Stop relying on the</span>
                 <FlipWords
                   words={cyclePhrases}
                   duration={2800}
-                  className="font-semibold italic text-white border-b-2 border-white/20 pb-0.5 min-w-[180px] sm:min-w-[280px] md:min-w-[360px] text-center whitespace-nowrap inline-block"
+                  className="landing-soft-gradient font-semibold italic min-w-[180px] sm:min-w-[280px] md:min-w-[360px] text-center whitespace-nowrap inline-block"
                 />
               </motion.h2>
             </div>
@@ -163,18 +177,18 @@ export default function Hero() {
               variants={itemVariants}
               className="w-full mt-6"
             >
-              <p className="text-zinc-200 text-base sm:text-lg md:text-xl font-light leading-relaxed max-w-2xl mx-auto mb-8 select-none font-['Plus_Jakarta_Sans'] filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
+              <p className="landing-copy text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-8 select-none">
                 DeepFocus is a browser extension that enforces discipline by blocking LeetCode solutions, disabling copy-pasting, and intelligently scheduling your revisions.
               </p>
             </motion.div>
 
             <motion.div 
               variants={itemVariants} 
-              className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto z-10 relative font-['Plus_Jakarta_Sans']"
+              className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto z-10 relative"
             >
               <a 
                 href="#" 
-                className="group relative w-full sm:w-auto px-9 py-4 bg-white text-black rounded-xl font-extrabold text-[12px] tracking-widest uppercase overflow-hidden transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:bg-zinc-100"
+                className="group relative w-full sm:w-auto px-9 py-4 bg-white text-black rounded-xl font-extrabold text-[12px] tracking-normal uppercase overflow-hidden transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:bg-zinc-100"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
                 
@@ -186,7 +200,7 @@ export default function Hero() {
 
               <Link 
                 to="/revision" 
-                className="group relative w-full sm:w-auto px-9 py-4 bg-black/40 hover:bg-black/60 border border-white/20 hover:border-white/40 text-white rounded-xl font-extrabold text-[12px] tracking-widest uppercase overflow-hidden backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
+                className="group relative w-full sm:w-auto px-9 py-4 bg-black/40 hover:bg-black/60 border border-white/20 hover:border-white/40 text-white rounded-xl font-extrabold text-[12px] tracking-normal uppercase overflow-hidden backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
                 

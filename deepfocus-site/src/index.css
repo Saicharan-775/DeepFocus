@@ -4,13 +4,13 @@
   :root {
     --bg-primary: 0, 0, 0;
     /* #000000 */
-    --bg-secondary: 9, 9, 11;
-    /* #09090b */
-    --bg-elevated: 24, 24, 27;
-    /* #18181b */
+    --bg-secondary: 10, 10, 12;
+    /* #0A0A0C */
+    --bg-elevated: 18, 18, 20;
+    /* #121214 */
 
-    --accent-indigo: 139, 92, 246;
-    /* violet-500 */
+    --accent-indigo: 248, 250, 252;
+    /* #F8FAFC */
     --accent-emerald: 52, 211, 153;
     /* emerald-400 */
     --accent-cyan: 6, 182, 212;
@@ -19,7 +19,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: rgb(var(--bg-primary));
     scroll-behavior: smooth;
     overflow-x: hidden;
@@ -28,6 +28,7 @@
   body {
     margin: 0;
     color: #F8FAFC;
+    background-color: #000000;
     min-width: 320px;
     min-height: 100vh;
     overflow-x: hidden;
@@ -36,30 +37,93 @@
 }
 
 @layer components {
+  .landing-typography {
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-feature-settings: "ss01" 1, "ss02" 1, "cv01" 1;
+  }
+
+  .landing-display {
+    font-family: "Space Grotesk", "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .landing-copy {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: #a8b3c7;
+  }
+
+  .landing-gradient-text {
+    color: #ffffff;
+  }
+
+  .landing-soft-gradient {
+    color: #ffffff;
+  }
+
+  .landing-word-glow {
+    text-shadow: none;
+  }
+
   .glass-card {
-    @apply bg-white/[0.02] backdrop-blur-[40px] rounded-2xl border border-white/[0.06] transition-all duration-300;
+    @apply rounded-2xl border border-white/[0.075] bg-black/58 transition-all duration-300;
+    background-image:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018) 42%, rgba(255, 255, 255, 0.026)),
+      radial-gradient(circle at 1px 1px, rgba(248, 250, 252, 0.04) 1px, transparent 0),
+      radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.032) 1px, transparent 0);
+    background-size: auto, 24px 24px, 32px 32px;
+    background-position: 0 0, 0 0, 12px 10px;
+    backdrop-filter: blur(18px);
     box-shadow:
-      0 10px 40px -10px rgba(0, 0, 0, 0.3),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+      0 22px 60px -30px rgba(0, 0, 0, 0.88),
+      inset 0 1px 0 rgba(255, 255, 255, 0.055);
   }
 
   .glass-card:hover {
-    @apply border-white/[0.1] bg-white/[0.04];
+    @apply border-white/[0.12] bg-black/68;
     box-shadow:
-      0 20px 50px -10px rgba(0, 0, 0, 0.4),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+      0 32px 78px -34px rgba(0, 0, 0, 0.92),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
   }
 
+  .landing-section {
+    @apply relative overflow-visible px-6 py-24 md:py-28 lg:py-32;
+  }
+
+  .section-kicker {
+    @apply mb-7 inline-flex rounded-full border border-white/[0.08] bg-black/50 px-3.5 py-1 text-xs font-bold uppercase tracking-normal text-zinc-300;
+    font-family: "Space Grotesk", "Plus Jakarta Sans", system-ui, sans-serif;
+    backdrop-filter: blur(14px);
+  }
+
+  .premium-surface {
+    position: relative;
+    overflow: hidden;
+    @apply border border-white/[0.075] bg-black/60;
+    background-image:
+      linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.016) 46%, rgba(255,255,255,0.026)),
+      radial-gradient(circle at 1px 1px, rgba(248, 250, 252, 0.034) 1px, transparent 0);
+    background-size: auto, 26px 26px;
+    backdrop-filter: blur(18px);
+    box-shadow:
+      0 28px 78px -36px rgba(0, 0, 0, 0.9),
+      inset 0 1px 0 rgba(255,255,255,0.055);
+  }
+
+
   .premium-input {
-    @apply w-full bg-[#151C2F] border border-white/[0.06] rounded-xl py-2.5 px-4 text-sm text-[#F8FAFC] placeholder-[#64748B] focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all;
+    @apply w-full rounded-xl border border-white/[0.06] bg-black/50 px-4 py-2.5 text-sm text-[#F8FAFC] placeholder-[#64748B] transition-all focus:border-white/25 focus:outline-none focus:ring-1 focus:ring-white/20;
   }
 
   .premium-button {
-    @apply px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2;
+    @apply flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-lg shadow-black/30 transition-all hover:bg-zinc-200 active:scale-95 disabled:opacity-50;
   }
 
   .premium-button-secondary {
-    @apply px-4 py-2.5 bg-[#151C2F] hover:bg-white/[0.06] text-[#F8FAFC] text-sm font-semibold rounded-xl transition-all border border-white/[0.06] active:scale-95 flex items-center justify-center gap-2;
+    @apply flex items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-black/50 px-4 py-2.5 text-sm font-semibold text-[#F8FAFC] transition-all hover:bg-white/[0.06] active:scale-95;
   }
 }
 
@@ -93,8 +157,8 @@
 
 /* Custom Text selection */
 ::selection {
-  background: rgba(99, 102, 241, 0.3);
-  color: white;
+  background: rgba(214, 211, 255, 0.22);
+  color: #F8FAFC;
 }
 
 @keyframes shimmer {
@@ -113,4 +177,64 @@
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+@keyframes calendar-flame {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(-2deg);
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.22));
+  }
+  45% {
+    transform: translateY(-1.5px) scale(1.08) rotate(3deg);
+    filter: drop-shadow(0 0 9px rgba(251, 191, 36, 0.42));
+  }
+}
+
+.animate-calendar-flame {
+  animation: calendar-flame 1.8s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+@keyframes landing-grid-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.82; }
+  50% { transform: translate3d(-18px, 14px, 0); opacity: 1; }
+}
+
+.landing-grid-drift {
+  animation: landing-grid-drift 38s ease-in-out infinite;
+}
+
+.landing-aurora-field {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(124, 77, 255, 0.18), transparent 36%),
+    radial-gradient(circle at 72% 58%, rgba(167, 139, 250, 0.12), transparent 34%),
+    linear-gradient(115deg, transparent 12%, rgba(124, 77, 255, 0.12) 42%, transparent 72%);
+  filter: blur(22px) saturate(1.22);
+  opacity: 0.92;
+  animation: landing-aurora-shift 24s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes landing-aurora-shift {
+  0%, 100% { transform: translate3d(-1%, -1%, 0) scale(1); }
+  50% { transform: translate3d(1.5%, 1%, 0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-grid-drift,
+  .landing-aurora-field {
+    animation: none;
+  }
+}
+
+@keyframes ambient-drift {
+  0%, 100% { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+  50% { transform: translate3d(1.5%, 1.2%, 0) scale(1.025); }
+}
+
+.ambient-drift {
+  animation: ambient-drift 56s ease-in-out infinite;
+}
+
+.ambient-drift-slow {
+  animation: ambient-drift 64s ease-in-out infinite reverse;
 }

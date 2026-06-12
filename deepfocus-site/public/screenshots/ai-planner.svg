@@ -1,0 +1,62 @@
+<svg width="1492" height="928" viewBox="0 0 1492 928" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1492" height="928" fill="#08080c"/>
+  <radialGradient id="plannerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(456 220) rotate(35) scale(720 520)">
+    <stop stop-color="#8B5CF6" stop-opacity=".16"/>
+    <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1492" height="928" fill="url(#plannerGlow)"/>
+  <line y1="116.5" x2="1492" y2="116.5" stroke="white" stroke-opacity=".07"/>
+  <rect x="202" y="38" width="100" height="100" rx="20" fill="#121218" stroke="white" stroke-opacity=".55"/>
+  <circle cx="252" cy="88" r="22" stroke="#9B6CFF" stroke-width="6"/>
+  <circle cx="252" cy="88" r="10" stroke="#9B6CFF" stroke-width="5"/>
+  <circle cx="252" cy="88" r="3" fill="#9B6CFF"/>
+  <text x="202" y="191" fill="white" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="800">Crack FAANG Interviews</text>
+  <rect x="1116" y="156" width="146" height="42" rx="9" fill="white" fill-opacity=".07" stroke="white" stroke-opacity=".08"/>
+  <text x="1161" y="183" fill="#A7A7B0" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Reconfigure</text>
+  <g fill="#A6A6B1" font-family="Inter, Arial, sans-serif" font-size="15">
+    <text x="226" y="274" fill-opacity=".58">Target Date</text>
+    <text x="343" y="273" fill="white" fill-opacity=".9">31-12-2026</text>
+    <text x="226" y="310" fill-opacity=".58">Daily target</text>
+    <text x="346" y="309" fill="white" fill-opacity=".9">2 hours / day</text>
+    <text x="786" y="274" fill-opacity=".58">Total Progress</text>
+    <text x="1067" y="273" fill="white" fill-opacity=".9">0%</text>
+    <text x="786" y="310" fill-opacity=".58">Engine Status</text>
+  </g>
+  <rect x="902" y="293" width="138" height="24" rx="6" fill="#00D09C" fill-opacity=".16" stroke="#00D09C" stroke-opacity=".25"/>
+  <text x="914" y="309" fill="#00D09C" font-family="JetBrains Mono, Consolas, monospace" font-size="12" font-weight="700">ACTIVE (AI PLAN)</text>
+  <rect x="902" y="264" width="150" height="8" rx="4" fill="white" fill-opacity=".12"/>
+  <line x1="202" y1="347.5" x2="1262" y2="347.5" stroke="white" stroke-opacity=".09"/>
+  <text x="249" y="409" fill="white" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">Workspace View</text>
+  <text x="434" y="409" fill="#A5A5AD" fill-opacity=".78" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Board View</text>
+  <text x="582" y="409" fill="#A5A5AD" fill-opacity=".78" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Timeline View</text>
+  <rect x="202" y="425" width="180" height="4" fill="#9B6CFF"/>
+  <line x1="202" y1="430.5" x2="1262" y2="430.5" stroke="white" stroke-opacity=".48"/>
+  <rect x="202" y="482" width="1060" height="89" rx="14" fill="white" fill-opacity=".018" stroke="white" stroke-opacity=".1"/>
+  <circle cx="235" cy="517" r="10" stroke="#9B6CFF" stroke-width="3"/>
+  <text x="263" y="520" fill="white" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">AI Co-pilot Insight:</text>
+  <text x="405" y="520" fill="#B7B7BE" fill-opacity=".72" font-family="Inter, Arial, sans-serif" font-size="14">Based on target goal “Crack FAANG Interviews”, we suggest mastering fundamental patterns sequentially.</text>
+  <rect x="1135" y="506" width="104" height="19" rx="4" fill="white" fill-opacity=".12"/>
+  <text x="1142" y="519" fill="white" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">Generate Plan</text>
+  <text x="202" y="615" fill="#777783" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.8">ROADMAP NODES</text>
+  <text x="1168" y="617" fill="#AD7CFF" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">+ Add Phase</text>
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="202" y="637" width="1060" height="71" rx="15" fill="#09090d" stroke="white" stroke-opacity=".75"/>
+    <text x="257" y="678" fill="#777783" font-size="13">Week 1</text>
+    <text x="317" y="680" fill="white" font-size="18" font-weight="800">Arrays &amp; Matrices: Matrix Rotation / Transpose &amp; Spiral / Diagonal Traversal &amp; More</text>
+    <text x="1021" y="675" fill="#8E8E98" font-size="14">0/13 solved</text>
+    <rect x="1132" y="658" width="108" height="30" rx="5" fill="white" fill-opacity=".07" stroke="white" stroke-opacity=".08"/>
+    <text x="1148" y="678" fill="white" font-size="13">To Do</text>
+    <rect x="202" y="720" width="1060" height="71" rx="15" fill="#09090d" stroke="white" stroke-opacity=".75"/>
+    <text x="257" y="761" fill="#777783" font-size="13">Week 2</text>
+    <text x="317" y="763" fill="white" font-size="18" font-weight="800">Two Pointers: Opposite Ends &amp; Fast &amp; Slow (Tortoise &amp; Hare) &amp; More</text>
+    <text x="1021" y="758" fill="#8E8E98" font-size="14">0/15 solved</text>
+    <rect x="1132" y="740" width="108" height="30" rx="5" fill="white" fill-opacity=".07" stroke="white" stroke-opacity=".08"/>
+    <text x="1148" y="760" fill="white" font-size="13">To Do</text>
+    <rect x="202" y="802" width="1060" height="71" rx="15" fill="#09090d" stroke="white" stroke-opacity=".75"/>
+    <text x="257" y="843" fill="#777783" font-size="13">Week 3</text>
+    <text x="317" y="845" fill="white" font-size="18" font-weight="800">Sliding Window: Data Structure Design &amp; Fixed Size Window &amp; More</text>
+    <text x="1021" y="840" fill="#8E8E98" font-size="14">0/9 solved</text>
+    <rect x="1132" y="822" width="108" height="30" rx="5" fill="white" fill-opacity=".07" stroke="white" stroke-opacity=".08"/>
+    <text x="1148" y="842" fill="white" font-size="13">To Do</text>
+  </g>
+</svg>

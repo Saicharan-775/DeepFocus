@@ -1,0 +1,69 @@
+<svg width="1902" height="1040" viewBox="0 0 1902 1040" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1902" height="1040" fill="#07070a"/>
+  <line x1="99.5" y1="0" x2="99.5" y2="1040" stroke="white" stroke-opacity=".06"/>
+  <rect x="0" y="0" width="1902" height="80" fill="#060608"/>
+  <line y1="79.5" x2="1902" y2="79.5" stroke="white" stroke-opacity=".07"/>
+  <text x="140" y="48" fill="#7F879A" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">DeepFocus</text>
+  <text x="264" y="48" fill="white" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800">Dashboard</text>
+  <rect x="689" y="21" width="560" height="40" rx="9" fill="white" fill-opacity=".025" stroke="white" stroke-opacity=".08"/>
+  <text x="733" y="47" fill="#7F879A" font-family="Inter, Arial, sans-serif" font-size="17">Search anything (Cmd+K)</text>
+  <rect x="170" y="141" width="46" height="46" rx="9" fill="white" fill-opacity=".035" stroke="white" stroke-opacity=".08"/>
+  <rect x="232" y="140" width="274" height="50" rx="9" fill="white" fill-opacity=".035" stroke="white" stroke-opacity=".08"/>
+  <text x="278" y="171" fill="white" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800">Merge Two Sorted Lists</text>
+  <rect x="891" y="153" width="72" height="25" rx="12" fill="#00D09C" fill-opacity=".12" stroke="#00D09C" stroke-opacity=".28"/>
+  <text x="914" y="169" fill="#00D09C" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800">EASY</text>
+  <rect x="975" y="153" width="120" height="25" rx="12" fill="white" fill-opacity=".045" stroke="white" stroke-opacity=".07"/>
+  <text x="998" y="169" fill="#A4A4AD" font-family="Inter, Arial, sans-serif" font-size="12">Arrays &amp; Matrices</text>
+  <rect x="1128" y="153" width="168" height="25" rx="12" fill="#FFB020" fill-opacity=".1" stroke="#FFB020" stroke-opacity=".28"/>
+  <text x="1149" y="169" fill="#FFB020" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800">Give Up / Score 70%</text>
+  <line x1="140" y1="208.5" x2="1880" y2="208.5" stroke="white" stroke-opacity=".08"/>
+  <rect x="170" y="234" width="766" height="806" rx="8" fill="#101014" stroke="white" stroke-opacity=".1"/>
+  <rect x="952" y="234" width="897" height="806" rx="8" fill="#09090c" stroke="white" stroke-opacity=".1"/>
+  <rect x="170" y="234" width="766" height="60" fill="#121217"/>
+  <rect x="522" y="240" width="164" height="50" rx="7" fill="#202029" stroke="white" stroke-opacity=".08"/>
+  <text x="566" y="272" fill="white" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">Submitted</text>
+  <circle cx="666" cy="265" r="4" fill="#00D09C"/>
+  <text x="196" y="334" fill="#696975" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="4">REVISION WORKSPACE</text>
+  <text x="196" y="384" fill="white" font-family="Inter, Arial, sans-serif" font-size="33" font-weight="800">Merge Two Sorted Lists</text>
+  <rect x="196" y="407" width="60" height="31" rx="15" fill="#00D09C" fill-opacity=".14"/>
+  <text x="215" y="426" fill="#00D09C" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800">Easy</text>
+  <rect x="263" y="407" width="143" height="31" rx="15" fill="white" fill-opacity=".055"/>
+  <text x="281" y="426" fill="#A9A9B0" font-family="Inter, Arial, sans-serif" font-size="13">Arrays &amp; Matrices</text>
+  <rect x="417" y="407" width="117" height="31" rx="15" fill="#8B7CFF" fill-opacity=".15"/>
+  <text x="430" y="426" fill="#C9C2FF" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800">Give Up - 70%</text>
+  <line x1="196" y1="461.5" x2="910" y2="461.5" stroke="white" stroke-opacity=".07"/>
+  <text x="196" y="503" fill="#696975" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="4">SUBMITTED</text>
+  <text x="196" y="539" fill="white" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Final implementation</text>
+  <rect x="196" y="564" width="714" height="440" rx="8" fill="#08080b" stroke="white" stroke-opacity=".06"/>
+  <text x="222" y="610" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">class Solution {</text>
+  <text x="222" y="640" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">public:</text>
+  <text x="260" y="670" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {</text>
+  <text x="300" y="700" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">ListNode* dummy = new ListNode(0);</text>
+  <text x="300" y="730" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">ListNode* cur = dummy;</text>
+  <text x="300" y="790" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">while (list1 &amp;&amp; list2) {</text>
+  <text x="338" y="820" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">if (list1-&gt;val &gt; list2-&gt;val) {</text>
+  <text x="376" y="850" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">cur-&gt;next = list2;</text>
+  <text x="376" y="880" fill="white" font-family="JetBrains Mono, Consolas, monospace" font-size="18">list2 = list2-&gt;next;</text>
+  <rect x="952" y="234" width="897" height="60" fill="#111115"/>
+  <text x="1002" y="271" fill="white" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800">Pseudocode</text>
+  <text x="1108" y="270" fill="#696975" font-family="Inter, Arial, sans-serif" font-size="13">editorial reasoning</text>
+  <rect x="1726" y="246" width="103" height="39" rx="7" fill="#8B7CFF" fill-opacity=".18"/>
+  <text x="1761" y="270" fill="white" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">AI Draft</text>
+  <line x1="1021.5" y1="294" x2="1021.5" y2="1040" stroke="white" stroke-opacity=".06"/>
+  <g font-family="JetBrains Mono, Consolas, monospace" font-size="18" fill="white">
+    <text x="1051" y="348">## Merge Two Sorted Lists Pseudocode</text>
+    <text x="1051" y="420">1. Create a dummy node to simplify the merging process.</text>
+    <text x="1051" y="454">2. Initialize a current pointer to the dummy node.</text>
+    <text x="1051" y="488">3. **While both lists have nodes**:</text>
+    <text x="1084" y="522">- Compare the current nodes' values.</text>
+    <text x="1084" y="556">- Append the smaller value to the current node and move to the next</text>
+    <text x="1051" y="590">node in that list.</text>
+    <text x="1051" y="624">4. **Append the remaining nodes** from the non-empty list.</text>
+    <text x="1051" y="658">5. Return the next node of the dummy node as the merged list head.</text>
+  </g>
+  <g fill="#2E3138" font-family="Inter, Arial, sans-serif" font-size="14">
+    <text x="998" y="343">1</text><text x="998" y="377">2</text><text x="998" y="411">3</text><text x="998" y="445">4</text>
+    <text x="998" y="479">5</text><text x="998" y="513">6</text><text x="998" y="547">7</text><text x="998" y="581">8</text>
+    <text x="998" y="615">9</text><text x="998" y="649">10</text><text x="998" y="683">11</text><text x="998" y="717">12</text>
+  </g>
+</svg>

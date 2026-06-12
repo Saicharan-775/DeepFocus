@@ -10,6 +10,7 @@
 
 # Build output
 dist/
+reports/
 
 # Vite cache, timestamp files
 .vite/

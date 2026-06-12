@@ -3,7 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnBack) {
     btnBack.addEventListener('click', () => {
       // Send message to parent window (content script) to handle navigation
-      window.parent.postMessage({ type: 'DEEPFOCUS_BACK_TO_PROBLEM' }, '*');
+      let targetOrigin = '*';
+      try {
+        targetOrigin = new URL(document.referrer).origin;
+      } catch (_) {}
+      window.parent.postMessage({ type: 'DEEPFOCUS_BACK_TO_PROBLEM' }, targetOrigin);
     });
   }
 });

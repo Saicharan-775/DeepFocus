@@ -16,7 +16,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#000000] text-zinc-100 flex flex-col items-center justify-between select-none overflow-hidden font-['Inter',sans-serif] z-50">
+    <div className="fixed inset-0 w-full h-full bg-[#000000] text-zinc-100 flex flex-col items-center justify-between select-none overflow-hidden z-50">
       
       {/* Subtle Ambient Radial Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.015)_0%,_transparent_70%)] pointer-events-none z-0" />

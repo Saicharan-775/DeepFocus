@@ -694,11 +694,11 @@ export default function RevisionWorkspace() {
 
   // Render empty state if loading or no problems
   if (loading && problems.length === 0) {
-    return <DeepFocusLoader message="Initializing personal DSA workspace..." fullScreen={false} />;
+    return <DeepFocusLoader message="" fullScreen={false} />;
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#070708] pb-10 font-['Outfit','Inter',sans-serif] text-zinc-100 antialiased selection:bg-indigo-400/20 selection:text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[#070708] pb-10 text-zinc-100 antialiased selection:bg-violet-400/20 selection:text-white">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#070708]">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(255,255,255,0.025),_transparent_34%,_rgba(255,255,255,0.018))]" />
         <div
@@ -1172,7 +1172,7 @@ export default function RevisionWorkspace() {
                         <span>{insightTab === 'mistake' ? 'Where thinking drifted' : 'Corrected transition'}</span>
                       </div>
                       {aiLoading ? (
-                        <DeepFocusLoader message="Reviewing approach..." fullScreen={false} size="sm" className="min-h-[8rem] bg-transparent" />
+                        <DeepFocusLoader message="" fullScreen={false} size="sm" className="min-h-[8rem] bg-transparent" />
                       ) : insightBody ? (
                         <div className="max-w-5xl space-y-1 text-sm leading-6 text-zinc-200">
                           {insightBody.split('\n').map((line, idx) => renderParagraph(line, idx))}

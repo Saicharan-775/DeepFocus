@@ -1,6 +1,15 @@
 let refreshInterval;
 let cachedUrl = '';
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const btnStart = document.getElementById('btn-start');
   const btnStop = document.getElementById('btn-stop');
@@ -377,21 +386,21 @@ async function updateAnalyticsUI() {
       } else {
         for (const item of history) {
           const scoreColor = item.score < 50 ? '#ef4444' : '#34d399';
-          historyList.innerHTML += `
+          historyList.insertAdjacentHTML('beforeend', `
             <div class="h-item">
               <div class="h-icon">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
               </div>
               <div class="h-info">
-                <h4 class="h-title">${item.title}</h4>
-                <p class="h-sub">Previously Solved • ${item.difficulty}</p>
+                <h4 class="h-title">${escapeHtml(item.title)}</h4>
+                <p class="h-sub">Previously Solved • ${escapeHtml(item.difficulty)}</p>
               </div>
               <div class="h-stats">
-                <div class="h-time">${item.durationMins}m • ${item.mistakes || 0} mistakes</div>
-                <div class="h-score" style="color: ${scoreColor};">${item.score} score</div>
+                <div class="h-time">${escapeHtml(item.durationMins)}m • ${escapeHtml(item.mistakes || 0)} mistakes</div>
+                <div class="h-score" style="color: ${scoreColor};">${escapeHtml(item.score)} score</div>
               </div>
             </div>
-          `;
+          `);
         }
       }
     }

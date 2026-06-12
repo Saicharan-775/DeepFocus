@@ -17,38 +17,34 @@ function ArrowIcon() {
 
 export default function FinalCTA() {
   return (
-    <section id="final-cta" className="px-6 py-10 md:py-16 relative overflow-hidden bg-[#07070b]">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-900/10 to-indigo-900/16 pointer-events-none" />
-      <div className="absolute bottom-[-25%] left-1/2 -translate-x-1/2 w-[760px] h-[420px] bg-violet-500/12 blur-[120px] rounded-full pointer-events-none" />
-
+    <section id="final-cta" className="landing-section">
+      <div className="pointer-events-none absolute bottom-[-18rem] right-[-10rem] h-[860px] w-[860px] rounded-full bg-[rgba(139,125,255,0.10)] blur-[320px]" />
       <div className="max-w-5xl mx-auto relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -5, scale: 1.006 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-card rounded-[40px] p-10 md:p-16 lg:p-20 text-center relative overflow-hidden border border-white/[0.12] bg-gradient-to-b from-white/[0.07] to-white/[0.025] shadow-[0_28px_90px_rgba(0,0,0,0.38)]"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="glass-card relative overflow-hidden rounded-[40px] p-10 text-center md:p-16 lg:p-20"
         >
-          {/* Internal Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-500/20 blur-[100px] rounded-full pointer-events-none" />
-
-          <p className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-violet-400 mb-8 border border-violet-500/20 rounded-full px-4 py-2 bg-violet-500/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+          <p className="section-kicker">
+            <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
             The final step
           </p>
 
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-white leading-[1.05] max-w-4xl mx-auto mb-6">
+          <h2 className="landing-display mx-auto mb-7 max-w-4xl text-4xl leading-[1.05] text-[#F8FAFC] md:text-6xl lg:text-7xl">
             Build interview-grade discipline.
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-600 mt-2">Before your next interview.</span>
+            <span className="landing-soft-gradient mt-2 inline-block">Before your next interview.</span>
           </h2>
 
-          <p className="text-lg md:text-xl text-zinc-300/85 max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="landing-copy mx-auto mb-12 max-w-2xl text-lg leading-8 md:text-xl">
             Install DeepFocus, start a problem, and force your brain to solve it before looking up answers.
             Real engineering growth starts where the shortcuts end.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#" className="group flex items-center justify-center gap-2 bg-white text-black px-10 py-5 rounded-2xl font-semibold text-base hover:bg-gray-100 transition-all active:scale-[0.98] shadow-[0_0_40px_rgba(255,255,255,0.2)] w-full sm:w-auto">
+            <a href="#" className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F8FAFC] px-10 py-5 text-base font-semibold text-[#040816] shadow-[0_18px_44px_rgba(0,0,0,0.32)] transition-all hover:bg-zinc-200 active:scale-[0.98] sm:w-auto">
               Install for Chrome
               <ArrowIcon />
             </a>

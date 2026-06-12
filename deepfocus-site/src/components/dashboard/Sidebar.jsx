@@ -24,6 +24,7 @@ export default function Sidebar() {
     { name: 'AI Planner', path: '/planner', icon: BrainCircuit },
     { name: 'Analytics', path: '/analytics', icon: LineChart },
     { name: 'Library', path: '/library', icon: Library },
+    { name: 'Community', path: '/community', icon: MessageSquare },
   ];
 
   return (

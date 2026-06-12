@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { getRevisionProblems } from '../services/revisionService';
+import { refreshRevisionProblems, subscribeRevisionStore } from '../store/revisionStore';
 import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from '../utils/patternMatcher';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import subpatternFilters from '../constants/Patterns/subpattern_filters.json';
@@ -83,6 +83,27 @@ function groupItemsBySubpattern(items, subpatterns) {
   return { groups, uncategorized };
 }
 
+function problemTimestamp(problem) {
+  const time = new Date(problem?.updated_at || problem?.created_at || 0).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
+function isAttemptedProblem(problem) {
+  return !!problem && problem.focus_status && problem.focus_status !== 'Unattempted';
+}
+
+function chooseVisibleProblem(current, candidate) {
+  if (!current) return candidate;
+  if (isAttemptedProblem(candidate) && !isAttemptedProblem(current)) return candidate;
+  if (!isAttemptedProblem(candidate) && isAttemptedProblem(current)) return current;
+  return problemTimestamp(candidate) >= problemTimestamp(current) ? candidate : current;
+}
+
+function setDbMatch(map, key, problem) {
+  if (!key) return;
+  map[key] = chooseVisibleProblem(map[key], problem);
+}
+
 export default function Sheet() {
   const [dbProblems, setDbProblems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,18 +118,26 @@ export default function Sheet() {
   const [alertModal, setAlertModal] = useState({ open: false, message: "" });
 
   useEffect(() => {
+    const unsubscribeRevisionStore = subscribeRevisionStore((snapshot) => {
+      setDbProblems(snapshot.items);
+      if (!snapshot.loading) setLoading(false);
+    });
+
     loadData(false);
     const channel = supabase
       .channel('sheet_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => refreshRevisionProblems())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      unsubscribeRevisionStore();
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function loadData(silent = false) {
     if (!silent) setLoading(true);
-    const rawData = await getRevisionProblems();
-    setDbProblems(rawData);
+    const snapshot = await refreshRevisionProblems();
+    setDbProblems(snapshot.items);
     if (!silent) setLoading(false);
   }
 
@@ -121,8 +150,8 @@ export default function Sheet() {
     dbProblems.forEach(p => {
       const normTitle = normalizeTitle(p.title);
       const normSlug = getSlugFromLink(p.link);
-      if (normTitle) dbMatchMap[normTitle] = p;
-      if (normSlug) dbMatchMap[normSlug] = p;
+      setDbMatch(dbMatchMap, normTitle, p);
+      setDbMatch(dbMatchMap, normSlug, p);
     });
 
     const combined = [];
@@ -279,7 +308,7 @@ export default function Sheet() {
   }
 
   if (loading) {
-    return <DeepFocusLoader message="Loading curriculum..." />;
+    return <DeepFocusLoader message="" />;
   }
 
   const totalProblems = mergedData.length;
@@ -290,7 +319,7 @@ export default function Sheet() {
   const weakPatterns = patternsMap.filter(p => p.strength === 'Weak').length;
 
   return (
-    <div className="relative min-h-screen bg-[#070709] text-zinc-100 font-['Outfit','Inter',sans-serif] pb-24 overflow-hidden antialiased selection:bg-zinc-800">
+    <div className="relative min-h-screen bg-[#070709] text-zinc-100 pb-24 overflow-hidden antialiased selection:bg-violet-400/20">
       
       {/* Subtle background mesh grid */}
       <div
@@ -600,7 +629,7 @@ function PatternDetail({ pattern, onBack, toggleMastered, setNotesModal }) {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white font-['Outfit']">{pattern.name}</h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white">{pattern.name}</h2>
             
             <div className="flex flex-wrap items-center gap-6 mt-4">
               {/* Strength Badge */}
@@ -698,13 +727,6 @@ function SmartRevision({ queue, toggleMastered, setNotesModal }) {
       exit={{ opacity: 0 }} 
       className="space-y-6"
     >
-      <div className="rounded-xl border border-white/[0.04] p-6 bg-white/[0.002]">
-        <h2 className="text-sm md:text-base font-bold text-white mb-1.5">Smart Revise</h2>
-        <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
-          Queue schedules dynamic iterations of unattempted, low-scoring, and unmastered solutions.
-        </p>
-      </div>
-
       {queue.length === 0 ? (
         <div className="text-center py-24 rounded-xl border border-dashed border-white/[0.04] bg-white/[0.002]">
           <h3 className="text-sm font-semibold text-zinc-300 mb-1">All revision complete</h3>

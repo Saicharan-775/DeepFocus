@@ -42,7 +42,7 @@ export default function UpdatePassword() {
       
       setSuccess(true);
       setTimeout(() => {
-        navigate('/revision'); // Or wherever dashboard is
+        navigate('/revision');
       }, 3000);
     } catch (err) {
       setError(err.message);
@@ -53,8 +53,8 @@ export default function UpdatePassword() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-300/8 blur-[120px] rounded-full" />
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

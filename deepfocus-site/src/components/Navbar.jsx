@@ -194,14 +194,14 @@ export default function Navbar() {
             style={{
               opacity: hoverX !== null ? 1 : 0,
               background:
-                "radial-gradient(120px circle at var(--spotlight-x) 100%, rgba(139,92,246,0.18) 0%, rgba(14,165,233,0.08) 28%, transparent 58%)",
+                "radial-gradient(120px circle at var(--spotlight-x) 100%, rgba(255,255,255,0.16) 0%, rgba(148,163,184,0.07) 28%, transparent 58%)",
             }}
           />
           <div
             className="pointer-events-none absolute bottom-0 left-2 right-2 z-[1] h-[2px]"
             style={{
               background:
-                "radial-gradient(70px circle at var(--ambience-x) 0%, rgba(255,255,255,0.95) 0%, rgba(139,92,246,0.5) 38%, transparent 100%)",
+                "radial-gradient(70px circle at var(--ambience-x) 0%, rgba(255,255,255,0.72) 0%, rgba(148,163,184,0.28) 38%, transparent 100%)",
             }}
           />
 
@@ -213,7 +213,7 @@ export default function Navbar() {
               data-index={idx}
               className={cn(
                 "relative z-10 rounded-full px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-200 cursor-pointer",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
                 activeIndex === idx
                   ? "text-white"
                   : "text-zinc-500 hover:text-zinc-100"
@@ -239,7 +239,7 @@ export default function Navbar() {
               {/* Avatar trigger button */}
               <button
                 onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
-                className="relative w-7 h-7 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-500 border border-white/10 hover:border-violet-400 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)] transition-all duration-300 flex items-center justify-center overflow-hidden active:scale-95 cursor-pointer z-50"
+                className="relative w-7 h-7 rounded-full border border-white/10 bg-white/[0.08] hover:border-white/30 hover:bg-white/[0.12] transition-all duration-300 flex items-center justify-center overflow-hidden active:scale-95 cursor-pointer z-50"
               >
                 {user?.user_metadata?.avatar_url ? (
                   <img

@@ -43,5 +43,5 @@ export default function AuthCallback() {
     };
   }, [navigate]);
 
-  return <DeepFocusLoader message="Signing you in..." />;
+  return <DeepFocusLoader message="" />;
 }

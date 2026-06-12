@@ -3,19 +3,35 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" href="/vite.svg" />
+  <link rel="icon" href="/deepfocus-logo-small.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#040816" />
+  <meta name="description" content="DeepFocus helps developers stay focused, track revision, and improve DSA practice with performance insights." />
+  <style>
+    html{background:#040816;color:#f8fafc;font-family:Geist,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{margin:0;min-width:320px;min-height:100vh;background:#040816;overflow-x:hidden}
+    #root:empty{min-height:100vh;background:#040816}
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
-  <link rel="preload" as="video" type="video/mp4" href="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" fetchpriority="high">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="dns-prefetch" href="https://d8j0ntlcm91z4.cloudfront.net">
+  <link rel="preload" as="image" href="/deepfocus-logo-small.png" fetchpriority="high">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <title>DeepFocus</title>
 </head>
 
 <body>
   <div id="root">
   </div>
+  <script>
+    if (
+      ['localhost', '127.0.0.1'].includes(window.location.hostname) &&
+      'serviceWorker' in navigator
+    ) {
+      navigator.serviceWorker.getRegistrations()
+        .then((registrations) => registrations.forEach((registration) => registration.unregister()));
+    }
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

@@ -48,6 +48,8 @@ export default function Header() {
   }, []);
 
   const getPageTitle = () => {
+    if (location.pathname.startsWith('/community')) return 'Community';
+
     switch (location.pathname) {
       case '/dashboard': return 'Dashboard';
       case '/revision': return 'Revision Sheet';
@@ -99,8 +101,8 @@ export default function Header() {
         
         {/* Dynamic Streak / Focus Coins Badge (LeetCode Style) */}
         <div className="flex items-center gap-3 px-3 py-1.5 bg-[#09090B] border border-white/5 rounded-lg shadow-inner cursor-default">
-           <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400">
-             <Icon icon="solar:bolt-bold" width="14" className="text-orange-400 drop-shadow-[0_0_4px_rgba(251,146,60,0.4)]" />
+           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+             <Icon icon="solar:bolt-bold" width="14" className="text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.35)]" />
              <span>{streak} Day</span>
            </div>
            <div className="w-px h-3 bg-white/10" />

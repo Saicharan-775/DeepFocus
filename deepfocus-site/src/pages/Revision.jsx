@@ -428,7 +428,7 @@ export default function Revision() {
 
       setGeneratedToken(rawToken);
       setConnectionModalOpen(true);
-      window.postMessage({ type: "DEEPFOCUS_CONNECT", token: rawToken }, "*");
+      window.postMessage({ type: "DEEPFOCUS_CONNECT", token: rawToken }, window.location.origin);
       
     } catch (error) {
       console.error("Connection error:", error);
@@ -464,7 +464,7 @@ export default function Revision() {
   };
 
   if (dataLoading) {
-    return <DeepFocusLoader message="Loading your revision list..." />;
+    return <DeepFocusLoader message="" />;
   }
 
   return (
@@ -810,7 +810,7 @@ function StatusBadge({ status }) {
   const styles = {
     'Cheated': 'bg-rose-400/10 text-rose-400 border-rose-400/20',
     'Give Up': 'bg-amber-400/10 text-amber-400 border-amber-400/20',
-    'Low Focus': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    'Low Focus': 'bg-amber-400/10 text-amber-400 border-amber-400/20',
     'Focus Kept': 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
   };
   return <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border ${styles[status] || styles['Low Focus']}`}>{status || 'Unknown'}</span>;

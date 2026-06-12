@@ -17,6 +17,9 @@ const Settings = lazy(() => import("./pages/Settings.jsx"));
 const Guide = lazy(() => import("./pages/Guide"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const Library = lazy(() => import("./pages/Library.jsx"));
+const Community = lazy(() => import("./pages/Community.jsx"));
+const CommunityPost = lazy(() => import("./pages/CommunityPost.jsx"));
+const NewCommunityPost = lazy(() => import("./pages/NewCommunityPost.jsx"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
@@ -33,7 +36,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Suspense fallback={<DeepFocusLoader message="Loading DeepFocus..." />}>
+        <Suspense fallback={<DeepFocusLoader message="" />}>
           <Routes>
 
             {/* Marketing pages */}
@@ -53,6 +56,9 @@ function App() {
                 <Route path="/planner" element={<AiPlanner />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/library" element={<Library />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/community/new" element={<NewCommunityPost />} />
+                <Route path="/community/post/:postId" element={<CommunityPost />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>

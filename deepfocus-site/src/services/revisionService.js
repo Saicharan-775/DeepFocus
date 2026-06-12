@@ -71,17 +71,29 @@ export async function addRevisionProblem(problem) {
     focus_status: problem.focusStatus || problem.focus_status || 'Unattempted',
     focus_score: problem.focusScore !== undefined ? problem.focusScore : (problem.focus_score ?? 0),
     switches: problem.switches || 0,
+    focus_duration: problem.focusDuration !== undefined ? problem.focusDuration : (problem.focus_duration ?? 0),
     notes: problem.notes || '',
     code: problem.code || '',
     revision_needed: true,
   };
 
-  const { data: existing, error: lookupError } = await supabase
+  let { data: existing, error: lookupError } = await supabase
     .from('revision_problems')
     .select('id, notes, code')
     .eq('user_id', session.user.id)
     .eq('link', newProblem.link)
     .maybeSingle();
+
+  if (!lookupError && !existing) {
+    const titleLookup = await supabase
+      .from('revision_problems')
+      .select('id, notes, code')
+      .eq('user_id', session.user.id)
+      .eq('title', newProblem.title)
+      .maybeSingle();
+    existing = titleLookup.data;
+    lookupError = titleLookup.error;
+  }
 
   if (lookupError) {
     console.error('[revisionService] Error checking existing revision problem:', lookupError.message);
@@ -147,7 +159,6 @@ export async function updateProblemNotesByLink(link, summaryToAppend, title = nu
     .single();
 
   if (error || !data) {
-    console.log('[revisionService] Problem not found by link, inserting new record for AI summary...');
     await addRevisionProblem({
       title: title || 'Unknown Problem',
       link: normalizedLink,
@@ -192,7 +203,7 @@ export async function setProblemRevisionNeeded(id, revisionNeeded) {
     .from('revision_problems')
     .update({ revision_needed: revisionNeeded })
     .eq('id', id)
-    .select()
+    .select('id, revision_needed')
     .single();
 
   if (error) {

@@ -15,8 +15,8 @@
     "*://*.supabase.co/*",
     "http://localhost/*",
     "http://127.0.0.1/*",
-    "https://*.vercel.app/*",
-    "https://*.netlify.app/*"
+    "https://deepfocus.app/*",
+    "https://www.deepfocus.app/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -29,8 +29,8 @@
         "https://*.leetcode.com/*",
         "http://localhost/*",
         "http://127.0.0.1/*",
-        "https://*.vercel.app/*",
-        "https://*.netlify.app/*"
+        "https://deepfocus.app/*",
+        "https://www.deepfocus.app/*"
       ],
       "css": ["styles/widget.css"],
       "js": ["config.js", "utils/soundManager.js", "content.js"],
@@ -53,8 +53,8 @@
         "*://*.leetcode.com/*",
         "http://localhost/*",
         "http://127.0.0.1/*",
-        "https://*.vercel.app/*",
-        "https://*.netlify.app/*"
+        "https://deepfocus.app/*",
+        "https://www.deepfocus.app/*"
       ]
     }
   ],

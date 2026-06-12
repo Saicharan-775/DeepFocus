@@ -11,7 +11,7 @@
       type: '__DEEPFOCUS_SUBMISSION_RESULT__',
       status_msg: status_msg,
       state: state || ''
-    }, '*');
+    }, window.location.origin);
   }
 
   // Internal state tracking in the main world
@@ -89,7 +89,7 @@
         window.postMessage({
           type: '__DEEPFOCUS_EXTRACTED_CODE__',
           code: code
-        }, '*');
+        }, window.location.origin);
       }
     } catch (e) {}
   }, 2000);
@@ -109,7 +109,7 @@
     window.postMessage({
       type: '__DEEPFOCUS_INTERNAL_COPY__',
       text: text
-    }, '*');
+    }, window.location.origin);
   }
 
   // Hook Clipboard setData to catch internal copies (Monaco uses this)
@@ -167,7 +167,7 @@
         return text;
       }
 
-      window.postMessage({ type: '__DEEPFOCUS_PASTE_BLOCKED__' }, '*');
+      window.postMessage({ type: '__DEEPFOCUS_PASTE_BLOCKED__' }, window.location.origin);
       return "";
     };
   }
@@ -187,7 +187,7 @@
               window.postMessage({
                 type: '__DEEPFOCUS_SUBMITTED_CODE__',
                 code: submittedCode
-              }, '*');
+              }, window.location.origin);
             }
           } catch (e) {}
         }
@@ -229,7 +229,7 @@
             window.postMessage({
               type: '__DEEPFOCUS_SUBMITTED_CODE__',
               code: submittedCode
-            }, '*');
+            }, window.location.origin);
           }
         } catch (e) {}
       }
@@ -250,6 +250,6 @@
   };
 
   // Signal ready
-  window.postMessage({ type: '__DEEPFOCUS_INTERCEPTOR_READY__' }, '*');
+  window.postMessage({ type: '__DEEPFOCUS_INTERCEPTOR_READY__' }, window.location.origin);
 })();
 
