@@ -127,14 +127,70 @@ function formatProviderErrors(errors, fallback) {
   return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
 }
 
-async function callDemoAi(kind, payload) {
-  const { data, error } = await supabase.functions.invoke("ai-demo", {
-    body: { kind, payload }
-  });
-
-  if (error) {
-    throw new Error(error.message || "Demo AI request failed.");
+function getDemoAiEndpoint() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("Supabase is not configured for this deployment.");
   }
+  return `${supabaseUrl.replace(/\/$/, "")}/functions/v1/ai-demo`;
+}
+
+async function readDemoAiError(response) {
+  let message = "";
+  try {
+    const text = await response.text();
+    if (text) {
+      try {
+        const data = JSON.parse(text);
+        message = data?.error || data?.message || text;
+      } catch (_) {
+        message = text;
+      }
+    }
+  } catch (_) {
+    message = "";
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    return "Please sign in again before using demo AI analysis.";
+  }
+  if (response.status === 404) {
+    return "Demo AI is not deployed on this Supabase project.";
+  }
+  if (response.status >= 500) {
+    return message || "Demo AI is not configured on the server yet.";
+  }
+  return message || `Demo AI request failed (${response.status}).`;
+}
+
+async function callDemoAi(kind, payload) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) {
+    throw new Error("Please sign in again before using demo AI analysis.");
+  }
+
+  let response;
+  try {
+    response = await fetch(getDemoAiEndpoint(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${accessToken}`,
+        "x-client-info": "deepfocus-site"
+      },
+      body: JSON.stringify({ kind, payload })
+    });
+  } catch (_) {
+    throw new Error("Could not reach Demo AI from this deployment. Check the Supabase URL and Edge Function deployment.");
+  }
+
+  if (!response.ok) {
+    throw new Error(await readDemoAiError(response));
+  }
+
+  const data = await response.json();
   if (!data?.success || !data?.content) {
     throw new Error(data?.error || "Demo AI did not return a response.");
   }
