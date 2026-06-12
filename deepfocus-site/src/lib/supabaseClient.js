@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+function normalizeEnvValue(value) {
+  return String(value || '').trim().replace(/^["']|["']$/g, '');
+}
+
+const supabaseUrl = normalizeEnvValue(import.meta.env.VITE_SUPABASE_URL);
+const supabaseAnonKey = normalizeEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 // Guard: fail loudly at startup if env vars are missing rather than silently at runtime
 if (!supabaseUrl || !supabaseAnonKey) {

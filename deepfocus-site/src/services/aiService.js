@@ -128,11 +128,19 @@ function formatProviderErrors(errors, fallback) {
 }
 
 function getDemoAiEndpoint() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = normalizeApiKey(import.meta.env.VITE_SUPABASE_URL);
   if (!supabaseUrl) {
     throw new Error("Supabase is not configured for this deployment.");
   }
   return `${supabaseUrl.replace(/\/$/, "")}/functions/v1/ai-demo`;
+}
+
+function getSupabaseAnonKey() {
+  const anonKey = normalizeApiKey(import.meta.env.VITE_SUPABASE_ANON_KEY);
+  if (!anonKey) {
+    throw new Error("Supabase anon key is not configured for this deployment.");
+  }
+  return anonKey;
 }
 
 async function readDemoAiError(response) {
@@ -176,14 +184,15 @@ async function callDemoAi(kind, payload) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+        "apikey": getSupabaseAnonKey(),
         "Authorization": `Bearer ${accessToken}`,
         "x-client-info": "deepfocus-site"
       },
       body: JSON.stringify({ kind, payload })
     });
-  } catch (_) {
-    throw new Error("Could not reach Demo AI from this deployment. Check the Supabase URL and Edge Function deployment.");
+  } catch (err) {
+    const detail = err?.message ? ` (${err.message})` : "";
+    throw new Error(`Could not reach Demo AI from this deployment${detail}. Check the Supabase URL and Edge Function deployment.`);
   }
 
   if (!response.ok) {
