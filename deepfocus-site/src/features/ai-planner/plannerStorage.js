@@ -1,12 +1,11 @@
 const PLANNER_STORAGE_KEY = 'df_custom_planner_data';
 
 export const getPlannerApiKey = () => {
-  const provider = localStorage.getItem('df_ai_provider') || 'demo';
   const openrouterKey = localStorage.getItem('df_openrouter_api_key');
   const groqKey = localStorage.getItem('df_groq_api_key');
   const openaiKey = localStorage.getItem('df_openai_key');
 
-  return provider === 'demo' ? 'demo_active' : (openrouterKey || groqKey || openaiKey);
+  return openrouterKey || groqKey || openaiKey || '';
 };
 
 export const loadPlannerData = () => {

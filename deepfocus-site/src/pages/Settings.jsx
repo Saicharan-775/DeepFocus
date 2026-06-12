@@ -33,28 +33,15 @@ const tabs = [
   },
 ];
 
-const DEMO_AI_DAILY_LIMIT = 5;
-const DEMO_AI_TRIAL_DAYS = 3;
+const AI_PROVIDERS = [
+  { id: "openrouter", name: "OpenRouter", desc: "Low-cost routing" },
+  { id: "groq", name: "Groq", desc: "Fast inference" },
+  { id: "openai", name: "OpenAI", desc: "GPT models" },
+];
 
-function getDemoAiStatus() {
-  const today = new Date().toISOString().split("T")[0];
-  let startedAt = Number(localStorage.getItem("df_demo_ai_started_at") || 0);
-
-  if (!startedAt) {
-    startedAt = Date.now();
-    localStorage.setItem("df_demo_ai_started_at", String(startedAt));
-  }
-
-  const elapsedDays = Math.floor((Date.now() - startedAt) / 86400000);
-  const daysLeft = Math.max(0, DEMO_AI_TRIAL_DAYS - elapsedDays);
-  const storedDate = localStorage.getItem("df_demo_ai_usage_date");
-  const usedToday = storedDate === today ? Number(localStorage.getItem("df_demo_ai_usage_count") || 0) : 0;
-
-  return {
-    daysLeft,
-    usedToday,
-    remainingToday: Math.max(0, DEMO_AI_DAILY_LIMIT - usedToday)
-  };
+function getInitialAiProvider() {
+  const saved = localStorage.getItem("df_ai_provider");
+  return AI_PROVIDERS.some((provider) => provider.id === saved) ? saved : "openrouter";
 }
 
 export default function Settings() {
@@ -77,7 +64,7 @@ export default function Settings() {
   );
 
   const [aiProvider, setAiProvider] = useState(
-    localStorage.getItem("df_ai_provider") || "demo"
+    () => getInitialAiProvider()
   );
 
   const [stats, setStats] = useState({
@@ -94,9 +81,9 @@ export default function Settings() {
 
   const [generatedToken, setGeneratedToken] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showPairToken, setShowPairToken] = useState(false);
 
   const [saveState, setSaveState] = useState("saved");
-  const [demoAiStatus, setDemoAiStatus] = useState(() => getDemoAiStatus());
 
   useEffect(() => {
     let channel;
@@ -188,18 +175,6 @@ export default function Settings() {
     setSaveState("unsaved");
   }, [dailyGoal, openAiKey, openrouterApiKey, groqApiKey, aiProvider]);
 
-  useEffect(() => {
-    const refreshDemoStatus = () => setDemoAiStatus(getDemoAiStatus());
-    refreshDemoStatus();
-    window.addEventListener("focus", refreshDemoStatus);
-    window.addEventListener("storage", refreshDemoStatus);
-
-    return () => {
-      window.removeEventListener("focus", refreshDemoStatus);
-      window.removeEventListener("storage", refreshDemoStatus);
-    };
-  }, [activeTab]);
-
   const checkExtensionConnection = async (userId) => {
     const { data: conn } = await supabase
       .from("extension_connections")
@@ -230,9 +205,27 @@ export default function Settings() {
       openrouterApiKey: hasUserKey ? selectedOpenrouterKey : "",
       groqApiKey: hasUserKey ? selectedGroqKey : "",
       openAiApiKey: hasUserKey ? selectedOpenAiKey : "",
-      aiKeyMode: hasUserKey ? "byok" : "demo"
+      aiKeyMode: hasUserKey ? "byok" : "none"
     }, window.location.origin);
 
+    setSaveState("saved");
+  };
+
+  const clearAiKeys = () => {
+    setOpenrouterApiKey("");
+    setGroqApiKey("");
+    setOpenAiKey("");
+    localStorage.removeItem("df_openrouter_api_key");
+    localStorage.removeItem("df_groq_api_key");
+    localStorage.removeItem("df_openai_key");
+    localStorage.setItem("df_ai_provider", aiProvider);
+    window.postMessage({
+      type: "DEEPFOCUS_SET_AI_KEYS",
+      openrouterApiKey: "",
+      groqApiKey: "",
+      openAiApiKey: "",
+      aiKeyMode: "none"
+    }, window.location.origin);
     setSaveState("saved");
   };
 
@@ -270,6 +263,7 @@ export default function Settings() {
       if (rpcError) throw rpcError;
 
       setGeneratedToken(rawToken);
+      setShowPairToken(false);
 
       window.postMessage(
         {
@@ -517,30 +511,8 @@ export default function Settings() {
                     AI Engine
                   </h1>
                   <p className="mt-1 text-sm text-zinc-400">
-                    Configure inference providers, API keys, and reasoning models.
+                    Bring your own provider key. Keys stay on this device and are sent directly to the selected AI provider.
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0c] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Demo uses left</div>
-                    <div className="mt-2 text-2xl font-semibold text-white">{demoAiStatus.remainingToday}</div>
-                    <div className="mt-1 text-xs text-zinc-500">of {DEMO_AI_DAILY_LIMIT} today</div>
-                  </div>
-                  <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0c] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Trial days left</div>
-                    <div className="mt-2 text-2xl font-semibold text-white">{demoAiStatus.daysLeft}</div>
-                    <div className="mt-1 text-xs text-zinc-500">of {DEMO_AI_TRIAL_DAYS} demo days</div>
-                  </div>
-                  <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0c] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Current mode</div>
-                    <div className="mt-2 text-2xl font-semibold text-white">
-                      {openrouterApiKey.trim() || groqApiKey.trim() || openAiKey.trim() ? "Own key" : "Demo"}
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      {openrouterApiKey.trim() || groqApiKey.trim() || openAiKey.trim() ? "No demo limit" : "Limited access"}
-                    </div>
-                  </div>
                 </div>
 
                 {/* PROVIDER SETTINGS */}
@@ -550,13 +522,8 @@ export default function Settings() {
                   </div>
                   
                   <div className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      {[
-                        { id: "demo", name: "Demo Credits", desc: "3 days, 5/day" },
-                        { id: "openrouter", name: "OpenRouter", desc: "Your API key" },
-                        { id: "groq", name: "Groq", desc: "Fast fallback" },
-                        { id: "openai", name: "OpenAI", desc: "GPT key" },
-                      ].map((provider) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {AI_PROVIDERS.map((provider) => (
                         <button
                           key={provider.id}
                           onClick={() => setAiProvider(provider.id)}
@@ -590,74 +557,78 @@ export default function Settings() {
                   <div className="divide-y divide-white/[0.06]">
                     {aiProvider === "openrouter" && (
                       <>
-                        <div className="p-6 space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-white mb-1.5">
-                              OpenRouter API Key
-                            </label>
-                            <input
-                              type="password"
-                              value={openrouterApiKey}
-                              onChange={(e) => setOpenrouterApiKey(e.target.value)}
-                              placeholder="sk-or-v1-..."
-                              className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
-                            />
-                            <p className="mt-2 text-xs text-zinc-500">
-                              Stored locally in your browser and synced to the extension on this device.
-                            </p>
+                          <div className="p-6 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-1.5">
+                                OpenRouter API Key
+                              </label>
+                              <input
+                                type="password"
+                                value={openrouterApiKey}
+                                onChange={(e) => setOpenrouterApiKey(e.target.value)}
+                                placeholder="sk-or-v1-..."
+                                className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
+                              />
+                              <p className="mt-2 text-xs text-zinc-500">
+                                Used on this device for DeepFocus and the browser extension.
+                              </p>
+                            </div>
                           </div>
-                        </div>
                       </>
                     )}
 
                     {aiProvider === "groq" && (
-                      <div className="p-6 space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-white mb-1.5">
-                            Groq API Key
-                          </label>
-                          <input
-                            type="password"
-                            value={groqApiKey}
-                            onChange={(e) => setGroqApiKey(e.target.value)}
-                            placeholder="gsk_..."
-                            className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
-                          />
-                          <p className="mt-2 text-xs text-zinc-500">
-                            Stored locally in your browser and synced to the extension on this device.
-                          </p>
-                        </div>
-                      </div>
+                          <div className="p-6 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-1.5">
+                                Groq API Key
+                              </label>
+                              <input
+                                type="password"
+                                value={groqApiKey}
+                                onChange={(e) => setGroqApiKey(e.target.value)}
+                                placeholder="gsk_..."
+                                className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
+                              />
+                              <p className="mt-2 text-xs text-zinc-500">
+                                Used on this device for DeepFocus and the browser extension.
+                              </p>
+                            </div>
+                          </div>
                     )}
 
                     {aiProvider === "openai" && (
-                      <div className="p-6 space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-white mb-1.5">
-                            OpenAI API Key
-                          </label>
-                          <input
-                            type="password"
-                            value={openAiKey}
-                            onChange={(e) => setOpenAiKey(e.target.value)}
-                            placeholder="sk-proj-..."
-                            className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
-                          />
-                          <p className="mt-2 text-xs text-zinc-500">
-                            Stored locally in your browser and synced to the extension on this device.
-                          </p>
-                        </div>
-                      </div>
+                          <div className="p-6 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-1.5">
+                                OpenAI API Key
+                              </label>
+                              <input
+                                type="password"
+                                value={openAiKey}
+                                onChange={(e) => setOpenAiKey(e.target.value)}
+                                placeholder="sk-proj-..."
+                                className="w-full rounded-lg border border-white/[0.1] bg-[#151515] px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
+                              />
+                              <p className="mt-2 text-xs text-zinc-500">
+                                Used on this device for DeepFocus and the browser extension.
+                              </p>
+                            </div>
+                          </div>
                     )}
 
-                    {aiProvider === "demo" && (
-                      <div className="p-6">
-                        <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-4 text-sm text-zinc-400 leading-relaxed">
-                          Demo mode uses the DeepFocus environment key for AI analysis and pseudocode generation. 
-                          Free demo access lasts 3 days and allows 5 successful AI actions per day. Adding your own OpenRouter, Groq, or OpenAI key removes the DeepFocus usage limit.
-                        </div>
+                    <div className="p-6">
+                      <div className="flex flex-col gap-3 rounded-lg border border-white/[0.04] bg-white/[0.02] p-4 text-sm leading-relaxed text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+                        <span>Your key stays on your device and is never saved to DeepFocus servers.</span>
+                        <button
+                          type="button"
+                          onClick={clearAiKeys}
+                          className="shrink-0 rounded-lg border border-white/[0.08] px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+                        >
+                          Remove stored keys
+                        </button>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </motion.div>

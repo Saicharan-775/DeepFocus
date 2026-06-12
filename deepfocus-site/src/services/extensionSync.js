@@ -16,7 +16,7 @@ export function startExtensionSync() {
       openrouterApiKey: hasUserKey ? userOpenrouterApiKey : "",
       groqApiKey: hasUserKey ? userGroqApiKey : "",
       openAiApiKey: hasUserKey ? userOpenAiKey : "",
-      aiKeyMode: hasUserKey ? "byok" : "demo"
+      aiKeyMode: hasUserKey ? "byok" : "none"
     }, window.location.origin);
   }
 

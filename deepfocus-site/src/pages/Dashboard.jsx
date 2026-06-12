@@ -14,7 +14,10 @@ import {
   ShieldAlert,
   Sparkles,
   Target,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle,
+  BarChart3,
+  Layers
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
@@ -23,6 +26,9 @@ import { useAuth } from '../hooks/useAuth';
 import DeepFocusLoader from '../components/DeepFocusLoader';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
+import { getProblemPattern } from '../utils/patternMatcher';
+import curatedQuestions from '../constants/Patterns/curated_questions.json';
+import patternPriority from '../constants/Patterns/pattern_priority.json';
 
 const ease = [0.16, 1, 0.3, 1];
 
@@ -35,6 +41,96 @@ const itemVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease } }
 };
+
+/* ─── Pattern helpers ─── */
+
+function derivePattern(title) {
+  if (!title) return 'Unknown';
+  const curated = curatedQuestions.find((c) => c.title === title);
+  if (curated?.primary_pattern) return curated.primary_pattern;
+  return getProblemPattern(title) || 'Unknown';
+}
+
+const patternLabels = {
+  'Arrays': 'Arrays',
+  'Strings': 'Strings',
+  'Hash Map': 'Hash Map',
+  'Two Pointers': 'Two Pointers',
+  'Sliding Window': 'Sliding Window',
+  'Binary Search': 'Binary Search',
+  'Linked List': 'Linked List',
+  'Trees': 'Trees',
+  'Graphs': 'Graphs',
+  'Dynamic Programming': 'Dynamic Programming',
+  'Backtracking': 'Backtracking',
+  'Greedy': 'Greedy',
+  'Sorting': 'Sorting',
+  'Stack': 'Stack',
+  'Queue': 'Queue',
+  'Heap': 'Heap',
+  'Trie': 'Trie',
+  'Recursion': 'Recursion',
+  'Math': 'Math',
+  'Matrix': 'Matrix',
+  'Intervals': 'Intervals',
+  'Bit Manipulation': 'Bit Manipulation',
+  'Design': 'Design',
+  'Simulation': 'Simulation',
+  'Divide and Conquer': 'Divide & Conquer',
+  'Prefix Sum': 'Prefix Sum',
+  'Union Find': 'Union Find',
+  'Topological Sort': 'Topological Sort',
+  'Segment Tree': 'Segment Tree',
+  'Monotonic Stack': 'Monotonic Stack',
+  'Shortest Path': 'Shortest Path',
+  'Minimum Spanning Tree': 'MST',
+  'Binary Indexed Tree': 'Fenwick',
+  'Merge Sort': 'Merge Sort',
+  'Quick Select': 'Quick Select',
+  'BFS': 'BFS',
+  'DFS': 'DFS',
+  'Memoization': 'Memoization',
+  'Game Theory': 'Game Theory',
+  'Reservoir Sampling': 'Sampling',
+  'Counting': 'Counting',
+  'Hash Function': 'Hash Function',
+  'Randomized': 'Randomized',
+  'Data Stream': 'Data Stream',
+  'Iterator': 'Iterator',
+  'Brainteaser': 'Brainteaser',
+  'Combinatorics': 'Combinatorics',
+  'Geometry': 'Geometry',
+  'Shell': 'Shell',
+  'Concurrency': 'Concurrency',
+  'Database': 'Database',
+  'Rolling Hash': 'Rolling Hash',
+  'Memo': 'Memo',
+  'Suffix Array': 'Suffix Array',
+  'Line Sweep': 'Line Sweep',
+  'Bucket Sort': 'Bucket Sort',
+  'Radix Sort': 'Radix Sort',
+  'Eulerian Circuit': 'Eulerian Circuit',
+  'Strongly Connected Component': 'SCC',
+  'Cyclic Sort': 'Cyclic Sort',
+  'In-place reversal': 'In-place Rev.',
+  'Tree BFS': 'Tree BFS',
+  'Tree DFS': 'Tree DFS',
+  'Subsets': 'Subsets',
+  'Modified Binary Search': 'Modified BS',
+  'K-way merge': 'K-way Merge',
+  'Top K Elements': 'Top K',
+  'Multi-threaded': 'Multi-threaded',
+  'Fast & Slow Pointers': 'Fast & Slow',
+  'Two Heaps': 'Two Heaps',
+  'Graph': 'Graph',
+  'Unknown': 'Unknown'
+};
+
+function shortenPattern(p) {
+  return patternLabels[p] || p;
+}
+
+/* ─── Scoring helpers ─── */
 
 function scoreSuggestedProblem(problem) {
   let score = 0;
@@ -80,11 +176,13 @@ function signalColor(problem) {
   return 'bg-violet-200';
 }
 
+/* ─── Shared UI components ─── */
+
 function Panel({ children, className = '' }) {
   return (
     <motion.section
       variants={itemVariants}
-      className={`rounded-2xl border border-white/[0.08] bg-[#0D0C10]/98 shadow-[0_24px_80px_rgba(0,0,0,0.32)] ring-1 ring-white/[0.018] ${className}`}
+      className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#0D0C10]/98 shadow-[0_24px_80px_rgba(0,0,0,0.32)] ring-1 ring-white/[0.018] ${className}`}
     >
       {children}
     </motion.section>
@@ -119,6 +217,41 @@ function StatPill({ icon: Icon, label, value }) {
     </div>
   );
 }
+
+function PatternStrengthBar({ pattern, strong, total, maxCount }) {
+  const fraction = total > 0 ? (strong / total) * 100 : 0;
+  const barWidth = Math.max(4, (total / maxCount) * 100);
+  const color =
+    fraction >= 70 ? 'bg-emerald-400' :
+    fraction >= 35 ? 'bg-amber-400' :
+    'bg-rose-400';
+
+  return (
+    <div className="flex items-center gap-3 py-2 px-1">
+      <div className="min-w-[100px] shrink-0">
+        <span className="text-xs font-semibold text-zinc-300">{shortenPattern(pattern)}</span>
+      </div>
+      <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${barWidth}%` }}
+            transition={{ duration: 0.8, ease }}
+            className={`h-full rounded-full ${color}`}
+          />
+        </div>
+        <span className="w-8 text-right text-[11px] font-mono font-semibold text-zinc-400">
+          {fraction >= 70 ? '✓' : fraction >= 35 ? '⚡' : '⚠'}
+        </span>
+      </div>
+      <div className="w-14 text-right">
+        <span className="text-xs font-semibold text-zinc-300">{strong}/{total}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Calendar component ─── */
 
 function RevisionCalendar({ days, monthLabel, activeCount, currentStreak, onStart, onPrevMonth, onNextMonth }) {
   return (
@@ -212,6 +345,132 @@ function RevisionCalendar({ days, monthLabel, activeCount, currentStreak, onStar
   );
 }
 
+/* ─── Quality Distribution Chart ─── */
+
+function QualityDistribution({ cleanCount, weakCount, abandonedCount, totalCount }) {
+  if (totalCount === 0) return null;
+  const cleanPct = Math.round((cleanCount / totalCount) * 100);
+  const weakPct = Math.round((weakCount / totalCount) * 100);
+  const abandonedPct = Math.round((abandonedCount / totalCount) * 100);
+
+  return (
+    <Panel className="overflow-hidden">
+      <div className="border-b border-white/[0.06] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 size={14} className="text-zinc-400" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Quality</p>
+        </div>
+      </div>
+      <div className="p-4 sm:p-5">
+        <div className="flex h-3 rounded-full overflow-hidden border border-white/[0.06]">
+          {cleanCount > 0 && (
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${cleanPct}%` }}
+              transition={{ duration: 0.9, ease }}
+              className="h-full bg-emerald-400"
+              title={`Clean: ${cleanCount}`}
+            />
+          )}
+          {weakCount > 0 && (
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${weakPct}%` }}
+              transition={{ duration: 0.9, delay: 0.15, ease }}
+              className="h-full bg-amber-400"
+              title={`Weak: ${weakCount}`}
+            />
+          )}
+          {abandonedCount > 0 && (
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${abandonedPct}%` }}
+              transition={{ duration: 0.9, delay: 0.3, ease }}
+              className="h-full bg-rose-400"
+              title={`Abandoned: ${abandonedCount}`}
+            />
+          )}
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Solid</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-emerald-100">{cleanCount}</p>
+          </div>
+          <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Shaky</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-amber-100">{weakCount}</p>
+          </div>
+          <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-rose-400" />
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Rough</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-rose-100">{abandonedCount}</p>
+          </div>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* ─── Smart Insight ─── */
+
+function SmartInsight({ insight }) {
+  if (!insight) return null;
+  const { title, description } = insight;
+  return (
+    <Panel className="overflow-hidden">
+      <div className="flex items-start gap-3 px-5 py-4">
+        <div className="mt-0.5 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-amber-300/15 bg-amber-300/[0.06]">
+          <span className="text-sm">⚠</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-400">{description}</p>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* ─── Pattern Weakness Panel ─── */
+
+function PatternWeaknessGrid({ patterns }) {
+  if (patterns.length === 0) return null;
+  const maxCount = Math.max(...patterns.map((p) => p.total), 1);
+
+  return (
+    <Panel className="overflow-hidden">
+      <div className="border-b border-white/[0.06] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Layers size={14} className="text-zinc-400" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Weak patterns</p>
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">By solve ratio weakest first</p>
+      </div>
+      <div className="divide-y divide-white/[0.04] px-4 py-2 sm:px-5">
+        {patterns.slice(0, 8).map((p) => (
+          <PatternStrengthBar
+            key={p.pattern}
+            pattern={p.pattern}
+            strong={p.strong}
+            total={p.total}
+            maxCount={maxCount}
+          />
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+/* ─── Main Dashboard ─── */
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -271,6 +530,7 @@ export default function Dashboard() {
     const scores = problems.filter((p) => p.focus_score !== undefined && p.focus_score !== null).map((p) => p.focus_score);
     const retentionScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
+    // Activity map from both problems and sessions
     const activityMap = {};
     problems.forEach((p) => {
       if (p.created_at) {
@@ -286,6 +546,7 @@ export default function Dashboard() {
       }
     });
 
+    // Streak
     let currentStreak = 0;
     const todayStr = dayjs().format('YYYY-MM-DD');
     const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
@@ -297,6 +558,7 @@ export default function Dashboard() {
       }
     }
 
+    // 14-day chart
     const chartData = [];
     for (let i = 13; i >= 0; i -= 1) {
       const d = dayjs().subtract(i, 'day');
@@ -304,6 +566,7 @@ export default function Dashboard() {
     }
     const maxChartVal = Math.max(...chartData.map((d) => d.value), 3);
 
+    // Calendar
     const monthStart = calendarMonth.startOf('month');
     const calendarStart = monthStart.subtract((monthStart.day() + 6) % 7, 'day');
     const calendarDays = Array.from({ length: 35 }, (_, index) => {
@@ -321,6 +584,7 @@ export default function Dashboard() {
     });
     const calendarActiveCount = calendarDays.filter((day) => day.inMonth && day.count > 0).length;
 
+    // Today counts
     const todayProblemsSet = new Set();
     problems.forEach((p) => {
       if (p.created_at && dayjs(p.created_at).isSame(dayjs(), 'day')) todayProblemsSet.add(p.link || p.id);
@@ -329,27 +593,78 @@ export default function Dashboard() {
       const dateStr = s.start_time || s.created_at;
       if (dateStr && dayjs(dateStr).isSame(dayjs(), 'day')) todayProblemsSet.add(s.problem_url || s.id);
     });
-
     const todaySolved = todayProblemsSet.size;
     const todayDuration = sessions.reduce((acc, s) => {
       const dateStr = s.start_time || s.created_at;
       return dateStr && dayjs(dateStr).isSame(dayjs(), 'day') ? acc + (s.focus_duration || 0) : acc;
     }, 0);
 
+    // Revision queue
     const revisionQueue = problems
       .filter((p) => p.revision_needed !== false || p.focus_status === 'Give Up' || p.focus_status === 'Cheated' || (p.focus_score ?? 100) < 70)
       .map(scoreSuggestedProblem)
       .sort((a, b) => b.priorityScore - a.priorityScore)
       .slice(0, 6);
 
+    // Recent activity
     const recentActivity = [...problems]
       .sort((a, b) => new Date(b.solved_at || b.created_at || 0) - new Date(a.solved_at || a.created_at || 0))
       .slice(0, 5);
 
+    // Categorize
     const abandonedCount = problems.filter((p) => p.focus_status === 'Give Up' || p.focus_status === 'Cheated').length;
-    const weakCount = problems.filter((p) => (p.focus_score ?? 100) < 70).length;
+    const weakCount = problems.filter((p) => (p.focus_score ?? 100) < 70 && p.focus_status !== 'Give Up' && p.focus_status !== 'Cheated').length;
     const hardCount = problems.filter((p) => p.difficulty === 'Hard').length;
     const cleanCount = problems.filter((p) => (p.focus_score ?? 0) >= 80 && p.focus_status !== 'Give Up' && p.focus_status !== 'Cheated').length;
+
+    // ─── Pattern analysis ───
+    const patternMap = {};
+    problems.forEach((p) => {
+      const pat = derivePattern(p.title);
+      if (!patternMap[pat]) {
+        patternMap[pat] = { strong: 0, total: 0, pattern: pat };
+      }
+      patternMap[pat].total += 1;
+      const score = p.focus_score ?? 0;
+      if (score >= 80 && p.focus_status !== 'Give Up' && p.focus_status !== 'Cheated') {
+        patternMap[pat].strong += 1;
+      }
+    });
+
+    const patternEntries = Object.values(patternMap)
+      .filter((p) => p.total >= 2)
+      .sort((a, b) => {
+        const aPct = a.total > 0 ? a.strong / a.total : 0;
+        const bPct = b.total > 0 ? b.strong / b.total : 0;
+        return aPct - bPct; // weakest first
+      });
+
+    // ─── Smart insight ───
+    let insight = null;
+    if (totalSolved === 0) {
+      insight = {
+        title: 'Start your journey',
+        description: 'Solve your first problem to unlock personalised recommendations.'
+      };
+    } else if (patternEntries.length > 0 && patternEntries[0].total >= 2) {
+      const weakest = patternEntries[0];
+      const weakPct = Math.round(((weakest.total - weakest.strong) / weakest.total) * 100);
+      insight = {
+        title: `${shortenPattern(weakest.pattern)} needs attention`,
+        description: `${weakPct}% of your ${weakest.pattern} solves are weak or unfinished. Do a short revision pass on this pattern next.`
+      };
+      if (weakPct < 30 && currentStreak >= 3) {
+        insight = {
+          title: `${shortenPattern(weakest.pattern)} is stabilising`,
+          description: `Your ${weakest.pattern} solves are trending clean. Keep the momentum — consistency locks mastery.`
+        };
+      }
+    } else {
+      insight = {
+        title: 'Keep going',
+        description: `You've solved ${totalSolved} problems across ${patternEntries.length} patterns. More data means sharper picks.`
+      };
+    }
 
     return {
       totalSolved,
@@ -371,7 +686,9 @@ export default function Dashboard() {
       abandonedCount,
       weakCount,
       hardCount,
-      cleanCount
+      cleanCount,
+      patternEntries,
+      insight
     };
   }, [calendarMonth, dailyGoal, problems, sessions]);
 
@@ -395,6 +712,7 @@ export default function Dashboard() {
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_46%_0%,rgba(139,125,255,0.14),transparent_32%),radial-gradient(circle_at_92%_22%,rgba(255,255,255,0.04),transparent_24%)]" />
 
       <div className="relative mx-auto flex max-w-[1500px] flex-col gap-5">
+        {/* ── ROW 1: Hero + Calendar ── */}
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)]">
           <Panel className="overflow-hidden">
             <div className="grid gap-7 p-5 sm:p-6 md:grid-cols-[1fr_auto] md:p-7">
@@ -451,6 +769,7 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* ── ROW 2: Stat pills ── */}
         <motion.section variants={itemVariants} className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
           <StatPill icon={Target} label="Today" value={`${state.todaySolved}/${dailyGoal}`} />
           <StatPill icon={CheckCircle2} label="Mastered" value={`${state.masteryProgress}%`} />
@@ -460,45 +779,24 @@ export default function Dashboard() {
           <StatPill icon={RotateCcw} label="Today time" value={`${todayMinutes}m`} />
         </motion.section>
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
-          <Panel className="overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-white/[0.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Memory runway</p>
-                <h2 className="mt-1 text-lg font-semibold text-white">Work ordered by risk, not recency</h2>
-              </div>
-              <button onClick={() => navigate('/today')} className="w-fit rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-white/[0.045] hover:text-white">
-                Open queue
-              </button>
-            </div>
+        {/* ── ROW 3: Smart Insight + Pattern Weakness + Quality Distribution ── */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <SmartInsight insight={state.insight} />
+          </div>
+          <div>
+            <QualityDistribution
+              cleanCount={state.cleanCount}
+              weakCount={state.weakCount}
+              abandonedCount={state.abandonedCount}
+              totalCount={state.totalSolved}
+            />
+          </div>
+        </div>
 
-            {runway.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <BookOpen size={30} className="text-zinc-700" />
-                <p className="mt-3 text-sm font-medium text-zinc-300">No solved problems yet</p>
-                <p className="mt-1 max-w-sm text-xs leading-5 text-zinc-600">Complete one protected session and this becomes your revision runway.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-white/[0.055]">
-                {runway.slice(0, 6).map((item, index) => (
-                  <button key={`${item.id}-${index}`} onClick={() => navigate(`/workspace?id=${item.id}`)} className="group grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-4 text-left transition hover:bg-white/[0.025] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-4 sm:px-5">
-                    <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.075] bg-white/[0.025] text-sm font-semibold text-white">
-                      <span className={`absolute -right-1 -top-1 h-3 w-3 rounded-full ${signalColor(item)}`} />
-                      {index + 1}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold text-zinc-100">{item.title}</h3>
-                      <p className="mt-1 truncate text-xs text-zinc-500">{item.suggestionReason}</p>
-                    </div>
-                    <span className={`hidden shrink-0 rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase sm:inline-flex ${difficultyClass(item.difficulty)}`}>
-                      {item.difficulty || 'Medium'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </Panel>
-
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
+          <PatternWeaknessGrid patterns={state.patternEntries} />
+          {/* ── ROW 4, RIGHT: Pressure Map ── */}
           <Panel className="overflow-hidden">
             <div className="border-b border-white/[0.06] px-5 py-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Pressure map</p>
@@ -535,87 +833,139 @@ export default function Dashboard() {
           </Panel>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[430px_minmax(0,1fr)]">
-          <Panel className="p-4 sm:p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Practice pulse</p>
-                <h2 className="mt-1 text-lg font-semibold text-white">14-day signal</h2>
-              </div>
-              <span className="rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1 text-xs text-zinc-500">
-                {state.currentStreak} day streak
-              </span>
-            </div>
-            <div className="grid gap-1.5 rounded-xl border border-white/[0.055] bg-black/15 p-3" style={{ gridTemplateColumns: 'repeat(14, minmax(0, 1fr))' }}>
-              {state.chartData.map((item, index) => {
-                const height = Math.max(18, Math.round((item.value / state.maxChartVal) * 70));
-                const fill = item.value === 0 ? 'bg-white/[0.04]' : item.value === 1 ? 'bg-violet-200/25' : item.value < state.maxChartVal ? 'bg-violet-200/45' : 'bg-violet-100/75';
-                return (
-                  <div key={`${item.day}-${index}`} className="flex h-24 flex-col justify-end">
-                    <motion.div
-                      initial={{ height: 18 }}
-                      animate={{ height }}
-                      transition={{ duration: 0.65, delay: index * 0.025, ease }}
-                      className={`rounded-md border border-white/[0.06] ${fill}`}
-                    />
-                    <p className="mt-2 text-center text-[10px] font-medium text-zinc-600">{item.day}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Solved</p>
-                <p className="mt-1 text-sm font-semibold text-white">{state.totalSolved}</p>
-              </div>
-              <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Clean</p>
-                <p className="mt-1 text-sm font-semibold text-emerald-100">{state.cleanCount}</p>
-              </div>
-              <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Weak</p>
-                <p className="mt-1 text-sm font-semibold text-amber-100">{state.weakCount}</p>
-              </div>
-            </div>
-          </Panel>
-
+        {/* ── ROW 5: Memory Runway + Practice Pulse + Recent Activity ── */}
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
           <Panel className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+            <div className="flex flex-col gap-3 border-b border-white/[0.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Solve tape</p>
-                <h2 className="mt-1 text-lg font-semibold text-white">Latest attempts</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Memory runway</p>
+                <h2 className="mt-1 text-lg font-semibold text-white">Work ordered by risk, not recency</h2>
               </div>
-              <button onClick={() => navigate('/revision')} className="shrink-0 text-xs font-medium text-zinc-500 transition hover:text-white">View all</button>
+              <button onClick={() => navigate('/today')} className="w-fit rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-medium text-zinc-400 transition hover:bg-white/[0.045] hover:text-white">
+                Open queue
+              </button>
             </div>
 
-            {state.recentActivity.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center">
-                <History className="h-8 w-8 text-zinc-700" />
-                <p className="mt-3 text-sm font-medium text-zinc-400">No recent activity.</p>
+            {runway.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                <BookOpen size={30} className="text-zinc-700" />
+                <p className="mt-3 text-sm font-medium text-zinc-300">No solved problems yet</p>
+                <p className="mt-1 max-w-sm text-xs leading-5 text-zinc-600">Complete one protected session and this becomes your revision runway.</p>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.055]">
-                {state.recentActivity.map((item) => (
-                  <button key={item.id} onClick={() => navigate(`/workspace?id=${item.id}`)} className="grid w-full grid-cols-1 gap-3 px-4 py-4 text-left transition hover:bg-white/[0.025] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 sm:px-5">
+                {runway.slice(0, 6).map((item, index) => (
+                  <button
+                    key={`${item.id}-${index}`}
+                    onClick={() => navigate(`/workspace?id=${item.id}`)}
+                    className="group grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-4 text-left transition hover:bg-white/[0.025] sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-5"
+                  >
+                    <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.075] bg-white/[0.025] text-sm font-semibold text-white">
+                      <span className={`absolute -right-1 -top-1 h-3 w-3 rounded-full ${signalColor(item)}`} />
+                      {index + 1}
+                    </div>
                     <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold text-white">{item.title}</h3>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-                        <span>{item.focus_status || 'Attempted'}</span>
-                        <span>/</span>
-                        <span>{item.solved_at || item.created_at ? new Date(item.solved_at || item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Today'}</span>
-                      </div>
+                      <h3 className="truncate text-sm font-semibold text-zinc-100">{item.title}</h3>
+                      <p className="mt-1 truncate text-xs text-zinc-500">{item.suggestionReason}</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-sm font-semibold text-zinc-100">{item.focus_score || 0}%</span>
-                      <span className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase ${difficultyClass(item.difficulty)}`}>
-                        {item.difficulty || 'Medium'}
-                      </span>
-                    </div>
+                    <span className={`hidden shrink-0 rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase sm:inline-flex ${difficultyClass(item.difficulty)}`}>
+                      {item.difficulty || 'Medium'}
+                    </span>
+                    <span className="hidden shrink-0 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[10px] font-medium text-zinc-500 sm:inline-flex">
+                      {shortenPattern(derivePattern(item.title))}
+                    </span>
                   </button>
                 ))}
               </div>
             )}
           </Panel>
+
+          <div className="grid grid-cols-1 gap-5">
+            <Panel className="p-4 sm:p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Practice pulse</p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">14-day signal</h2>
+                </div>
+                <span className="rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1 text-xs text-zinc-500">
+                  {state.currentStreak} day streak
+                </span>
+              </div>
+              <div className="grid gap-1.5 rounded-xl border border-white/[0.055] bg-black/15 p-3" style={{ gridTemplateColumns: 'repeat(14, minmax(0, 1fr))' }}>
+                {state.chartData.map((item, index) => {
+                  const height = Math.max(18, Math.round((item.value / state.maxChartVal) * 70));
+                  const fill = item.value === 0 ? 'bg-white/[0.04]' : item.value === 1 ? 'bg-violet-200/25' : item.value < state.maxChartVal ? 'bg-violet-200/45' : 'bg-violet-100/75';
+                  return (
+                    <div key={`${item.day}-${index}`} className="flex h-24 flex-col justify-end">
+                      <motion.div
+                        initial={{ height: 18 }}
+                        animate={{ height }}
+                        transition={{ duration: 0.65, delay: index * 0.025, ease }}
+                        className={`rounded-md border border-white/[0.06] ${fill}`}
+                      />
+                      <p className="mt-2 text-center text-[10px] font-medium text-zinc-600">{item.day}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Solved</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{state.totalSolved}</p>
+                </div>
+                <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Clean</p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-100">{state.cleanCount}</p>
+                </div>
+                <div className="rounded-lg border border-white/[0.055] bg-white/[0.02] px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">Weak</p>
+                  <p className="mt-1 text-sm font-semibold text-amber-100">{state.weakCount}</p>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel className="overflow-hidden">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Solve tape</p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">Latest attempts</h2>
+                </div>
+                <button onClick={() => navigate('/revision')} className="shrink-0 text-xs font-medium text-zinc-500 transition hover:text-white">View all</button>
+              </div>
+
+              {state.recentActivity.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <History className="h-8 w-8 text-zinc-700" />
+                  <p className="mt-3 text-sm font-medium text-zinc-400">No recent activity.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-white/[0.055]">
+                  {state.recentActivity.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => navigate(`/workspace?id=${item.id}`)}
+                      className="grid w-full grid-cols-1 gap-3 px-4 py-4 text-left transition hover:bg-white/[0.025] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 sm:px-5"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-semibold text-white">{item.title}</h3>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                          <span>{item.focus_status || 'Attempted'}</span>
+                          <span>/</span>
+                          <span>{item.solved_at || item.created_at ? new Date(item.solved_at || item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Today'}</span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-sm font-semibold text-zinc-100">{item.focus_score || 0}%</span>
+                        <span className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase ${difficultyClass(item.difficulty)}`}>
+                          {item.difficulty || 'Medium'}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Panel>
+          </div>
         </div>
       </div>
     </motion.div>

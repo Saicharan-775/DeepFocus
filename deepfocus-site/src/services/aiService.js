@@ -1,13 +1,4 @@
-import { supabase } from "../lib/supabaseClient";
-const DEMO_AI_DAILY_LIMIT = 5;
-const DEMO_AI_TRIAL_DAYS = 3;
-const DEMO_AI_START_KEY = "df_demo_ai_started_at";
-const DEMO_AI_DATE_KEY = "df_demo_ai_usage_date";
-const DEMO_AI_COUNT_KEY = "df_demo_ai_usage_count";
-
-function todayKey() {
-  return new Date().toISOString().split("T")[0];
-}
+const MISSING_BYOK_MESSAGE = "Add your OpenRouter, Groq, or OpenAI API key in Settings to use AI analysis.";
 
 function getStoredValue(key) {
   if (typeof localStorage === "undefined") return "";
@@ -25,65 +16,17 @@ function getAiKeys() {
   const userOpenrouterKey = normalizeApiKey(getStoredValue("df_openrouter_api_key"));
   const userGroqKey = normalizeApiKey(getStoredValue("df_groq_api_key"));
   const userOpenAiKey = normalizeApiKey(getStoredValue("df_openai_key"));
-  const hasUserKey = !!(userOpenrouterKey || userGroqKey || userOpenAiKey);
 
   return {
     openrouterKey: userOpenrouterKey,
     groqKey: userGroqKey,
-    openAiKey: userOpenAiKey,
-    source: hasUserKey ? "byok" : "demo"
+    openAiKey: userOpenAiKey
   };
 }
 
-function getDemoAiUsage() {
-  if (typeof localStorage === "undefined") {
-    return { allowed: true, remaining: DEMO_AI_DAILY_LIMIT, daysLeft: DEMO_AI_TRIAL_DAYS };
-  }
-
-  let startedAt = Number(localStorage.getItem(DEMO_AI_START_KEY) || 0);
-  if (!startedAt) {
-    startedAt = Date.now();
-    localStorage.setItem(DEMO_AI_START_KEY, String(startedAt));
-  }
-
-  const elapsedDays = Math.floor((Date.now() - startedAt) / 86400000);
-  const daysLeft = Math.max(0, DEMO_AI_TRIAL_DAYS - elapsedDays);
-  const date = todayKey();
-  const storedDate = localStorage.getItem(DEMO_AI_DATE_KEY);
-  const count = storedDate === date ? Number(localStorage.getItem(DEMO_AI_COUNT_KEY) || 0) : 0;
-  const remaining = Math.max(0, DEMO_AI_DAILY_LIMIT - count);
-
-  return {
-    allowed: daysLeft > 0 && remaining > 0,
-    remaining,
-    daysLeft,
-    date,
-    count
-  };
-}
-
-function assertDemoAiAllowed(source) {
-  if (source !== "demo") return;
-  const usage = getDemoAiUsage();
-  if (usage.daysLeft <= 0) {
-    throw new Error("Your 3-day demo AI trial has ended. Add your own OpenRouter or Groq API key to continue.");
-  }
-  if (usage.remaining <= 0) {
-    throw new Error("Demo AI limit reached for today (5/5). Add your own OpenRouter or Groq API key to continue.");
-  }
-}
-
-function recordDemoAiUse(source) {
-  if (source !== "demo" || typeof localStorage === "undefined") return;
-  const usage = getDemoAiUsage();
-  localStorage.setItem(DEMO_AI_DATE_KEY, usage.date || todayKey());
-  localStorage.setItem(DEMO_AI_COUNT_KEY, String((usage.count || 0) + 1));
-}
-
-function finishAiResponse(content, source) {
+function finishAiResponse(content) {
   const value = content?.trim();
   if (!value) return null;
-  recordDemoAiUse(source);
   return value;
 }
 
@@ -127,103 +70,13 @@ function formatProviderErrors(errors, fallback) {
   return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
 }
 
-function getDemoAiEndpoint() {
-  const supabaseUrl = normalizeApiKey(import.meta.env.VITE_SUPABASE_URL);
-  if (!supabaseUrl) {
-    throw new Error("Supabase is not configured for this deployment.");
-  }
-  return `${supabaseUrl.replace(/\/$/, "")}/functions/v1/ai-demo`;
-}
-
-function getSupabaseAnonKey() {
-  const anonKey = normalizeApiKey(import.meta.env.VITE_SUPABASE_ANON_KEY);
-  if (!anonKey) {
-    throw new Error("Supabase anon key is not configured for this deployment.");
-  }
-  return anonKey;
-}
-
-async function readDemoAiError(response) {
-  let message = "";
-  try {
-    const text = await response.text();
-    if (text) {
-      try {
-        const data = JSON.parse(text);
-        message = data?.error || data?.message || text;
-      } catch (_) {
-        message = text;
-      }
-    }
-  } catch (_) {
-    message = "";
-  }
-
-  if (response.status === 401 || response.status === 403) {
-    return "Please sign in again before using demo AI analysis.";
-  }
-  if (response.status === 404) {
-    return "Demo AI is not deployed on this Supabase project.";
-  }
-  if (response.status >= 500) {
-    return message || "Demo AI is not configured on the server yet.";
-  }
-  return message || `Demo AI request failed (${response.status}).`;
-}
-
-async function callDemoAi(kind, payload) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const accessToken = session?.access_token;
-  if (!accessToken) {
-    throw new Error("Please sign in again before using demo AI analysis.");
-  }
-
-  let response;
-  try {
-    response = await fetch(getDemoAiEndpoint(), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": getSupabaseAnonKey(),
-        "Authorization": `Bearer ${accessToken}`,
-        "x-client-info": "deepfocus-site"
-      },
-      body: JSON.stringify({ kind, payload })
-    });
-  } catch (err) {
-    const detail = err?.message ? ` (${err.message})` : "";
-    throw new Error(`Could not reach Demo AI from this deployment${detail}. Check the Supabase URL and Edge Function deployment.`);
-  }
-
-  if (!response.ok) {
-    throw new Error(await readDemoAiError(response));
-  }
-
-  const data = await response.json();
-  if (!data?.success || !data?.content) {
-    throw new Error(data?.error || "Demo AI did not return a response.");
-  }
-
-  try {
-    if (typeof localStorage !== "undefined" && data.usage) {
-      localStorage.setItem(DEMO_AI_DATE_KEY, todayKey());
-      localStorage.setItem(DEMO_AI_COUNT_KEY, String(DEMO_AI_DAILY_LIMIT - Number(data.usage.remaining || 0)));
-    }
-  } catch (_) {
-  }
-
-  return data.content.trim();
-}
-
 export async function getAiSummary({ title, difficulty, focusStatus, codeOrNotes }) {
-  const { openrouterKey, groqKey, openAiKey, source } = getAiKeys();
+  const { openrouterKey, groqKey, openAiKey } = getAiKeys();
   const providerErrors = [];
 
   if (!openrouterKey && !groqKey && !openAiKey) {
-    return callDemoAi("summary", { title, difficulty, focusStatus, codeOrNotes });
+    throw new Error(MISSING_BYOK_MESSAGE);
   }
-
-  assertDemoAiAllowed(source);
 
   const systemPrompt = `You are an expert DSA mentor.
 Analyze the user's submitted solution or notes.
@@ -273,7 +126,7 @@ ${codeOrNotes || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const result = finishAiResponse(content, source);
+            const result = finishAiResponse(content);
             if (result) return result;
           }
         } else {
@@ -318,7 +171,7 @@ ${codeOrNotes || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const result = finishAiResponse(content, source);
+            const result = finishAiResponse(content);
             if (result) return result;
           }
         } else {
@@ -357,7 +210,7 @@ ${codeOrNotes || "No code or notes provided yet."}`;
         const data = await res.json();
         const content = data?.choices?.[0]?.message?.content;
         if (content) {
-          const result = finishAiResponse(content, source);
+          const result = finishAiResponse(content);
           if (result) return result;
         }
       } else {
@@ -383,14 +236,12 @@ ${codeOrNotes || "No code or notes provided yet."}`;
 }
 
 export async function getAiPseudoCode({ title, difficulty, code }) {
-  const { openrouterKey, groqKey, openAiKey, source } = getAiKeys();
+  const { openrouterKey, groqKey, openAiKey } = getAiKeys();
   const providerErrors = [];
 
   if (!openrouterKey && !groqKey && !openAiKey) {
-    return callDemoAi("pseudocode", { title, difficulty, code });
+    throw new Error(MISSING_BYOK_MESSAGE);
   }
-
-  assertDemoAiAllowed(source);
 
   const systemPrompt = `You are a helpful programming tutor.
 Explain the algorithm logic step-by-step in very simple, plain, and easy-to-understand English.
@@ -433,7 +284,7 @@ ${code || "No code provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const result = finishAiResponse(content, source);
+            const result = finishAiResponse(content);
             if (result) return result;
           }
         } else {
@@ -478,7 +329,7 @@ ${code || "No code provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            const result = finishAiResponse(content, source);
+            const result = finishAiResponse(content);
             if (result) return result;
           }
         } else {
@@ -517,7 +368,7 @@ ${code || "No code provided yet."}`;
         const data = await res.json();
         const content = data?.choices?.[0]?.message?.content;
         if (content) {
-          const result = finishAiResponse(content, source);
+          const result = finishAiResponse(content);
           if (result) return result;
         }
       } else {

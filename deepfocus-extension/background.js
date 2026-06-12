@@ -17,15 +17,7 @@ const defaultState = {
 const MAX_FOCUS_SESSION_MS = 12 * 60 * 60 * 1000;
 const RPC_SYNC_TIMEOUT_MS = 10000;
 const EDGE_SYNC_TIMEOUT_MS = 15000;
-const DEMO_AI_DAILY_LIMIT = 5;
-const DEMO_AI_TRIAL_DAYS = 3;
-const DEMO_AI_START_KEY = 'df_demo_ai_started_at';
-const DEMO_AI_DATE_KEY = 'df_demo_ai_usage_date';
-const DEMO_AI_COUNT_KEY = 'df_demo_ai_usage_count';
-
-function todayKey() {
-  return new Date().toISOString().split('T')[0];
-}
+const MISSING_BYOK_MESSAGE = 'Add your OpenRouter, Groq, or OpenAI API key in DeepFocus Settings to use AI analysis.';
 
 function normalizeApiKey(value) {
   return String(value || '')
@@ -63,84 +55,6 @@ async function readProviderError(provider, response) {
 function formatProviderErrors(errors, fallback) {
   const uniqueErrors = [...new Set(errors.filter(Boolean))];
   return uniqueErrors.length ? uniqueErrors.join("\n") : fallback;
-}
-
-async function callDemoAiFromExtension({ title, difficulty, code }) {
-  const tokenData = await chrome.storage.local.get(['deepfocus_connection_token']);
-  const token = normalizeApiKey(tokenData.deepfocus_connection_token);
-  if (!token || !token.startsWith('dfx_')) {
-    throw new Error('Demo AI requires a connected DeepFocus account. Open Settings and connect the extension.');
-  }
-
-  const response = await fetch(`${DEEPFOCUS_CONFIG.SUPABASE_URL}/functions/v1/ai-demo`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': DEEPFOCUS_CONFIG.SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${DEEPFOCUS_CONFIG.SUPABASE_ANON_KEY}`,
-      'X-Extension-Token': token
-    },
-    body: JSON.stringify({
-      kind: 'summary',
-      payload: { title, difficulty, code }
-    })
-  });
-
-  const text = await response.text();
-  let data = {};
-  try { data = JSON.parse(text); } catch (_) {}
-
-  if (!response.ok || !data?.success || !data?.content) {
-    throw new Error(data?.error || text || `Demo AI failed (${response.status})`);
-  }
-
-  return data.content.trim();
-}
-
-async function getDemoAiUsage() {
-  const data = await chrome.storage.local.get([
-    DEMO_AI_START_KEY,
-    DEMO_AI_DATE_KEY,
-    DEMO_AI_COUNT_KEY
-  ]);
-
-  let startedAt = Number(data[DEMO_AI_START_KEY] || 0);
-  if (!startedAt) {
-    startedAt = Date.now();
-    await chrome.storage.local.set({ [DEMO_AI_START_KEY]: startedAt });
-  }
-
-  const elapsedDays = Math.floor((Date.now() - startedAt) / 86400000);
-  const daysLeft = Math.max(0, DEMO_AI_TRIAL_DAYS - elapsedDays);
-  const date = todayKey();
-  const count = data[DEMO_AI_DATE_KEY] === date ? Number(data[DEMO_AI_COUNT_KEY] || 0) : 0;
-
-  return {
-    daysLeft,
-    count,
-    date,
-    remaining: Math.max(0, DEMO_AI_DAILY_LIMIT - count)
-  };
-}
-
-async function assertDemoAiAllowed(aiKeyMode) {
-  if (aiKeyMode === 'byok') return;
-  const usage = await getDemoAiUsage();
-  if (usage.daysLeft <= 0) {
-    throw new Error('Your 3-day demo AI trial has ended. Add your own OpenRouter or Groq API key to continue.');
-  }
-  if (usage.remaining <= 0) {
-    throw new Error('Demo AI limit reached for today (5/5). Add your own OpenRouter or Groq API key to continue.');
-  }
-}
-
-async function recordDemoAiUse(aiKeyMode) {
-  if (aiKeyMode === 'byok') return;
-  const usage = await getDemoAiUsage();
-  await chrome.storage.local.set({
-    [DEMO_AI_DATE_KEY]: usage.date,
-    [DEMO_AI_COUNT_KEY]: usage.count + 1
-  });
 }
 
 function sendTabMessage(tabId, message, callback = null) {
@@ -570,18 +484,15 @@ async function handleStartFocus(payload) {
 }
 
 async function handleAnalyzeMistake({ title, difficulty, code }) {
-  const keys = await chrome.storage.local.get(['df_openrouter_api_key', 'df_groq_api_key', 'df_openai_api_key', 'df_ai_key_mode']);
+  const keys = await chrome.storage.local.get(['df_openrouter_api_key', 'df_groq_api_key', 'df_openai_api_key']);
   const openrouterKey = normalizeApiKey(keys.df_openrouter_api_key);
   const groqKey = normalizeApiKey(keys.df_groq_api_key);
   const openAiKey = normalizeApiKey(keys.df_openai_api_key);
-  const aiKeyMode = keys.df_ai_key_mode === 'byok' ? 'byok' : 'demo';
   const providerErrors = [];
 
   if (!openrouterKey && !groqKey && !openAiKey) {
-    return callDemoAiFromExtension({ title, difficulty, code });
+    throw new Error(MISSING_BYOK_MESSAGE);
   }
-
-  await assertDemoAiAllowed(aiKeyMode);
 
   const systemPrompt = `You are an expert DSA mentor.
 Analyze the user's submitted solution or notes.
@@ -631,7 +542,6 @@ ${code || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            await recordDemoAiUse(aiKeyMode);
             return content.trim();
           }
         } else {
@@ -677,7 +587,6 @@ ${code || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
-            await recordDemoAiUse(aiKeyMode);
             return content.trim();
           }
         } else {
@@ -716,7 +625,6 @@ ${code || "No code or notes provided yet."}`;
         const data = await res.json();
         const content = data?.choices?.[0]?.message?.content;
         if (content) {
-          await recordDemoAiUse(aiKeyMode);
           return content.trim();
         }
       } else {
