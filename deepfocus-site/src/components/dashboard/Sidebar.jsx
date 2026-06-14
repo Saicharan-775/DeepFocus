@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight, Sparkles, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
@@ -21,10 +21,11 @@ export default function Sidebar() {
     { name: 'Curriculum Sheet', path: '/sheet', icon: ClipboardList },
     { name: 'Revision Sheet', path: '/revision', icon: ClipboardList },
     { name: 'Revision Workspace', path: '/workspace', icon: Sparkles },
-    { name: 'AI Planner', path: '/planner', icon: BrainCircuit },
+    { name: 'Revision Planner', path: '/planner', icon: BrainCircuit },
     { name: 'Analytics', path: '/analytics', icon: LineChart },
     { name: 'Library', path: '/library', icon: Library },
     { name: 'Community', path: '/community', icon: MessageSquare },
+    { name: 'Send Feedback', path: '/feedback', icon: HeartHandshake },
   ];
 
   return (
@@ -36,7 +37,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className={`p-6 flex items-center justify-between ${isOpen ? '' : 'justify-center'}`}>
         <div className="flex items-center gap-3">
-          <DeepFocusLogo showText={false} markClassName="h-9 w-10 rounded-xl border-white/[0.1]" />
+          <DeepFocusLogo showText={false} markClassName="h-9 w-9 rounded-xl border-white/[0.1]" />
           {isOpen && (
             <motion.span
               initial={{ opacity: 0 }}

@@ -15,7 +15,7 @@ export default function Footer() {
           <div className="flex flex-col gap-4 max-w-xs">
             <Link to="/" className="flex items-center gap-2 group w-fit">
               <DeepFocusLogo
-                markClassName="h-9 w-11 rounded-xl border-white/[0.08] group-hover:border-white/20 transition-all"
+                markClassName="h-9 w-9 rounded-xl border-white/[0.08] group-hover:border-white/20 transition-all"
                 textClassName="text-base tracking-wide"
               />
             </Link>

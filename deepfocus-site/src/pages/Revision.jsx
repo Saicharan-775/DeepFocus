@@ -462,32 +462,52 @@ export default function Revision() {
         });
     }
   };
-
   if (dataLoading) {
     return <DeepFocusLoader message="" />;
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto p-8 space-y-8">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Revision Sheet</h1>
-          <p className="text-[#94A3B8] text-sm mt-1">Review your problems and track cognitive performance.</p>
-        </div>
-        <div>
-          <button
-            onClick={handleConnectExtension}
-            disabled={isConnecting}
-            className={`flex items-center gap-2 px-5 py-2.5 border rounded-xl text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 shadow-lg ${extensionLinked
-              ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400 shadow-emerald-400/5'
-              : 'bg-[#09090B] text-white hover:bg-white/[0.06] border-white/[0.06] active:scale-95 shadow-white/10'
-              }`}
-          >
-            {extensionLinked ? <CheckCircle2 size={16} /> : <LinkIcon size={16} />}
-            {isConnecting ? 'Generating...' : (extensionLinked ? 'Regenerate Token' : 'Generate Token')}
-          </button>
-        </div>
-      </header>
+    <div className="relative min-h-screen overflow-hidden bg-[#070708] pb-12 text-zinc-100 antialiased selection:bg-violet-400/20 selection:text-white">
+      {/* Background Grid & Ambient Glows */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#070708]">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(255,255,255,0.02),_transparent_40%,_rgba(255,255,255,0.015))]" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px)`,
+            backgroundSize: '56px 56px',
+            maskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)'
+          }}
+        />
+        {/* Glow Spheres */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-900/10 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 max-w-[1400px] mx-auto p-6 md:p-8 space-y-8">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.06] pb-6">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-400 bg-violet-400/5 border border-violet-400/10 px-2 py-0.5 rounded-md">Revision Hub</span>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-100 to-zinc-400">Revision Sheet</h1>
+            <p className="text-[#94A3B8] text-sm mt-1">Review your problems and track cognitive performance.</p>
+          </div>
+          <div>
+            <button
+              onClick={handleConnectExtension}
+              disabled={isConnecting}
+              className={`flex items-center gap-2 px-5 py-2.5 border rounded-xl text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 shadow-lg ${extensionLinked
+                ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400 shadow-emerald-400/5'
+                : 'bg-[#09090B] text-white hover:bg-white/[0.06] border-white/[0.06] active:scale-95 shadow-white/10'
+                }`}
+            >
+              {extensionLinked ? <CheckCircle2 size={16} /> : <LinkIcon size={16} />}
+              {isConnecting ? 'Generating...' : (extensionLinked ? 'Regenerate Token' : 'Generate Token')}
+            </button>
+          </div>
+        </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard title="Total Problems" value={filtered.length} icon={FolderOpen} />
@@ -555,9 +575,38 @@ export default function Revision() {
                           <input type="checkbox" checked={p.revised} onChange={() => toggle(p.id)} className="w-4 h-4 rounded border-gray-600 text-violet-500 focus:ring-violet-500 bg-transparent cursor-pointer" />
                         </td>
                         <td className="p-4 font-medium text-white max-w-[250px] truncate">
-                          <a href={p.link} target="_blank" rel="noreferrer" className="hover:text-violet-400 flex items-center gap-2 transition-colors">
+                          <a href={p.link} target="_blank" rel="noreferrer" className="hover:text-violet-400 flex items-center gap-2 transition-colors font-semibold">
                             {p.title} <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
                           </a>
+                          {/* Past Attempts Mini-Dots */}
+                          {(() => {
+                            const history = Array.isArray(p.focus_history) ? p.focus_history : [];
+                            if (history.length === 0) return null;
+                            const lastThree = history.slice(-3);
+                            return (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[9px] text-zinc-500 uppercase tracking-wider font-semibold">Attempts:</span>
+                                <div className="flex items-center gap-1">
+                                  {lastThree.map((att, idx) => {
+                                    let dotColor = "bg-emerald-400/80 shadow-[0_0_6px_rgba(52,211,153,0.4)]";
+                                    if (att.status === "Cheated") {
+                                      dotColor = "bg-rose-400/80 shadow-[0_0_6px_rgba(248,113,113,0.4)]";
+                                    } else if (att.status === "Give Up" || att.status === "Low Focus") {
+                                      dotColor = "bg-amber-400/80 shadow-[0_0_6px_rgba(251,191,36,0.4)]";
+                                    }
+                                    const dateStr = att.timestamp ? new Date(att.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'N/A';
+                                    return (
+                                      <span 
+                                        key={idx} 
+                                        className={`w-2 h-2 rounded-full border border-black/20 ${dotColor}`} 
+                                        title={`Score: ${att.score}% | Status: ${att.status} | Date: ${dateStr}`}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="p-4"><StatusBadge status={p.focusStatus} /></td>
                         <td className="p-4">
@@ -596,7 +645,7 @@ export default function Revision() {
                                   ? 'text-[#0ea5e9] bg-[#0ea5e9]/8 border-[#0ea5e9]/20 hover:bg-[#0ea5e9]/15'
                                   : 'text-[#64748B] border-transparent hover:bg-white/[0.06] hover:text-white'
                               }`}
-                              title={hasAiSummary ? 'View AI Summary & Notes' : (hasUserNotes || hasCode) ? 'View/Edit Note' : 'Add Note'}
+                              title={hasAiSummary ? 'View Analysis & Notes' : (hasUserNotes || hasCode) ? 'View/Edit Note' : 'Add Note'}
                             >
                               <FileText size={16} />
                             </button>
@@ -735,6 +784,7 @@ export default function Revision() {
           </div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

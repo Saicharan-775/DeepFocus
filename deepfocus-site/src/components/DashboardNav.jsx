@@ -33,7 +33,7 @@ export default function DashboardNav() {
         
         {/* BRAND LOGO */}
         <Link to="/" className="px-3 mr-1 border-r border-white/10 hover:opacity-80 transition-opacity">
-          <DeepFocusLogo showText={false} markClassName="h-8 w-10 rounded-[10px] border-white/10" />
+          <DeepFocusLogo showText={false} markClassName="h-8 w-8 rounded-[10px] border-white/10" />
         </Link>
 
         {navItems.map((item) => {
@@ -68,9 +68,13 @@ export default function DashboardNav() {
         <div className="relative">
           <button 
             onClick={() => setShowProfile(!showProfile)}
-            className="w-8 h-8 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center text-xs font-bold hover:bg-violet-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+            className="w-8 h-8 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center text-xs font-bold hover:bg-violet-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-violet-500/50 overflow-hidden"
           >
-            {getInitial()}
+            {user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              getInitial()
+            )}
           </button>
 
           <AnimatePresence>

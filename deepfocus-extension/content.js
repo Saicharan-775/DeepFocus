@@ -1093,6 +1093,7 @@ function promptAISummaryAfterStop(snapshot) {
       </div>
     `;
   appendToBodyWhenReady(overlay);
+  makeModalDraggable(overlay.querySelector('.df-ai-modal-content'));
 
   document.getElementById('df-prompt-no').onclick = () => {
     overlay.remove();
@@ -1386,6 +1387,43 @@ function makeWidgetDraggable(el) {
     document.onmouseup = null;
     document.onmousemove = null;
     try { chrome.storage.local.set({ widgetPos: { top: el.style.top, left: el.style.left } }); } catch (e) { }
+  }
+}
+
+function makeModalDraggable(el) {
+  let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+  el.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    e.preventDefault();
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e.preventDefault();
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    const nextTop = el.offsetTop - pos2;
+    const nextLeft = el.offsetLeft - pos1;
+    const maxTop = Math.max(8, window.innerHeight - el.offsetHeight - 8);
+    const maxLeft = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+    el.style.top = Math.min(Math.max(8, nextTop), maxTop) + "px";
+    el.style.left = Math.min(Math.max(8, nextLeft), maxLeft) + "px";
+    el.style.bottom = "auto";
+    el.style.right = "auto";
+  }
+
+  function closeDragElement() {
+    document.onmouseup = null;
+    document.onmousemove = null;
   }
 }
 

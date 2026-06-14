@@ -3,13 +3,15 @@ import { supabase } from "../lib/supabaseClient";
 import { 
   Target, CheckCircle2, ExternalLink, 
   MessageSquare, Brain, Clock, AlertTriangle, Lightbulb, 
-  RefreshCcw, FolderOpen, ChevronDown, ChevronLeft, Code, Code2
+  RefreshCcw, FolderOpen, ChevronDown, ChevronLeft, Code, Code2,
+  Sparkles, Save
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { getProblemPattern, patternPriorityMap } from "../utils/patternMatcher";
 import DeepFocusLoader from "../components/DeepFocusLoader";
+import { getAiPseudoCode } from "../services/aiService";
 
 function parseRevisionNotes(dbNotes) {
   if (!dbNotes || typeof dbNotes !== "string") {
@@ -52,6 +54,104 @@ export default function TodaysRevision() {
   const [activeSurface, setActiveSurface] = useState("pseudo");
   const [solveMode, setSolveMode] = useState(false);
   const [solveDraft, setSolveDraft] = useState("");
+
+  const [editorPseudoCode, setEditorPseudoCode] = useState("");
+  const [editorNotes, setEditorNotes] = useState("");
+  const [isNotesSaved, setIsNotesSaved] = useState(true);
+  const [pseudoCodeLoading, setPseudoCodeLoading] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  useEffect(() => {
+    if (activeProblem) {
+      const activeRevision = parseRevisionNotes(activeProblem.notes);
+      const activeNotes = activeRevision.notes || {};
+      const localNotes = JSON.parse(localStorage.getItem('df_notes') || '{}')[activeProblem.id] || {};
+      
+      const initPseudo = activeNotes.pseudoCode || activeNotes.mentalModel || localNotes.pseudoCode || localNotes.mentalModel || "";
+      const initNotes = activeNotes.optimal || activeNotes.better || activeNotes.brute || localNotes.optimal || localNotes.better || localNotes.brute || "";
+      
+      setEditorPseudoCode(initPseudo);
+      setEditorNotes(initNotes);
+      setIsNotesSaved(true);
+    } else {
+      setEditorPseudoCode("");
+      setEditorNotes("");
+      setIsNotesSaved(true);
+    }
+  }, [activeProblem]);
+
+  const handleEditorTextChange = (field, value) => {
+    setIsNotesSaved(false);
+    if (field === 'pseudo') {
+      setEditorPseudoCode(value);
+    } else if (field === 'notes') {
+      setEditorNotes(value);
+    }
+  };
+
+  async function handleSaveNotes() {
+    if (!activeProblem) return;
+    
+    const activeRevision = parseRevisionNotes(activeProblem.notes);
+    const existingNotesObj = activeRevision.notes || {};
+    
+    const noteObj = {
+      ...existingNotesObj,
+      pseudoCode: editorPseudoCode,
+      mentalModel: editorPseudoCode,
+      optimal: editorNotes,
+      better: existingNotesObj.better || editorNotes,
+      brute: existingNotesObj.brute || editorNotes
+    };
+    
+    // Save to localStorage
+    const allNotes = JSON.parse(localStorage.getItem('df_notes') || '{}');
+    allNotes[activeProblem.id] = noteObj;
+    localStorage.setItem('df_notes', JSON.stringify(allNotes));
+    
+    // Database format
+    const finalDbNotes = JSON.stringify(noteObj) + (activeRevision.aiSummary ? "\n\n### AI Summary\n" + activeRevision.aiSummary : "");
+    
+    try {
+      const { error } = await supabase
+        .from('revision_problems')
+        .update({ notes: finalDbNotes })
+        .eq('id', activeProblem.id);
+        
+      if (error) throw error;
+      
+      setSuggestedProblems(prev => prev.map(p => p.id === activeProblem.id ? { ...p, notes: finalDbNotes } : p));
+      setActiveProblem(prev => prev && prev.id === activeProblem.id ? { ...prev, notes: finalDbNotes } : prev);
+      setIsNotesSaved(true);
+    } catch (e) {
+      console.error("Error saving notes in Today's Revision:", e);
+    }
+  }
+
+  async function handleGeneratePseudoCode() {
+    if (!activeProblem) return;
+    setPseudoCodeLoading(true);
+    try {
+      const generated = await getAiPseudoCode({
+        title: activeProblem.title,
+        difficulty: activeProblem.difficulty,
+        code: activeProblem.code || ""
+      });
+      setEditorPseudoCode(generated);
+      setIsNotesSaved(false);
+    } catch (e) {
+      console.error("Error generating pseudocode:", e);
+    } finally {
+      setPseudoCodeLoading(false);
+    }
+  }
+
+  const handleCopyCode = () => {
+    if (!activeProblem?.code) return;
+    navigator.clipboard.writeText(activeProblem.code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
 
   const [stats, setStats] = useState({
     totalSolved: 0,
@@ -472,36 +572,86 @@ export default function TodaysRevision() {
                 />
               ) : (
                 <>
-                  <div className="flex gap-1 border-b border-white/[0.06] bg-[#0d0d0f] px-2 py-2">
-                    {[
-                      { key: 'pseudo', label: 'Pseudocode', icon: Code },
-                      { key: 'notes', label: 'Notes', icon: MessageSquare },
-                      { key: 'code', label: 'Code', icon: Code2 }
-                    ].map((tab) => {
-                      const TabIcon = tab.icon;
-                      return (
+                  <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d0d0f] px-2 py-2">
+                    <div className="flex gap-1">
+                      {[
+                        { key: 'pseudo', label: 'Pseudocode', icon: Code },
+                        { key: 'notes', label: 'Notes', icon: MessageSquare },
+                        { key: 'code', label: 'Code', icon: Code2 }
+                      ].map((tab) => {
+                        const TabIcon = tab.icon;
+                        return (
+                          <button
+                            key={tab.key}
+                            onClick={() => setActiveSurface(tab.key)}
+                            className={`flex h-8 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${activeSurface === tab.key ? 'bg-white/[0.07] text-white' : 'text-zinc-600 hover:text-zinc-300'}`}
+                          >
+                            <TabIcon size={13} />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-2 pr-1 font-mono text-xs">
+                      {!isNotesSaved && (
                         <button
-                          key={tab.key}
-                          onClick={() => setActiveSurface(tab.key)}
-                          className={`flex h-8 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${activeSurface === tab.key ? 'bg-white/[0.07] text-white' : 'text-zinc-600 hover:text-zinc-300'}`}
+                          onClick={handleSaveNotes}
+                          className="flex h-7 items-center gap-1 rounded bg-indigo-500/20 px-2.5 text-xs font-bold text-indigo-300 transition-colors hover:bg-indigo-500/30 active:scale-95 cursor-pointer"
                         >
-                          <TabIcon size={13} />
-                          {tab.label}
+                          <Save size={12} />
+                          <span>Save</span>
                         </button>
-                      );
-                    })}
+                      )}
+
+                      {activeSurface === 'pseudo' && (
+                        <button
+                          onClick={handleGeneratePseudoCode}
+                          disabled={pseudoCodeLoading}
+                          className="flex h-7 items-center gap-1.5 rounded bg-violet-500/15 border border-violet-500/25 px-2.5 text-xs font-medium text-violet-300 transition-colors hover:bg-violet-500/25 disabled:text-zinc-600 active:scale-95 cursor-pointer"
+                        >
+                          <Sparkles size={12} />
+                          <span>{pseudoCodeLoading ? 'Generating...' : 'Generate Approach'}</span>
+                        </button>
+                      )}
+
+                      {activeSurface === 'code' && submittedCode && (
+                        <button
+                          onClick={handleCopyCode}
+                          className="flex h-7 items-center gap-1 rounded bg-zinc-800 px-2.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 active:scale-95 cursor-pointer"
+                        >
+                          <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  
                   <div className="flex min-w-0 flex-1 overflow-hidden bg-[#09090b]">
                     <div className="w-14 shrink-0 select-none border-r border-white/[0.055] bg-[#0d0d0f] py-6 pr-3 text-right font-mono text-xs leading-7 text-zinc-700">
-                      {Array.from({ length: 24 }).map((_, i) => <div key={i}>{i + 1}</div>)}
+                      {Array.from({ length: Math.max(24, (activeSurface === 'pseudo' ? editorPseudoCode : activeSurface === 'notes' ? editorNotes : (submittedCode || "")).split('\n').length) }).map((_, i) => <div key={i}>{i + 1}</div>)}
                     </div>
-                    <pre className="min-h-[560px] min-w-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-6 font-mono text-[15px] leading-7 text-zinc-200">
-                      {activeSurface === 'pseudo'
-                        ? (pseudocodeText || "No pseudocode saved yet. Open the full workspace to distill this problem into a clean revision artifact.")
-                        : activeSurface === 'notes'
-                        ? (notesText || "No notes saved yet. Capture the invariant, failed idea, optimization jump, and edge cases in the workspace.")
-                        : (submittedCode || "No submitted code was captured yet.")}
-                    </pre>
+
+                    {activeSurface === 'pseudo' ? (
+                      <textarea
+                        value={editorPseudoCode}
+                        onChange={(e) => handleEditorTextChange('pseudo', e.target.value)}
+                        onBlur={handleSaveNotes}
+                        placeholder="Generate approach outline or write pseudocode manually..."
+                        className="min-h-[560px] min-w-0 flex-1 resize-none border-0 bg-transparent p-6 font-mono text-[15px] leading-7 text-zinc-200 outline-none placeholder:text-zinc-600"
+                      />
+                    ) : activeSurface === 'notes' ? (
+                      <textarea
+                        value={editorNotes}
+                        onChange={(e) => handleEditorTextChange('notes', e.target.value)}
+                        onBlur={handleSaveNotes}
+                        placeholder="Write your study notes, key insights, failed attempts, or invariants here..."
+                        className="min-h-[560px] min-w-0 flex-1 resize-none border-0 bg-transparent p-6 font-mono text-[15px] leading-7 text-zinc-200 outline-none placeholder:text-zinc-600"
+                      />
+                    ) : (
+                      <pre className="min-h-[560px] min-w-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-6 font-mono text-[15px] leading-7 text-zinc-200">
+                        {submittedCode || "No submitted code was captured yet."}
+                      </pre>
+                    )}
                   </div>
                 </>
               )

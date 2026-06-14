@@ -26,7 +26,7 @@ export default function NotFound() {
         {/* Left: Minimal Circular Brand Logo */}
         <Link to="/" className="px-3 py-1 group">
           <DeepFocusLogo
-            markClassName="h-7 w-10 rounded-full border-white/[0.1] group-hover:border-white/20 transition-all"
+            markClassName="h-7 w-7 rounded-lg border-white/[0.1] group-hover:border-white/20 transition-all"
             textClassName="text-[12px] uppercase tracking-[0.2em] group-hover:text-zinc-200 transition-colors"
           />
         </Link>

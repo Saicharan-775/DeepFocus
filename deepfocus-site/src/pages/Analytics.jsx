@@ -381,9 +381,15 @@ export default function Analytics() {
                   
                   {/* Large Profile Avatar */}
                   <div className="relative w-24 h-24 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-500 border-2 border-white/10 flex items-center justify-center overflow-hidden mb-4 mt-4 shadow-[0_0_30px_rgba(139,92,246,0.3)]">
-                     {user ? (
+                     {user?.user_metadata?.avatar_url ? (
+                        <img
+                           src={user.user_metadata.avatar_url}
+                           alt="Avatar"
+                           className="w-full h-full object-cover rounded-full"
+                        />
+                     ) : user ? (
                         <span className="text-3xl font-extrabold text-white uppercase tracking-wider">
-                           {user.email ? user.email[0] : 'N'}
+                           {user.email ? user.email[0].toUpperCase() : 'N'}
                         </span>
                      ) : (
                         <span className="text-3xl font-extrabold text-white uppercase">U</span>

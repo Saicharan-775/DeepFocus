@@ -53,10 +53,11 @@ export default function Header() {
     switch (location.pathname) {
       case '/dashboard': return 'Dashboard';
       case '/revision': return 'Revision Sheet';
-      case '/planner': return 'AI Planner';
+      case '/planner': return 'Revision Planner';
       case '/analytics': return 'Profile';
       case '/library': return 'Library';
       case '/settings': return 'Settings';
+      case '/feedback': return 'Feedback & Requests';
       default: return 'Dashboard';
     }
   };

@@ -14,6 +14,7 @@ import { getAiSummary, getAiPseudoCode } from "../services/aiService";
 import ReactMarkdown from "react-markdown";
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import DeepFocusLoader from "../components/DeepFocusLoader";
+import DeepFocusLogo from "../components/DeepFocusLogo";
 
 // Helper function to parse notes from database string format
 function parseDbNotes(dbNotes) {
@@ -197,6 +198,7 @@ export default function RevisionWorkspace() {
   const [code, setCode] = useState("");
   const [isEditingCode, setIsEditingCode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedAttemptIndex, setSelectedAttemptIndex] = useState(null);
   
   // AI states
   const [aiSummary, setAiSummary] = useState("");
@@ -225,6 +227,7 @@ export default function RevisionWorkspace() {
   const selectProblem = (problem) => {
     setActiveProblem(problem);
     setSearchParams({ id: problem.id });
+    setSelectedAttemptIndex(null);
     
     // Parse notes
     const parsed = parseDbNotes(problem.dbNotes);
@@ -543,7 +546,7 @@ export default function RevisionWorkspace() {
         optimal;
 
       const reviewSource = code.trim()
-        ? `Submitted Code:\n${code}`
+        ? `My Code:\n${code}`
         : activeText.trim()
         ? `${activeApproachLabel} Notes:\n${activeText}`
         : [optimal, better, brute].filter(Boolean).join('\n\n');
@@ -666,7 +669,7 @@ export default function RevisionWorkspace() {
   const activeApproachText = activeTab === 'brute' ? brute : activeTab === 'better' ? better : optimal;
   const activeApproachTime = activeTab === 'brute' ? bruteTime : activeTab === 'better' ? betterTime : optimalTime;
   const activeApproachSpace = activeTab === 'brute' ? bruteSpace : activeTab === 'better' ? betterSpace : optimalSpace;
-  const activeApproachLabel = activeTab === 'brute' ? 'Brute' : activeTab === 'better' ? 'Better' : activeTab === 'optimal' ? 'Optimal' : 'Submitted';
+  const activeApproachLabel = activeTab === 'brute' ? 'Brute' : activeTab === 'better' ? 'Better' : activeTab === 'optimal' ? 'Optimal' : 'My Attempts';
   const approachMeta = {
     brute: {
       kicker: 'First valid path',
@@ -717,7 +720,7 @@ export default function RevisionWorkspace() {
         <div className="mx-auto flex max-w-[1500px] flex-col items-stretch justify-between gap-4 md:flex-row md:items-center">
           
           {/* Left info & Dropdown Selector */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <button 
               onClick={() => navigate(-1)} 
               className="flex items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.025] p-2.5 text-zinc-400 transition-all hover:border-white/[0.1] hover:bg-white/[0.055] hover:text-white active:scale-95"
@@ -725,6 +728,12 @@ export default function RevisionWorkspace() {
             >
               <ChevronLeft size={16} />
             </button>
+
+            {/* Branding Logo & App Name */}
+            <div className="flex items-center gap-2 border-r border-white/10 pr-3.5 mr-1 hidden sm:flex">
+              <DeepFocusLogo showText={false} markClassName="h-7 w-7 rounded-lg border-white/[0.08]" />
+              <span className="text-sm font-bold tracking-tight text-white">DeepFocus</span>
+            </div>
             
             <div className="relative">
               <button
@@ -886,7 +895,7 @@ export default function RevisionWorkspace() {
                   { key: 'brute', label: 'Brute', icon: Brain },
                   { key: 'better', label: 'Better', icon: Zap },
                   { key: 'optimal', label: 'Optimal', icon: Target },
-                  { key: 'code', label: 'Submitted', icon: Code2 }
+                  { key: 'code', label: 'My Attempts', icon: Code2 }
                 ].map((tab) => {
                   const isActive = activeTab === tab.key;
                   const IconComponent = tab.icon;
@@ -949,49 +958,244 @@ export default function RevisionWorkspace() {
                       </a>
                     )}
                   </div>
-                </div>
-
-                {activeTab === 'code' ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-600">Submitted</p>
-                        <h2 className="mt-1 text-lg font-semibold text-zinc-100">Final implementation</h2>
+                </div>                {activeTab === 'code' ? (() => {
+                  const history = Array.isArray(activeProblem?.focus_history) ? activeProblem.focus_history : [];
+                  return (
+                    <div className="space-y-4">
+                      {/* Submissions Header */}
+                      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                        <div>
+                          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-600">My Attempts</p>
+                          <h2 className="mt-1 text-lg font-semibold text-zinc-100">
+                            {history.length === 0
+                              ? "Current Code"
+                              : selectedAttemptIndex === null
+                              ? "Submissions & Attempts"
+                              : selectedAttemptIndex === 'draft'
+                              ? "Current Code"
+                              : `Attempt #${selectedAttemptIndex + 1}`}
+                          </h2>
+                        </div>
+                        {selectedAttemptIndex !== null && history.length > 0 && (
+                          <button
+                            onClick={() => setSelectedAttemptIndex(null)}
+                            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.025] px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-all active:scale-95 cursor-pointer"
+                          >
+                            <ArrowLeft size={13} />
+                            <span>Back to Submissions</span>
+                          </button>
+                        )}
                       </div>
-                      {code.trim() && (
-                        <button
-                          onClick={() => setIsEditingCode(!isEditingCode)}
-                          className="rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
-                        >
-                          {isEditingCode ? 'Preview' : 'Edit'}
-                        </button>
+
+                      {history.length > 0 ? (
+                        /* If there is history */
+                        selectedAttemptIndex === null ? (
+                          /* LeetCode-style Submissions Table */
+                          <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-black/10">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead className="bg-white/[0.02] border-b border-white/[0.06]">
+                                <tr className="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">
+                                  <th className="p-4">Submission / Attempt</th>
+                                  <th className="p-4">Status</th>
+                                  <th className="p-4 text-center">Score</th>
+                                  <th className="p-4 text-center">Time Spent</th>
+                                  <th className="p-4 text-center">Switches</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/[0.03]">
+                                {/* Active Code Draft Row */}
+                                <tr 
+                                  onClick={() => setSelectedAttemptIndex('draft')}
+                                  className="hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                                >
+                                  <td className="p-4 font-semibold text-violet-400 group-hover:text-violet-300">
+                                    Current Code
+                                    <span className="block text-[9px] text-zinc-500 font-normal mt-0.5">Editable workspace copy</span>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                                      Current Code
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-center text-zinc-600 font-mono">-</td>
+                                  <td className="p-4 text-center text-zinc-600 font-mono">-</td>
+                                  <td className="p-4 text-center text-zinc-600 font-mono">-</td>
+                                </tr>
+
+                                {/* Historical Attempts Rows */}
+                                {history.map((att, idx) => {
+                                  const attemptNum = idx + 1;
+                                  const dateStr = att.timestamp ? new Date(att.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown date';
+                                  
+                                  // Map focus status to color classes
+                                  const statusColor = att.status === 'Focus Kept' 
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                    : att.status === 'Cheated'
+                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+
+                                  const elapsedMinutes = att.duration ? `${Math.round(att.duration / 60)} min` : '--';
+
+                                  return (
+                                    <tr 
+                                      key={idx}
+                                      onClick={() => setSelectedAttemptIndex(idx)}
+                                      className="hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                                    >
+                                      <td className="p-4 font-semibold text-zinc-200 group-hover:text-violet-300">
+                                        Attempt #{attemptNum}
+                                        <span className="block text-[9px] text-zinc-500 font-normal mt-0.5">{dateStr}</span>
+                                      </td>
+                                      <td className="p-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border ${statusColor}`}>
+                                          {att.status || 'Attempted'}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 text-center font-mono font-bold text-zinc-300">
+                                        {att.score || 0}%
+                                      </td>
+                                      <td className="p-4 text-center font-mono text-zinc-300">
+                                        {elapsedMinutes}
+                                      </td>
+                                      <td className="p-4 text-center font-mono text-zinc-300">
+                                        {att.switches || 0}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : selectedAttemptIndex === 'draft' ? (
+                          /* Active Code Draft Editor */
+                          <div className="flex flex-col flex-1 gap-3">
+                            <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-zinc-400">
+                              <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                                Current Code (Syncs to Cloud)
+                              </span>
+                              <button
+                                onClick={() => setIsEditingCode(!isEditingCode)}
+                                className="rounded-md px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+                              >
+                                {isEditingCode ? 'Preview' : 'Edit'}
+                              </button>
+                            </div>
+                            
+                            {isEditingCode || !code.trim() ? (
+                              <textarea
+                                value={code}
+                                onChange={(e) => handleTextChange("code", e.target.value)}
+                                placeholder="Paste or write your latest code implementation here..."
+                                className="min-h-[500px] flex-1 w-full resize-none rounded-lg border border-white/[0.06] bg-[#09090b] p-5 font-mono text-sm leading-6 text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-300/35"
+                              />
+                            ) : (
+                              <div className="max-h-[550px] flex-1 overflow-auto rounded-lg border border-white/[0.06] bg-[#09090b] text-sm custom-scrollbar">
+                                <pre className="min-h-[500px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-zinc-100">
+                                  <code>{code}</code>
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        ) : (() => {
+                          /* Selected Past Attempt Details */
+                          const att = history[selectedAttemptIndex];
+                          
+                          // Calculate focus level
+                          const getFocusLevel = (score) => {
+                            if (score >= 80) return 'Good';
+                            if (score >= 50) return 'Moderate';
+                            return 'Weak';
+                          };
+                          const focusLevel = getFocusLevel(att.score);
+                          const focusColor = focusLevel === 'Good' 
+                            ? 'text-emerald-400' 
+                            : focusLevel === 'Moderate'
+                            ? 'text-amber-400'
+                            : 'text-rose-400';
+
+                          const elapsedMinutes = att.duration ? Math.round(att.duration / 60) : 0;
+
+                          return (
+                            <div className="flex flex-col flex-1 gap-4 overflow-hidden">
+                              {/* Stats Panel */}
+                              <div className="border border-white/[0.06] rounded-xl bg-black/40 p-4">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3">Your Stats</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                  <div className="bg-white/[0.015] border border-white/[0.04] rounded-lg p-3">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-semibold">Score</p>
+                                    <p className="text-xl font-bold text-white mt-0.5">{att.score || 0}%</p>
+                                  </div>
+                                  <div className="bg-white/[0.015] border border-white/[0.04] rounded-lg p-3">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-semibold">Focus</p>
+                                    <p className={`text-xl font-bold mt-0.5 ${focusColor}`}>{focusLevel}</p>
+                                  </div>
+                                  <div className="bg-white/[0.015] border border-white/[0.04] rounded-lg p-3">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-semibold">Tab Switches</p>
+                                    <p className="text-xl font-bold text-white mt-0.5">{att.switches || 0}</p>
+                                  </div>
+                                  <div className="bg-white/[0.015] border border-white/[0.04] rounded-lg p-3">
+                                    <p className="text-[10px] text-zinc-500 uppercase font-semibold">Time Spent</p>
+                                    <p className="text-xl font-bold text-white mt-0.5">{elapsedMinutes} min</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Attempt Code Preview */}
+                              <div className="flex flex-col flex-1 gap-2 overflow-hidden">
+                                <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-zinc-400 flex justify-between items-center">
+                                  <span className="font-mono font-medium text-zinc-300 font-bold">Code Submission (Attempt #{selectedAttemptIndex + 1})</span>
+                                </div>
+                                {att.code && att.code.trim() ? (
+                                  <div className="max-h-[420px] flex-1 overflow-auto rounded-lg border border-white/[0.06] bg-[#09090b] text-sm custom-scrollbar">
+                                    <pre className="min-h-[350px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-zinc-100 font-bold">
+                                      <code>{att.code}</code>
+                                    </pre>
+                                  </div>
+                                ) : (
+                                  <div className="border border-dashed border-white/[0.08] rounded-lg p-8 text-center text-zinc-500 text-xs font-mono bg-black/10 min-h-[350px] flex flex-col justify-center items-center">
+                                    No code snippet was captured during this attempt.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        /* Fallback to simple code editor when no history exists */
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-zinc-500">Current Code (Syncs to Cloud)</span>
+                            {code.trim() && (
+                              <button
+                                onClick={() => setIsEditingCode(!isEditingCode)}
+                                className="rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-white/[0.05] hover:text-zinc-200"
+                              >
+                                {isEditingCode ? 'Preview' : 'Edit'}
+                              </button>
+                            )}
+                          </div>
+                          {isEditingCode || !code.trim() ? (
+                            <textarea
+                              value={code}
+                              onChange={(e) => handleTextChange("code", e.target.value)}
+                              placeholder="No attempt code was captured yet. Paste your code here."
+                              className="min-h-[548px] w-full resize-none rounded-lg border border-white/[0.06] bg-[#09090b] p-5 font-mono text-sm leading-6 text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-300/35"
+                            />
+                          ) : (
+                            <div className="max-h-[610px] overflow-auto rounded-lg border border-white/[0.06] bg-[#09090b] text-sm custom-scrollbar">
+                              <pre className="min-h-[548px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-zinc-100">
+                                <code>{code}</code>
+                              </pre>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {isEditingCode || !code.trim() ? (
-                      <textarea
-                        value={code}
-                        onChange={(e) => handleTextChange("code", e.target.value)}
-                        placeholder="No submitted code was captured yet. Paste the final submitted code here."
-                        className="min-h-[548px] w-full resize-none rounded-lg border border-white/[0.06] bg-[#09090b] p-5 font-mono text-sm leading-6 text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-300/35"
-                      />
-                    ) : (
-                      <div className="max-h-[610px] overflow-auto rounded-lg border border-white/[0.06] bg-[#09090b] text-sm">
-                        <pre className="min-h-[548px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-zinc-100">
-                          <code>{code}</code>
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <div className="space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-600">{activeMeta.kicker}</p>
-                        <h2 className="mt-1 text-lg font-semibold text-zinc-100">{activeMeta.title}</h2>
-                      </div>
-                      <span className="mt-1 rounded-full bg-white/[0.035] px-2.5 py-1 text-xs text-zinc-500">{activeApproachText.trim() ? 'Stored' : 'Empty'}</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_1.2fr]">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <label className="space-y-1.5 rounded-lg border border-white/[0.055] bg-white/[0.025] p-3">
                         <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-600">Time</span>
                         <input
@@ -1010,10 +1214,6 @@ export default function RevisionWorkspace() {
                           className="w-full border-0 bg-transparent px-0 py-1 font-mono text-sm text-zinc-100 outline-none placeholder:text-zinc-700"
                         />
                       </label>
-                      <div className="rounded-lg border border-white/[0.055] bg-white/[0.025] p-3">
-                        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-600">Focus</p>
-                        <p className="mt-1.5 text-sm text-zinc-300">{activeMeta.focus}</p>
-                      </div>
                     </div>
 
                     <textarea
@@ -1038,7 +1238,7 @@ export default function RevisionWorkspace() {
                 <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
                   <Code2 size={16} className="text-indigo-300" />
                   <span>Pseudocode</span>
-                  <span className="hidden text-xs font-normal text-zinc-600 sm:inline">editorial reasoning</span>
+                  <span className="hidden text-xs font-normal text-zinc-600 sm:inline">Approach Breakdown</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -1086,7 +1286,7 @@ export default function RevisionWorkspace() {
                     className="flex h-8 items-center gap-1.5 rounded-md bg-indigo-400/[0.12] px-2.5 text-xs font-medium text-indigo-100 transition-colors hover:bg-indigo-400/[0.18] disabled:text-zinc-600"
                   >
                     {pseudoCodeLoading ? <Sparkles size={13} /> : <Sparkles size={13} />}
-                    <span>{pseudoCodeLoading ? 'Drafting' : 'AI Draft'}</span>
+                    <span>{pseudoCodeLoading ? 'Generating...' : 'Generate Approach'}</span>
                   </button>
                 </div>
               </div>
@@ -1105,7 +1305,7 @@ export default function RevisionWorkspace() {
                   value={pseudoCode}
                   onScroll={handleTextareaScroll}
                   onChange={(e) => handleTextChange("pseudoCode", e.target.value)}
-                  placeholder={"Generate with AI or write manually.\n\nExample:\n1. Track the invariant\n2. Move the pointer/state only when the condition changes\n3. Return the final accumulated answer"}
+                  placeholder={"Generate approach outline or write manually.\n\nExample:\n1. Track the invariant\n2. Move the pointer/state only when the condition changes\n3. Return the final accumulated answer"}
                   className="h-full min-h-[648px] flex-1 resize-none border-0 bg-transparent p-6 font-mono text-[15px] leading-7 text-zinc-100 outline-none placeholder:text-zinc-600"
                   style={{ textAlign: pseudoCodeAlign }}
                 />
@@ -1121,7 +1321,7 @@ export default function RevisionWorkspace() {
                   className={`relative flex h-10 items-center gap-2 rounded-md px-3 font-medium transition-colors ${insightTab === 'mistake' ? 'bg-rose-300/[0.06] text-rose-200' : 'text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-300'}`}
                 >
                   <ShieldAlert size={14} />
-                  Mistake
+                  Common Mistakes
                   {insightTab === 'mistake' && <motion.span layoutId="insight-tab-line" className="absolute inset-x-3 bottom-0 h-px bg-rose-300/70" />}
                 </button>
                 <button
@@ -1129,7 +1329,7 @@ export default function RevisionWorkspace() {
                   className={`relative flex h-10 items-center gap-2 rounded-md px-3 font-medium transition-colors ${insightTab === 'fix' ? 'bg-emerald-300/[0.06] text-emerald-200' : 'text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-300'}`}
                 >
                   <Lightbulb size={14} />
-                  Fix
+                  Key Strategy & Takeaways
                   {insightTab === 'fix' && <motion.span layoutId="insight-tab-line" className="absolute inset-x-3 bottom-0 h-px bg-emerald-300/70" />}
                 </button>
               </div>
@@ -1141,7 +1341,7 @@ export default function RevisionWorkspace() {
                   className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs text-zinc-400 transition-colors hover:bg-white/[0.05] hover:text-zinc-100 disabled:text-zinc-600"
                 >
                   <RefreshCw size={13} />
-                  <span>{aiLoading ? 'Reviewing' : 'Analyze'}</span>
+                  <span>{aiLoading ? 'Analyzing...' : 'Analyze My Approach'}</span>
                 </button>
                 <button
                   onClick={() => setInsightPanelOpen(prev => !prev)}
@@ -1169,7 +1369,7 @@ export default function RevisionWorkspace() {
                     }`}>
                       <div className={`mb-3 flex items-center gap-2 text-sm font-medium ${insightTab === 'mistake' ? 'text-rose-200' : 'text-emerald-200'}`}>
                         {insightTab === 'mistake' ? <ShieldAlert size={15} /> : <Lightbulb size={15} />}
-                        <span>{insightTab === 'mistake' ? 'Where thinking drifted' : 'Corrected transition'}</span>
+                        <span>{insightTab === 'mistake' ? 'Common Mistakes & Friction Points' : 'Key Strategy & Takeaways'}</span>
                       </div>
                       {aiLoading ? (
                         <DeepFocusLoader message="" fullScreen={false} size="sm" className="min-h-[8rem] bg-transparent" />
@@ -1180,8 +1380,8 @@ export default function RevisionWorkspace() {
                       ) : (
                         <p className="text-sm leading-6 text-zinc-400">
                           {insightTab === 'mistake'
-                            ? 'Analyze the submitted solution to surface the exact skipped logic or wrong transition.'
-                            : 'Analyze the submitted solution to turn the correction into a clean mental move.'}
+                            ? 'Click "Analyze My Approach" to review common misconceptions and skipped logic.'
+                            : 'Click "Analyze My Approach" to extract the optimal mental model and strategy.'}
                         </p>
                       )}
                     </div>

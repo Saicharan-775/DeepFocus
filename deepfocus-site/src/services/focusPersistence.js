@@ -20,6 +20,7 @@ export function normalizeFocusProblem(input = {}) {
     notes: input.notes || '',
     code: input.code || '',
     revision_needed: input.revision_needed ?? true,
+    focus_history: input.focus_history || [],
     created_at: input.created_at || now,
     updated_at: input.updated_at || now,
     __syncState: input.__syncState || 'optimistic',
@@ -37,5 +38,6 @@ export async function persistFocusProblem(problem) {
     switches: normalized.switches,
     notes: normalized.notes,
     code: normalized.code,
+    isNewAttempt: true,
   });
 }

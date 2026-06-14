@@ -14,6 +14,7 @@ const Sheet = lazy(() => import("./pages/Sheet.jsx"));
 const TodaysRevision = lazy(() => import("./pages/TodaysRevision.jsx"));
 const RevisionWorkspace = lazy(() => import("./pages/RevisionWorkspace.jsx"));
 const Settings = lazy(() => import("./pages/Settings.jsx"));
+const Feedback = lazy(() => import("./pages/Feedback.jsx"));
 const Guide = lazy(() => import("./pages/Guide"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const Library = lazy(() => import("./pages/Library.jsx"));
@@ -60,6 +61,7 @@ function App() {
                 <Route path="/community/new" element={<NewCommunityPost />} />
                 <Route path="/community/post/:postId" element={<CommunityPost />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/feedback" element={<Feedback />} />
               </Route>
             </Route>
             {/* Auth routes */}

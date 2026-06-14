@@ -79,7 +79,7 @@ export async function addRevisionProblem(problem) {
 
   let { data: existing, error: lookupError } = await supabase
     .from('revision_problems')
-    .select('id, notes, code')
+    .select('id, notes, code, focus_history')
     .eq('user_id', session.user.id)
     .eq('link', newProblem.link)
     .maybeSingle();
@@ -87,7 +87,7 @@ export async function addRevisionProblem(problem) {
   if (!lookupError && !existing) {
     const titleLookup = await supabase
       .from('revision_problems')
-      .select('id, notes, code')
+      .select('id, notes, code, focus_history')
       .eq('user_id', session.user.id)
       .eq('title', newProblem.title)
       .maybeSingle();
@@ -100,6 +100,26 @@ export async function addRevisionProblem(problem) {
     return null;
   }
 
+  const isNewAttempt = problem.isNewAttempt || false;
+  const historyItem = {
+    score: newProblem.focus_score,
+    status: newProblem.focus_status,
+    switches: newProblem.switches,
+    duration: newProblem.focus_duration,
+    code: newProblem.code,
+    timestamp: new Date().toISOString()
+  };
+
+  let updatedHistory = [];
+  if (existing) {
+    updatedHistory = Array.isArray(existing.focus_history) ? existing.focus_history : [];
+    if (isNewAttempt) {
+      updatedHistory = [...updatedHistory, historyItem];
+    }
+  } else {
+    updatedHistory = [historyItem];
+  }
+
   const query = existing
     ? supabase
         .from('revision_problems')
@@ -107,11 +127,15 @@ export async function addRevisionProblem(problem) {
           ...newProblem,
           notes: problem.notes ? problem.notes : (existing.notes || ''),
           code: problem.code ? problem.code : (existing.code || ''),
+          focus_history: updatedHistory
         })
         .eq('id', existing.id)
     : supabase
         .from('revision_problems')
-        .insert([newProblem]);
+        .insert([{
+          ...newProblem,
+          focus_history: updatedHistory
+        }]);
 
   const { data, error } = await query
     .select()

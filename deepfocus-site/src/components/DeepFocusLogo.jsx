@@ -14,7 +14,7 @@ export default function DeepFocusLogo({
         <img
           src="/deepfocus-logo-small.png"
           alt="DeepFocus"
-          className="h-full w-full object-contain"
+          className="h-full w-full object-contain p-1"
           width="36"
           height="36"
           loading="eager"

@@ -8,8 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import DeepFocusLoader from "../components/DeepFocusLoader";
 
 // --- SERVICES ---
-// In the future, this module interacts with `/api` instead. None of this UI needs to know about it.
 import { getWeeklyRecommendations, getGroupedLibraryData } from "../services/libraryService";
+import { getRevisionProblems } from "../services/revisionService";
+import { patterns } from "../data/library/patterns";
+import { getProblemPattern } from "../utils/patternMatcher";
 
 // --- COMPONENTS ---
 
@@ -334,12 +336,52 @@ export default function Library() {
   useEffect(() => {
     async function loadData() {
       try {
-        // e.g. Pass weak topics found from backend analytics determining weakness
-        const weekRecs = await getWeeklyRecommendations(["arrays", "linkedlist"]);
+        // 1. Fetch real-time revision problems from Supabase
+        const problems = await getRevisionProblems();
+        
+        // 2. Identify weak topic IDs based on problem history
+        const weakTopicsSet = new Set();
+        if (problems && problems.length > 0) {
+          problems.forEach(p => {
+            const hasWeakFocus = (p.focus_score !== undefined && p.focus_score < 75) || 
+                                 p.focus_status === 'Cheated' || 
+                                 p.focus_status === 'Give Up';
+            if (hasWeakFocus) {
+              const patName = getProblemPattern(p.title);
+              if (patName) {
+                const parentPattern = patterns.find(pat => 
+                  pat.name.toLowerCase() === patName.toLowerCase() || 
+                  pat.id.toLowerCase() === patName.toLowerCase().replace(/[\s-]/g, "_")
+                );
+                if (parentPattern) {
+                  weakTopicsSet.add(parentPattern.topicId);
+                }
+              }
+            }
+          });
+        }
+        
+        // Fallback to standard topics if no weak topics found yet
+        const weakTopicIds = weakTopicsSet.size > 0 ? Array.from(weakTopicsSet) : ["arrays", "linkedlist"];
+        
+        // 3. Load dynamic recommendations
+        const weekRecs = await getWeeklyRecommendations(weakTopicIds);
         setFocusData(weekRecs);
 
+        // 4. Load library grouping and hydrate saved/completed states from localStorage
+        const savedIds = JSON.parse(localStorage.getItem("df_library_saved") || "[]");
+        const completedIds = JSON.parse(localStorage.getItem("df_library_completed") || "[]");
+        
         const libraryGrouping = await getGroupedLibraryData();
-        setLibraryData(libraryGrouping);
+        const hydratedGrouping = libraryGrouping.map(section => ({
+          ...section,
+          resources: section.resources.map(res => ({
+            ...res,
+            isSaved: savedIds.includes(res.id),
+            isCompleted: completedIds.includes(res.id)
+          }))
+        }));
+        setLibraryData(hydratedGrouping);
       } catch (err) {
         console.error("Failed to load library data:", err);
       } finally {
@@ -351,21 +393,39 @@ export default function Library() {
   }, []);
 
   const handleToggleSave = (resourceId) => {
-    setLibraryData(prev => prev.map(section => ({
-      ...section,
-      resources: section.resources.map(res => 
-        res.id === resourceId ? { ...res, isSaved: !res.isSaved } : res
-      )
-    })));
+    let nextSavedIds = [];
+    setLibraryData(prev => prev.map(section => {
+      const nextResources = section.resources.map(res => {
+        if (res.id === resourceId) {
+          const nextSaved = !res.isSaved;
+          if (nextSaved) nextSavedIds.push(res.id);
+          return { ...res, isSaved: nextSaved };
+        } else {
+          if (res.isSaved) nextSavedIds.push(res.id);
+          return res;
+        }
+      });
+      return { ...section, resources: nextResources };
+    }));
+    localStorage.setItem("df_library_saved", JSON.stringify(nextSavedIds));
   };
 
   const handleToggleComplete = (resourceId) => {
-    setLibraryData(prev => prev.map(section => ({
-      ...section,
-      resources: section.resources.map(res => 
-        res.id === resourceId ? { ...res, isCompleted: !res.isCompleted } : res
-      )
-    })));
+    let nextCompletedIds = [];
+    setLibraryData(prev => prev.map(section => {
+      const nextResources = section.resources.map(res => {
+        if (res.id === resourceId) {
+          const nextCompleted = !res.isCompleted;
+          if (nextCompleted) nextCompletedIds.push(res.id);
+          return { ...res, isCompleted: nextCompleted };
+        } else {
+          if (res.isCompleted) nextCompletedIds.push(res.id);
+          return res;
+        }
+      });
+      return { ...section, resources: nextResources };
+    }));
+    localStorage.setItem("df_library_completed", JSON.stringify(nextCompletedIds));
   };
 
   const getTopicsList = () => {

@@ -10,6 +10,8 @@ import {
   Link2,
   ShieldCheck,
   Copy,
+  Shuffle,
+  Sparkles,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,6 +39,32 @@ const AI_PROVIDERS = [
   { id: "openrouter", name: "OpenRouter", desc: "Low-cost routing" },
   { id: "groq", name: "Groq", desc: "Fast inference" },
   { id: "openai", name: "OpenAI", desc: "GPT models" },
+];
+
+const CURATED_AVATARS = [
+  // Lorelei (illustrated faces)
+  { id: "lorelei-1", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Aria&backgroundType=gradientLinear&backgroundColor=c0aede,d1d4f9" },
+  { id: "lorelei-2", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
+  { id: "lorelei-3", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Maya&backgroundType=gradientLinear&backgroundColor=ffdfdf,f0d5da" },
+  { id: "lorelei-4", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Christian&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
+
+  // Notionists (Notion minimal hand-drawn outline style)
+  { id: "notion-1", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Oliver&backgroundType=gradientLinear&backgroundColor=b6e3f4,d1d4f9" },
+  { id: "notion-2", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Sophia&backgroundType=gradientLinear&backgroundColor=ffd8be,fecdd3" },
+  { id: "notion-3", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundType=gradientLinear&backgroundColor=d2f4ea,bbf7d0" },
+  { id: "notion-4", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Bella&backgroundType=gradientLinear&backgroundColor=ffdfdf,c0aede" },
+
+  // Personas (sleek flat-vector illustrations)
+  { id: "persona-1", url: "https://api.dicebear.com/7.x/personas/svg?seed=Jack&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
+  { id: "persona-2", url: "https://api.dicebear.com/7.x/personas/svg?seed=Lily&backgroundType=gradientLinear&backgroundColor=c0aede,d1d4f9" },
+  { id: "persona-3", url: "https://api.dicebear.com/7.x/personas/svg?seed=Mason&backgroundType=gradientLinear&backgroundColor=ffdfdf,f0d5da" },
+  { id: "persona-4", url: "https://api.dicebear.com/7.x/personas/svg?seed=Emma&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
+
+  // Abstract / Geometric Styles
+  { id: "shape-1", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Focus&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
+  { id: "shape-2", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Deep&backgroundType=gradientLinear&backgroundColor=ec4899,8b5cf6" },
+  { id: "shape-3", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Core&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
+  { id: "shape-4", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Mind&backgroundType=gradientLinear&backgroundColor=d2f4ea,bbf7d0" },
 ];
 
 function getInitialAiProvider() {
@@ -84,6 +112,14 @@ export default function Settings() {
   const [showPairToken, setShowPairToken] = useState(false);
 
   const [saveState, setSaveState] = useState("saved");
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState("");
+  const [fullName, setFullName] = useState("");
+
+  // Custom Avatar Builder States
+  const [customStyle, setCustomStyle] = useState("lorelei");
+  const [customSeed, setCustomSeed] = useState("Focus");
+  const [customBgType, setCustomBgType] = useState("gradientLinear");
+  const [customBgColor, setCustomBgColor] = useState("c0aede,d1d4f9");
 
   useEffect(() => {
     let channel;
@@ -97,8 +133,9 @@ export default function Settings() {
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
-
       if (user) {
+        setSelectedAvatarUrl(user.user_metadata?.avatar_url || "");
+        setFullName(user.user_metadata?.full_name || "");
         checkExtensionConnection(user.id);
 
         const loadStats = async () => {
@@ -173,7 +210,7 @@ export default function Settings() {
 
   useEffect(() => {
     setSaveState("unsaved");
-  }, [dailyGoal, openAiKey, openrouterApiKey, groqApiKey, aiProvider]);
+  }, [dailyGoal, openAiKey, openrouterApiKey, groqApiKey, aiProvider, selectedAvatarUrl, fullName]);
 
   const checkExtensionConnection = async (userId) => {
     const { data: conn } = await supabase
@@ -185,7 +222,7 @@ export default function Settings() {
     setExtensionLinked(!!conn);
   };
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
     localStorage.setItem("dailyRevisionGoal", dailyGoal);
 
     localStorage.setItem("df_openai_key", openAiKey.trim());
@@ -207,6 +244,31 @@ export default function Settings() {
       openAiApiKey: hasUserKey ? selectedOpenAiKey : "",
       aiKeyMode: hasUserKey ? "byok" : "none"
     }, window.location.origin);
+
+    const metadataUpdates = {};
+    let needsUpdate = false;
+    if (selectedAvatarUrl !== (user?.user_metadata?.avatar_url || "")) {
+      metadataUpdates.avatar_url = selectedAvatarUrl;
+      needsUpdate = true;
+    }
+    if (fullName.trim() !== (user?.user_metadata?.full_name || "")) {
+      metadataUpdates.full_name = fullName.trim();
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      try {
+        const { data, error } = await supabase.auth.updateUser({
+          data: metadataUpdates
+        });
+        if (error) throw error;
+        if (data?.user) {
+          setUser(data.user);
+        }
+      } catch (err) {
+        console.error("Error updating profile details:", err);
+      }
+    }
 
     setSaveState("saved");
   };
@@ -404,40 +466,225 @@ export default function Settings() {
                   
                   <div className="divide-y divide-white/[0.06]">
                     <div className="px-6 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                      <div className="flex items-center gap-5">
-                        <div className="relative">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05] border border-white/[0.08] text-xl font-semibold">
-                            {user?.email?.charAt(0).toUpperCase() || "U"}
+                      <div className="flex items-center gap-5 w-full">
+                        <div className="relative shrink-0">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05] border border-white/[0.08] text-xl font-semibold overflow-hidden">
+                            {selectedAvatarUrl ? (
+                              <img
+                                src={selectedAvatarUrl}
+                                alt="Avatar"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{fullName ? fullName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || "U"}</span>
+                            )}
                           </div>
                           <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[#0c0c0c] bg-emerald-500" />
                         </div>
-                        <div>
-                          <div className="text-base font-medium text-white flex items-center gap-2">
-                            {user?.user_metadata?.full_name || "DeepFocus User"}
-                            <div className="flex items-center gap-1 rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] uppercase font-semibold tracking-wider text-zinc-300">
-                              <ShieldCheck size={10} />
-                              Verified
+                        <div className="flex-1 min-w-0 space-y-3">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Full Name</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="Enter your name..."
+                                className="w-full max-w-sm rounded-lg border border-white/[0.08] bg-[#151515] px-3 py-1.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
+                              />
+                              <div className="flex items-center gap-1 shrink-0 rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] uppercase font-semibold tracking-wider text-zinc-300">
+                                <ShieldCheck size={10} />
+                                Verified
+                              </div>
                             </div>
                           </div>
-                          <div className="mt-1 text-sm text-zinc-500">
+                          <div className="text-xs text-zinc-500">
                             {user?.email}
                           </div>
                         </div>
                       </div>
-                      <button className="h-9 px-4 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm font-medium text-white hover:bg-white/[0.08] transition-colors">
-                        Edit Profile
-                      </button>
                     </div>
 
-                    <div className="px-6 py-5 flex items-center justify-between gap-4">
-                      <div>
-                        <div className="text-sm font-medium text-white">Current Plan</div>
-                        <div className="text-sm text-zinc-500 mt-0.5">You are currently on the Pro tier</div>
+                    {/* Interactive Avatar Picker */}
+                    <div className="px-6 py-5">
+                      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-4">Choose Your Avatar</div>
+                      
+                      {/* Symmetrical 16 Preset Grid */}
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+                        {CURATED_AVATARS.map((avatar) => {
+                          const isSelected = selectedAvatarUrl === avatar.url;
+                          return (
+                            <button
+                              key={avatar.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedAvatarUrl(avatar.url);
+                                setSaveState("unsaved");
+                              }}
+                              className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all p-0.5 bg-white/[0.03] hover:scale-105 active:scale-95 cursor-pointer ${
+                                isSelected ? "border-violet-500 ring-2 ring-violet-500/20" : "border-white/[0.08] hover:border-white/[0.2]"
+                              }`}
+                            >
+                              <img
+                                src={avatar.url}
+                                alt={`Avatar ${avatar.id}`}
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-violet-500/20 flex items-center justify-center">
+                                  <div className="bg-violet-500 text-white rounded-full p-0.5">
+                                    <Check size={10} strokeWidth={3} />
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
-                      <div className="text-sm font-medium text-white px-3 py-1 bg-white/[0.06] rounded-md border border-white/[0.06]">
-                        Pro Plan
+
+                      {/* Custom Avatar Builder Section */}
+                      <div className="mt-6 pt-6 border-t border-white/[0.06]">
+                        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-4 flex items-center gap-1.5">
+                          <Sparkles size={12} className="text-violet-400" />
+                          Design a Custom Avatar
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row gap-6 bg-white/[0.01] border border-white/[0.04] rounded-xl p-5">
+                          {/* Live Preview Column */}
+                          <div className="flex flex-col items-center justify-center gap-3 shrink-0">
+                            <div className="relative group">
+                              <div className="absolute -inset-0.5 bg-gradient-to-tr from-violet-600 to-indigo-500 rounded-full blur opacity-30 group-hover:opacity-55 transition duration-500" />
+                              <div className="relative h-24 w-24 rounded-full bg-[#151515] border border-white/10 p-1 flex items-center justify-center overflow-hidden">
+                                <img
+                                  src={`https://api.dicebear.com/7.x/${customStyle}/svg?seed=${encodeURIComponent(customSeed)}&backgroundType=${customBgType}&backgroundColor=${customBgColor}`}
+                                  alt="Custom avatar preview"
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              </div>
+                            </div>
+                            
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newUrl = `https://api.dicebear.com/7.x/${customStyle}/svg?seed=${encodeURIComponent(customSeed)}&backgroundType=${customBgType}&backgroundColor=${customBgColor}`;
+                                setSelectedAvatarUrl(newUrl);
+                                setSaveState("unsaved");
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
+                                selectedAvatarUrl === `https://api.dicebear.com/7.x/${customStyle}/svg?seed=${encodeURIComponent(customSeed)}&backgroundType=${customBgType}&backgroundColor=${customBgColor}`
+                                  ? "bg-violet-600 border-violet-500 text-white shadow-[0_0_12px_rgba(124,58,237,0.3)]"
+                                  : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:text-white hover:bg-white/[0.08]"
+                              }`}
+                            >
+                              <Check size={12} />
+                              {selectedAvatarUrl === `https://api.dicebear.com/7.x/${customStyle}/svg?seed=${encodeURIComponent(customSeed)}&backgroundType=${customBgType}&backgroundColor=${customBgColor}` ? "Selected" : "Apply Design"}
+                            </button>
+                          </div>
+
+                          {/* Customizer Controls Column */}
+                          <div className="flex-1 space-y-4">
+                            {/* Style selector */}
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Style</label>
+                              <div className="flex flex-wrap gap-2">
+                                {[
+                                  { id: "lorelei", label: "Lorelei" },
+                                  { id: "notionists", label: "Notionist" },
+                                  { id: "personas", label: "Persona" },
+                                  { id: "adventurer", label: "Adventurer" },
+                                  { id: "bottts-neutral", label: "Robot" },
+                                  { id: "shapes", label: "Geometric" },
+                                ].map((style) => (
+                                  <button
+                                    key={style.id}
+                                    type="button"
+                                    onClick={() => setCustomStyle(style.id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                                      customStyle === style.id
+                                        ? "bg-white/[0.08] border-white/[0.2] text-white"
+                                        : "bg-transparent border-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:border-white/[0.1]"
+                                    }`}
+                                  >
+                                    {style.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Seed Input */}
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Seed / Keyphrase</label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={customSeed}
+                                  onChange={(e) => setCustomSeed(e.target.value)}
+                                  placeholder="Type anything to morph..."
+                                  className="flex-1 rounded-lg border border-white/[0.08] bg-[#151515] px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:border-white/[0.2] focus:outline-none transition-colors"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const adjectives = ["Cool", "Smart", "Swift", "Focus", "Deep", "Code", "Apex", "Zero", "Nova", "Cosmic", "Byte", "Pixel"];
+                                    const nouns = ["Coder", "Developer", "Hacker", "Builder", "Sage", "Ninja", "Guru", "Wizard", "Runner", "Ghost", "Alpha", "Zen"];
+                                    const randSeed = adjectives[Math.floor(Math.random() * adjectives.length)] + 
+                                                     nouns[Math.floor(Math.random() * nouns.length)] + 
+                                                     Math.floor(Math.random() * 100);
+                                    setCustomSeed(randSeed);
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors flex items-center gap-1.5 text-xs cursor-pointer"
+                                  title="Randomize seed"
+                                >
+                                  <Shuffle size={12} />
+                                  Random
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Background Gradients */}
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Background Gradient</label>
+                              <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap gap-2">
+                                  {[
+                                    { label: "Ocean Sky", colors: "b6e3f4,c0aede,d1d4f9" },
+                                    { label: "Sunset Coral", colors: "ffdfdf,f0d5da" },
+                                    { label: "Cyber Punk", colors: "ec4899,8b5cf6" },
+                                    { label: "Lavender Dream", colors: "c084fc,818cf8" },
+                                    { label: "Emerald Mint", colors: "d2f4ea,bbf7d0" },
+                                    { label: "Sweet Peach", colors: "ffd8be,fecdd3" },
+                                    { label: "Cosmic Dark", colors: "1e1b4b,312e81" },
+                                    { label: "Deep Sea", colors: "0f172a,0d9488" },
+                                  ].map((bg, idx) => {
+                                    const isSelected = customBgColor === bg.colors;
+                                    const splitColors = bg.colors.split(",");
+                                    const gradientCss = splitColors.length === 2 
+                                      ? `linear-gradient(135deg, #${splitColors[0]}, #${splitColors[1]})`
+                                      : splitColors.length === 3 
+                                        ? `linear-gradient(135deg, #${splitColors[0]}, #${splitColors[1]}, #${splitColors[2]})`
+                                        : `linear-gradient(135deg, #fff, #000)`;
+
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => setCustomBgColor(bg.colors)}
+                                        className={`w-6 h-6 rounded-full border transition-all cursor-pointer relative ${
+                                          isSelected ? "border-white scale-110 shadow-[0_0_8px_rgba(255,255,255,0.4)]" : "border-white/10 hover:border-white/30"
+                                        }`}
+                                        style={{ background: gradientCss }}
+                                        title={bg.label}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
+
                   </div>
                 </div>
 
