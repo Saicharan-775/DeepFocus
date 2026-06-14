@@ -63,7 +63,13 @@ export default function FeedbackEmailTemplate({
           <Section style={styles.header}>
             <Row style={styles.brandRow}>
               <Column style={styles.brandLogoCol}>
-                <Text style={styles.brandLogo}>DF</Text>
+                <img
+                  src="https://raw.githubusercontent.com/Saicharan-775/DeepFocus/main/deepfocus-site/public/deepfocus-logo-small.png"
+                  alt="DF"
+                  style={styles.brandLogoImage}
+                  width="28"
+                  height="28"
+                />
               </Column>
               <Column style={styles.brandNameCol}>
                 <Text style={styles.brandName}>DeepFocus</Text>
@@ -220,20 +226,15 @@ const styles = {
     marginBottom: "20px",
   },
   brandLogoCol: {
-    width: "28px",
+    width: "32px",
     verticalAlign: "middle",
   },
-  brandLogo: {
-    margin: "0",
-    width: "24px",
-    height: "24px",
-    lineHeight: "24px",
-    textAlign: "center" as const,
-    backgroundColor: "#7c3aed",
+  brandLogoImage: {
+    display: "block",
+    width: "28px",
+    height: "28px",
     borderRadius: "6px",
-    fontWeight: "800",
-    fontSize: "11px",
-    color: "#ffffff",
+    border: "1px solid #f1f5f9",
   },
   brandNameCol: {
     verticalAlign: "middle",

@@ -94,11 +94,11 @@ export default async function handler(req, res) {
             <div style="padding: 32px 32px 24px; border-bottom: 1px solid #f1f5f9;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                  <td style="vertical-align: middle; width: 28px;">
-                    <div style="width: 24px; height: 24px; line-height: 24px; text-align: center; background-color: #7c3aed; border-radius: 6px; font-weight: 800; font-size: 11px; color: #ffffff;">DF</div>
+                  <td style="vertical-align: middle; width: 32px;">
+                    <img src="https://raw.githubusercontent.com/Saicharan-775/DeepFocus/main/deepfocus-site/public/deepfocus-logo-small.png" alt="DF" style="display: block; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #f1f5f9;" width="28" height="28" />
                   </td>
                   <td style="vertical-align: middle; padding-left: 8px;">
-                    <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #0f172a;">DeepFocus</span>
+                    <span style="font-weight: 700; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; color: #0f172a;">DeepFocus</span>
                   </td>
                 </tr>
               </table>
@@ -219,9 +219,10 @@ export default async function handler(req, res) {
     }
 
     // 8. Dispatch request to Resend API
+    let recipient = "support.deepfocus@gmail.com";
     const resendPayload = {
       from: "DeepFocus <onboarding@resend.dev>",
-      to: ["support.deepfocus@gmail.com"],
+      to: [recipient],
       subject: `[DeepFocus Feedback] ${categoryLabel} - ${cleanSubject}`,
       html: emailHtml,
     };
@@ -230,7 +231,7 @@ export default async function handler(req, res) {
       resendPayload.attachments = attachments;
     }
 
-    const response = await fetch("https://api.resend.com/emails", {
+    let response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -239,7 +240,24 @@ export default async function handler(req, res) {
       body: JSON.stringify(resendPayload),
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // If sandbox account restrictions block unverified recipient, automatically retry with the developer's verified email
+    if (!response.ok && (response.status === 403 || response.status === 422 || response.status === 400)) {
+      console.warn(`[Feedback API Warning] Failed to dispatch to ${recipient} (unverified restriction). Retrying with developer email...`);
+      recipient = "nagillasaicharan775@gmail.com";
+      resendPayload.to = [recipient];
+      
+      response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(resendPayload),
+      });
+      data = await response.json();
+    }
 
     if (!response.ok) {
       console.error("[Feedback API Error] Resend dispatch failed:", data);
