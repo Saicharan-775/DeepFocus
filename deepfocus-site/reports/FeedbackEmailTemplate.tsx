@@ -10,7 +10,6 @@ import {
   Link,
   Row,
   Column,
-  Hr,
 } from "@react-email/components";
 
 interface FeedbackEmailProps {
@@ -21,6 +20,8 @@ interface FeedbackEmailProps {
   email?: string | null;
   pageUrl?: string;
   timestamp?: string;
+  rating?: number | null;
+  attachment?: { name: string; size: string } | null;
 }
 
 export default function FeedbackEmailTemplate({
@@ -31,20 +32,22 @@ export default function FeedbackEmailTemplate({
   email = "user@example.com",
   pageUrl = "https://deepfocus.site/workspace",
   timestamp = new Date().toISOString(),
+  rating = null,
+  attachment = null,
 }: FeedbackEmailProps) {
   const categoryLabels = {
-    bug: { label: "Bug Report", bg: "rgba(239, 68, 68, 0.1)", text: "#EF4444", border: "rgba(239, 68, 68, 0.2)" },
-    feature: { label: "Feature Request", bg: "rgba(59, 130, 246, 0.1)", text: "#3B82F6", border: "rgba(59, 130, 246, 0.2)" },
-    improvement: { label: "Improvement Suggestion", bg: "rgba(245, 158, 11, 0.1)", text: "#F59E0B", border: "rgba(245, 158, 11, 0.2)" },
-    general: { label: "General Feedback", bg: "rgba(139, 92, 246, 0.1)", text: "#8B5CF6", border: "rgba(139, 92, 246, 0.2)" },
+    bug: { label: "Bug Report", bg: "#fef2f2", text: "#ef4444", border: "#fee2e2" },
+    feature: { label: "Feature Request", bg: "#eff6ff", text: "#3b82f6", border: "#dbeafe" },
+    improvement: { label: "Improvement Suggestion", bg: "#fffbeb", text: "#d97706", border: "#fef3c7" },
+    general: { label: "General Feedback", bg: "#faf5ff", text: "#7c3aed", border: "#f3e8ff" },
   };
   const cat = categoryLabels[category] || categoryLabels.general;
 
   const priorityLabels = {
-    low: { label: "Low Priority", bg: "rgba(16, 185, 129, 0.1)", text: "#10B981", border: "rgba(16, 185, 129, 0.2)" },
-    medium: { label: "Medium Priority", bg: "rgba(245, 158, 11, 0.1)", text: "#F59E0B", border: "rgba(245, 158, 11, 0.2)" },
-    high: { label: "High Priority", bg: "rgba(249, 115, 22, 0.1)", text: "#F97316", border: "rgba(249, 115, 22, 0.2)" },
-    critical: { label: "Critical Blocker", bg: "rgba(239, 68, 68, 0.1)", text: "#EF4444", border: "rgba(239, 68, 68, 0.2)" },
+    low: { label: "Low Priority", bg: "#f0fdf4", text: "#16a34a", border: "#dcfce7" },
+    medium: { label: "Medium Priority", bg: "#fffbeb", text: "#d97706", border: "#fef3c7" },
+    high: { label: "High Priority", bg: "#fff7ed", text: "#ea580c", border: "#ffedd5" },
+    critical: { label: "Critical Blocker", bg: "#fef2f2", text: "#dc2626", border: "#fee2e2" },
   };
   const prio = priorityLabels[priority] || priorityLabels.medium;
 
@@ -53,14 +56,19 @@ export default function FeedbackEmailTemplate({
       <Head />
       <Body style={styles.body}>
         <Container style={styles.container}>
-          {/* Top AI themed gradient indicator */}
+          {/* Top brand line accent */}
           <Section style={styles.topBar} />
 
           {/* Header section with brand mark */}
           <Section style={styles.header}>
-            <Section style={styles.logoContainer}>
-              <Text style={styles.logoText}>DF</Text>
-            </Section>
+            <Row style={styles.brandRow}>
+              <Column style={styles.brandLogoCol}>
+                <Text style={styles.brandLogo}>DF</Text>
+              </Column>
+              <Column style={styles.brandNameCol}>
+                <Text style={styles.brandName}>DeepFocus</Text>
+              </Column>
+            </Row>
             <Heading style={styles.title}>New Feedback Received</Heading>
             <Text style={styles.subtitle}>
               A user has submitted feedback through DeepFocus.
@@ -145,6 +153,24 @@ export default function FeedbackEmailTemplate({
                 </Column>
               </Row>
 
+              {rating && (
+                <Row style={styles.contextRow}>
+                  <Column style={styles.contextLabel}>User Rating</Column>
+                  <Column style={{ ...styles.contextValue, color: "#eab308" }}>
+                    {"★".repeat(rating)}{"☆".repeat(5 - rating)} ({rating}/5)
+                  </Column>
+                </Row>
+              )}
+
+              {attachment && (
+                <Row style={styles.contextRow}>
+                  <Column style={styles.contextLabel}>Attachment</Column>
+                  <Column style={{ ...styles.contextValue, color: "#3b82f6" }}>
+                    📎 {attachment.name} ({attachment.size})
+                  </Column>
+                </Row>
+              )}
+
               <Row style={styles.contextRowLast}>
                 <Column style={styles.contextLabel}>Timestamp</Column>
                 <Column style={styles.contextValue}>
@@ -170,71 +196,79 @@ export default function FeedbackEmailTemplate({
 // Inline typography and layout CSS objects following React Email specifications
 const styles = {
   body: {
-    backgroundColor: "#0b0f19",
+    backgroundColor: "#f8fafc",
     margin: "0",
     padding: "0",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
   container: {
-    maxWidth: "580px",
+    maxWidth: "540px",
     margin: "40px auto",
-    backgroundColor: "#111827",
-    border: "1px solid #1f2937",
-    borderRadius: "16px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
     overflow: "hidden",
-    boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)",
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.03), 0 1px 4px rgba(15, 23, 42, 0.02)",
   },
   topBar: {
-    background: "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)",
-    height: "5px",
+    backgroundColor: "#7c3aed",
+    height: "4px",
     width: "100%",
   },
-  header: {
-    padding: "36px 32px 28px",
-    textAlign: "center" as const,
-    borderBottom: "1px solid #1f2937",
-    background: "linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%)",
+  brandRow: {
+    width: "100%",
+    marginBottom: "20px",
   },
-  logoContainer: {
-    width: "46px",
-    height: "46px",
-    lineHeight: "46px",
-    backgroundColor: "#09090b",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    margin: "0 auto 18px",
-    boxShadow: "0 4px 16px rgba(139, 92, 246, 0.2)",
-    textAlign: "center" as const,
+  brandLogoCol: {
+    width: "28px",
+    verticalAlign: "middle",
   },
-  logoText: {
+  brandLogo: {
     margin: "0",
+    width: "24px",
+    height: "24px",
+    lineHeight: "24px",
+    textAlign: "center" as const,
+    backgroundColor: "#7c3aed",
+    borderRadius: "6px",
     fontWeight: "800",
-    fontSize: "18px",
+    fontSize: "11px",
     color: "#ffffff",
-    lineHeight: "46px",
+  },
+  brandNameCol: {
+    verticalAlign: "middle",
+    paddingLeft: "8px",
+  },
+  brandName: {
+    margin: "0",
+    fontWeight: "700",
+    fontSize: "13px",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase" as const,
+    color: "#0f172a",
+  },
+  header: {
+    padding: "32px 32px 24px",
+    borderBottom: "1px solid #f1f5f9",
   },
   title: {
-    margin: "0",
-    fontSize: "22px",
-    fontWeight: "800",
-    color: "#ffffff",
+    margin: "0 0 6px",
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#0f172a",
     letterSpacing: "-0.025em",
     lineHeight: "1.25",
   },
   subtitle: {
-    margin: "6px 0 0",
+    margin: "0",
     fontSize: "13px",
-    color: "#9ca3af",
-    fontWeight: "500",
+    color: "#64748b",
+    fontWeight: "400",
   },
   content: {
     padding: "32px",
   },
   badgesBox: {
-    padding: "14px",
-    backgroundColor: "#131924",
-    borderRadius: "12px",
-    border: "1px solid #1f2937",
     marginBottom: "24px",
   },
   badgeLabel: {
@@ -243,14 +277,14 @@ const styles = {
     fontWeight: "700",
     textTransform: "uppercase" as const,
     letterSpacing: "0.05em",
-    color: "#6b7280",
+    color: "#94a3b8",
   },
   badge: {
     display: "inline-block",
-    padding: "4px 10px",
+    padding: "4px 8px",
     fontSize: "10px",
     fontWeight: "700",
-    borderRadius: "6px",
+    borderRadius: "4px",
     textTransform: "uppercase" as const,
     letterSpacing: "0.025em",
     margin: "0",
@@ -264,81 +298,81 @@ const styles = {
     fontWeight: "700",
     textTransform: "uppercase" as const,
     letterSpacing: "0.05em",
-    color: "#6b7280",
+    color: "#94a3b8",
   },
   subjectText: {
     margin: "0",
     fontSize: "15px",
-    color: "#ffffff",
+    color: "#0f172a",
     fontWeight: "600",
     lineHeight: "1.4",
   },
   quoteCard: {
-    backgroundColor: "#0a0e17",
-    borderLeft: "3px solid #8b5cf6",
-    borderRadius: "0 12px 12px 0",
-    padding: "20px 24px",
-    borderTop: "1px solid #1e293b",
-    borderRight: "1px solid #1e293b",
-    borderBottom: "1px solid #1e293b",
-    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.4)",
+    backgroundColor: "#f8fafc",
+    borderLeft: "3px solid #7c3aed",
+    borderRadius: "0 8px 8px 0",
+    padding: "16px 20px",
+    borderTop: "1px solid #f1f5f9",
+    borderRight: "1px solid #f1f5f9",
+    borderBottom: "1px solid #f1f5f9",
   },
   messageText: {
     margin: "0",
-    fontSize: "15px",
-    lineHeight: "1.7",
-    color: "#e5e7eb",
+    fontSize: "14px",
+    lineHeight: "1.6",
+    color: "#334155",
     fontWeight: "400",
     whiteSpace: "pre-wrap" as const,
   },
   contextCard: {
-    padding: "16px",
-    borderRadius: "12px",
-    border: "1px solid #1f2937",
-    backgroundColor: "#131924",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
   },
   contextHeader: {
-    margin: "0 0 12px",
+    margin: "0",
+    padding: "12px 16px",
+    borderBottom: "1px solid #e2e8f0",
+    backgroundColor: "#f8fafc",
     fontSize: "10px",
     fontWeight: "700",
     textTransform: "uppercase" as const,
     letterSpacing: "0.05em",
-    color: "#6b7280",
+    color: "#64748b",
   },
   contextRow: {
-    fontSize: "13px",
-    borderBottom: "1px solid #1f2937",
-    paddingBottom: "8px",
-    marginBottom: "8px",
+    fontSize: "12px",
+    borderBottom: "1px solid #f1f5f9",
+    padding: "10px 16px",
   },
   contextRowLast: {
-    fontSize: "13px",
-    paddingBottom: "0",
-    marginBottom: "0",
+    fontSize: "12px",
+    padding: "10px 16px",
   },
   contextLabel: {
-    color: "#9ca3af",
+    color: "#64748b",
     fontWeight: "500",
   },
   contextValue: {
     textAlign: "right" as const,
-    color: "#ffffff",
+    color: "#0f172a",
     fontWeight: "600",
   },
   link: {
-    color: "#3b82f6",
+    color: "#7c3aed",
     textDecoration: "none",
     fontWeight: "600",
   },
   anonymous: {
-    color: "#4b5563",
+    color: "#94a3b8",
     fontStyle: "italic",
   },
   footer: {
     padding: "24px",
-    backgroundColor: "#09090b",
+    backgroundColor: "#f8fafc",
     textAlign: "center" as const,
-    borderTop: "1px solid #1f2937",
+    borderTop: "1px solid #e2e8f0",
   },
   footerBranding: {
     margin: "0",
@@ -346,13 +380,14 @@ const styles = {
     fontWeight: "700",
     textTransform: "uppercase" as const,
     letterSpacing: "0.05em",
-    color: "#4b5563",
+    color: "#94a3b8",
   },
   footerTagline: {
     margin: "3px 0 0",
-    fontSize: "11px",
-    color: "#9ca3af",
+    fontSize: "10px",
+    color: "#94a3b8",
     fontWeight: "500",
     fontStyle: "italic",
   },
 };
+

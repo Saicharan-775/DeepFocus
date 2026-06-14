@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { category, subject, details, priority, email, attachment, pageUrl } = req.body;
+    const { category, subject, details, priority, email, attachment, pageUrl, rating } = req.body;
 
     // 2. Server-side Validation & Input Sanitization
     if (!category || !subject || !details) {
@@ -27,6 +27,7 @@ export default async function handler(req, res) {
     const cleanEmail = email ? String(email).trim().substring(0, 100) : null;
     const cleanPriority = String(priority || "medium").trim().toLowerCase();
     const cleanPageUrl = pageUrl ? String(pageUrl).substring(0, 2083) : "Unknown";
+    const parsedRating = rating ? parseInt(rating, 10) : null;
 
     if (cleanSubject.length < 4) {
       return res.status(400).json({ error: "Subject must be at least 4 characters long." });
@@ -56,128 +57,143 @@ export default async function handler(req, res) {
     };
     const categoryLabel = categoryLabels[category] || "General";
 
-    // 5. Setup styling badges dynamically
+    // 5. Setup styling badges dynamically (Premium SaaS light design)
     const badgeColors = {
-      bug: { bg: "rgba(239, 68, 68, 0.1)", text: "#EF4444", border: "rgba(239, 68, 68, 0.2)" },
-      feature: { bg: "rgba(59, 130, 246, 0.1)", text: "#3B82F6", border: "rgba(59, 130, 246, 0.2)" },
-      improvement: { bg: "rgba(245, 158, 11, 0.1)", text: "#F59E0B", border: "rgba(245, 158, 11, 0.2)" },
-      general: { bg: "rgba(139, 92, 246, 0.1)", text: "#8B5CF6", border: "rgba(139, 92, 246, 0.2)" },
+      bug: { bg: "#fef2f2", text: "#ef4444", border: "#fee2e2" },
+      feature: { bg: "#eff6ff", text: "#3b82f6", border: "#dbeafe" },
+      improvement: { bg: "#fffbeb", text: "#d97706", border: "#fef3c7" },
+      general: { bg: "#faf5ff", text: "#7c3aed", border: "#f3e8ff" },
     };
     const colors = badgeColors[category] || badgeColors.general;
 
     const priorityColors = {
-      low: { bg: "rgba(16, 185, 129, 0.1)", text: "#10B981", border: "rgba(16, 185, 129, 0.2)", label: "Low Priority" },
-      medium: { bg: "rgba(245, 158, 11, 0.1)", text: "#F59E0B", border: "rgba(245, 158, 11, 0.2)", label: "Medium Priority" },
-      high: { bg: "rgba(249, 115, 22, 0.1)", text: "#F97316", border: "rgba(249, 115, 22, 0.2)", label: "High Priority" },
-      critical: { bg: "rgba(239, 68, 68, 0.1)", text: "#EF4444", border: "rgba(239, 68, 68, 0.2)", label: "Critical Blocker" },
+      low: { bg: "#f0fdf4", text: "#16a34a", border: "#dcfce7", label: "Low Priority" },
+      medium: { bg: "#fffbeb", text: "#d97706", border: "#fef3c7", label: "Medium Priority" },
+      high: { bg: "#fff7ed", text: "#ea580c", border: "#ffedd5", label: "High Priority" },
+      critical: { bg: "#fef2f2", text: "#dc2626", border: "#fee2e2", label: "Critical Blocker" },
     };
     const pColors = priorityColors[cleanPriority] || priorityColors.medium;
 
-    // 6. Build Premium AI SaaS HTML Template
+    // 6. Build Premium Transactional SaaS HTML Template (Light Theme, ultra-clean)
     const emailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>DeepFocus Feedback</title>
+        <title>DeepFocus Feedback Ticket</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-        <div style="background-color: #0b0f19; padding: 40px 16px;">
-          <div style="max-width: 580px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <div style="background-color: #f8fafc; padding: 48px 16px;">
+          <div style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03), 0 1px 4px rgba(15, 23, 42, 0.02);">
             
-            <!-- Glow Accent Top Border -->
-            <div style="background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%); height: 5px; width: 100%;"></div>
+            <!-- Top brand line accent -->
+            <div style="background-color: #7c3aed; height: 4px; width: 100%;"></div>
             
             <!-- Header Section -->
-            <div style="padding: 36px 32px 28px; text-align: center; border-bottom: 1px solid #1f2937; background: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%);">
-              <div style="margin-bottom: 18px; display: inline-block;">
-                <div style="width: 46px; height: 46px; line-height: 46px; text-align: center; background-color: #09090b; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; font-weight: 800; font-size: 18px; color: #ffffff; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);">DF</div>
-              </div>
-              <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; line-height: 1.25;">New Feedback Received</h2>
-              <p style="margin: 6px 0 0; font-size: 13px; color: #9ca3af; font-weight: 500;">A user has submitted feedback through DeepFocus.</p>
+            <div style="padding: 32px 32px 24px; border-bottom: 1px solid #f1f5f9;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="vertical-align: middle; width: 28px;">
+                    <div style="width: 24px; height: 24px; line-height: 24px; text-align: center; background-color: #7c3aed; border-radius: 6px; font-weight: 800; font-size: 11px; color: #ffffff;">DF</div>
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 8px;">
+                    <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: #0f172a;">DeepFocus</span>
+                  </td>
+                </tr>
+              </table>
+              <h2 style="margin: 20px 0 6px; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.025em; line-height: 1.25;">New Feedback Received</h2>
+              <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 400; line-height: 1.45;">A user has submitted feedback through DeepFocus.</p>
             </div>
 
             <!-- Content Area -->
             <div style="padding: 32px;">
               
-              <!-- Badges Card Row -->
+              <!-- Badges Row -->
               <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
                 <tr>
-                  <td style="padding: 14px; background-color: #131924; border-radius: 12px; border: 1px solid #1f2937;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                      <tr>
-                        <td style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; padding-bottom: 6px;">Category</td>
-                        <td style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; padding-bottom: 6px; text-align: right;">Urgency</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span style="display: inline-block; padding: 4px 10px; font-size: 10px; font-weight: 700; border-radius: 6px; background-color: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.border}; text-transform: uppercase; letter-spacing: 0.025em;">
-                            ${categoryLabel}
-                          </span>
-                        </td>
-                        <td style="text-align: right;">
-                          <span style="display: inline-block; padding: 4px 10px; font-size: 10px; font-weight: 700; border-radius: 6px; background-color: ${pColors.bg}; color: ${pColors.text}; border: 1px solid ${pColors.border}; text-transform: uppercase; letter-spacing: 0.025em;">
-                            ${pColors.label}
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; padding-bottom: 6px;">Category</td>
+                  <td style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; padding-bottom: 6px; text-align: right;">Urgency</td>
+                </tr>
+                <tr>
+                  <td>
+                    <span style="display: inline-block; padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; background-color: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.border}; text-transform: uppercase; letter-spacing: 0.025em;">
+                      ${categoryLabel}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <span style="display: inline-block; padding: 4px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; background-color: ${pColors.bg}; color: ${pColors.text}; border: 1px solid ${pColors.border}; text-transform: uppercase; letter-spacing: 0.025em;">
+                      ${pColors.label}
+                    </span>
                   </td>
                 </tr>
               </table>
 
               <!-- Subject Line -->
               <div style="margin-bottom: 24px;">
-                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 6px;">Subject</div>
-                <div style="font-size: 15px; color: #ffffff; font-weight: 600; line-height: 1.4;">${cleanSubject}</div>
+                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 6px;">Subject</div>
+                <div style="font-size: 15px; color: #0f172a; font-weight: 600; line-height: 1.4;">${cleanSubject}</div>
               </div>
 
-              <!-- Feedback Details Card (Quote Style) -->
+              <!-- Message Card -->
               <div style="margin-bottom: 28px;">
-                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 8px;">Feedback Message</div>
-                <div style="background-color: #0a0e17; border-left: 3px solid #8b5cf6; border-radius: 0 12px 12px 0; padding: 20px 24px; border-top: 1px solid #1e293b; border-right: 1px solid #1e293b; border-bottom: 1px solid #1e293b; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);">
-                  <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #e5e7eb; font-weight: 400; white-space: pre-wrap;">${cleanDetails}</p>
+                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 8px;">Message Details</div>
+                <div style="background-color: #f8fafc; border-left: 3px solid #7c3aed; padding: 16px 20px; border-radius: 0 8px 8px 0; border-top: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+                  <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #334155; font-weight: 400; white-space: pre-wrap;">${cleanDetails}</p>
                 </div>
               </div>
 
               <!-- Context Details Card -->
-              <table style="width: 100%; border-collapse: collapse; border: 1px solid #1f2937; background-color: #131924; border-radius: 12px;">
-                <tr>
-                  <td style="padding: 16px; border-radius: 12px; border: 1px solid #1f2937; background-color: #131924;">
-                    <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 12px;">Submission Context</div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                      <tr>
-                        <td style="padding: 6px 0; color: #9ca3af; font-weight: 500;">Sender Email</td>
-                        <td style="padding: 6px 0; text-align: right; color: #ffffff; font-weight: 600;">
-                          ${cleanEmail ? `<a href="mailto:${cleanEmail}" style="color: #3b82f6; text-decoration: none;">${cleanEmail}</a>` : '<span style="color: #4b5563; font-style: italic;">Anonymous</span>'}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 6px 0; color: #9ca3af; font-weight: 500; vertical-align: top;">Origin Page URL</td>
-                        <td style="padding: 6px 0; text-align: right; max-width: 260px; word-break: break-all;">
-                          <a href="${cleanPageUrl}" target="_blank" style="color: #3b82f6; text-decoration: none; font-weight: 600;">
-                            View Page Link &rarr;
-                          </a>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 6px 0; color: #9ca3af; font-weight: 500;">Timestamp</td>
-                        <td style="padding: 6px 0; text-align: right; color: #d1d5db; font-weight: 500;">
-                          ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+              <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
+                  <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Submission Context</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin: 0;">
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 16px; color: #64748b; font-weight: 500; width: 120px;">Sender Email</td>
+                    <td style="padding: 10px 16px; text-align: right; color: #0f172a; font-weight: 600;">
+                      ${cleanEmail ? `<a href="mailto:${cleanEmail}" style="color: #7c3aed; text-decoration: none;">${cleanEmail}</a>` : '<span style="color: #94a3b8; font-style: italic;">Anonymous</span>'}
+                    </td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 16px; color: #64748b; font-weight: 500; vertical-align: top;">Workspace URL</td>
+                    <td style="padding: 10px 16px; text-align: right; word-break: break-all; max-width: 250px;">
+                      <a href="${cleanPageUrl}" target="_blank" style="color: #7c3aed; text-decoration: none; font-weight: 600;">
+                        View Page URL &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                  ${parsedRating ? `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 16px; color: #64748b; font-weight: 500;">User Rating</td>
+                    <td style="padding: 10px 16px; text-align: right; color: #eab308; font-weight: 600;">
+                      ${'★'.repeat(parsedRating)}${'☆'.repeat(5 - parsedRating)} (${parsedRating}/5)
+                    </td>
+                  </tr>
+                  ` : ''}
+                  ${attachment ? `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 16px; color: #64748b; font-weight: 500;">Attachment</td>
+                    <td style="padding: 10px 16px; text-align: right; color: #3b82f6; font-weight: 600;">
+                      📎 ${attachment.name} (${attachment.size})
+                    </td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; color: #64748b; font-weight: 500;">Timestamp</td>
+                    <td style="padding: 10px 16px; text-align: right; color: #334155; font-weight: 500;">
+                      ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC
+                    </td>
+                  </tr>
+                </table>
+              </div>
 
             </div>
 
             <!-- Footer Branding Section -->
-            <div style="padding: 24px; background-color: #09090b; text-align: center; border-top: 1px solid #1f2937;">
-              <p style="margin: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4b5563;">Powered by DeepFocus Feedback System</p>
-              <p style="margin: 3px 0 0; font-size: 11px; color: #9ca3af; font-weight: 500; font-style: italic;">Build real intuition.</p>
+            <div style="padding: 24px; background-color: #f8fafc; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;">Powered by DeepFocus Feedback System</p>
+              <p style="margin: 3px 0 0; font-size: 10px; color: #94a3b8; font-weight: 500; font-style: italic;">Build real intuition.</p>
             </div>
 
           </div>
