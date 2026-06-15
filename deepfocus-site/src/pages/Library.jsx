@@ -5,7 +5,7 @@ import {
   MessageSquare, CheckCircle2, Bookmark, Clock, Star, ArrowRight 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { LibrarySkeleton } from "../components/Boneyard";
 
 // --- SERVICES ---
 import { getWeeklyRecommendations, getGroupedLibraryData } from "../services/libraryService";
@@ -463,7 +463,7 @@ export default function Library() {
     <div className="max-w-[1200px] mx-auto p-8 space-y-8 animate-fade-in">
       <main className="w-full">
         {isLoading ? (
-          <DeepFocusLoader message="" fullScreen={false} size="md" />
+          <LibrarySkeleton />
         ) : (
           <>
             <WeeklyFocus focusData={focusData} />

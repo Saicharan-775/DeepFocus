@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUp, Eye, Heart, Loader2, MessageSquare, Send, Wifi } fr
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
+import { CommunityPostSkeleton } from "../components/Boneyard";
 
 const tagClassName = {
   Experience: "border-white/10 bg-white/[0.04] text-neutral-300",
@@ -278,12 +279,7 @@ export default function CommunityPost() {
   };
 
   if (isLoadingPost) {
-    return (
-      <div className="flex min-h-[420px] items-center justify-center text-sm text-neutral-500">
-        <Loader2 size={18} className="mr-2 animate-spin" />
-        Loading discussion
-      </div>
-    );
+    return <CommunityPostSkeleton />;
   }
 
   if (!post) {

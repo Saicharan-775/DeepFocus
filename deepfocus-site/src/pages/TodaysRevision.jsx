@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { getProblemPattern, patternPriorityMap } from "../utils/patternMatcher";
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { RevisionSkeleton } from "../components/Boneyard";
 import { getAiPseudoCode } from "../services/aiService";
 
 function parseRevisionNotes(dbNotes) {
@@ -359,7 +359,7 @@ export default function TodaysRevision() {
   };
 
   if (loading) {
-    return <DeepFocusLoader message="" />;
+    return <RevisionSkeleton />;
   }
 
   const progressPercent = stats.todayTarget > 0 ? Math.min((stats.todayCompleted / stats.todayTarget) * 100, 100) : 0;

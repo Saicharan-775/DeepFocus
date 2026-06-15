@@ -27,6 +27,18 @@ const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
 const AuthCallback = lazy(() => import("./components/AuthCallback.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
+import {
+  DashboardSkeleton,
+  SheetSkeleton,
+  AnalyticsSkeleton,
+  LibrarySkeleton,
+  RevisionSkeleton,
+  WorkspaceSkeleton,
+  CommunitySkeleton,
+  CommunityPostSkeleton,
+  FeedbackSkeleton,
+  SettingsSkeleton
+} from "./components/Boneyard";
 
 function App() {
 
@@ -49,19 +61,19 @@ function App() {
             {/* Dashboard Routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/revision" element={<Revision />} />
-                <Route path="/workspace" element={<RevisionWorkspace />} />
-                <Route path="/sheet" element={<Sheet />} />
-                <Route path="/today" element={<TodaysRevision />} />
-                <Route path="/planner" element={<AiPlanner />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/library" element={<Library />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/community/new" element={<NewCommunityPost />} />
-                <Route path="/community/post/:postId" element={<CommunityPost />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/feedback" element={<Feedback />} />
+                <Route path="/dashboard" element={<Suspense fallback={<DashboardSkeleton />}><Dashboard /></Suspense>} />
+                <Route path="/revision" element={<Suspense fallback={<RevisionSkeleton />}><Revision /></Suspense>} />
+                <Route path="/workspace" element={<Suspense fallback={<WorkspaceSkeleton />}><RevisionWorkspace /></Suspense>} />
+                <Route path="/sheet" element={<Suspense fallback={<SheetSkeleton />}><Sheet /></Suspense>} />
+                <Route path="/today" element={<Suspense fallback={<RevisionSkeleton />}><TodaysRevision /></Suspense>} />
+                <Route path="/planner" element={<Suspense fallback={<RevisionSkeleton />}><AiPlanner /></Suspense>} />
+                <Route path="/analytics" element={<Suspense fallback={<AnalyticsSkeleton />}><Analytics /></Suspense>} />
+                <Route path="/library" element={<Suspense fallback={<LibrarySkeleton />}><Library /></Suspense>} />
+                <Route path="/community" element={<Suspense fallback={<CommunitySkeleton />}><Community /></Suspense>} />
+                <Route path="/community/new" element={<Suspense fallback={<CommunityPostSkeleton />}><NewCommunityPost /></Suspense>} />
+                <Route path="/community/post/:postId" element={<Suspense fallback={<CommunityPostSkeleton />}><CommunityPost /></Suspense>} />
+                <Route path="/settings" element={<Suspense fallback={<SettingsSkeleton />}><Settings /></Suspense>} />
+                <Route path="/feedback" element={<Suspense fallback={<FeedbackSkeleton />}><Feedback /></Suspense>} />
               </Route>
             </Route>
             {/* Auth routes */}

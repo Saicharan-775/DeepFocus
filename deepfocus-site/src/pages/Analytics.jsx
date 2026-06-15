@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { AnalyticsSkeleton } from '../components/Boneyard';
 
 /* ==========================================
    PREMIUM 3D-FEEL METALLIC SVG BADGES
@@ -365,7 +365,7 @@ export default function Analytics() {
    const medLength = medRatio * circumference;
    const hardLength = hardRatio * circumference;
 
-    if (loading) return <DeepFocusLoader message="" />;
+    if (loading) return <AnalyticsSkeleton />;
 
    return (
       <div className="max-w-[1400px] mx-auto space-y-8 text-zinc-100 pb-20">

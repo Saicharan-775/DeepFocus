@@ -3,6 +3,7 @@ import { ArrowUp, ChevronDown, Eye, Flame, Heart, Loader2, MessageSquare, Plus, 
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
+import { CommunitySkeleton } from "../components/Boneyard";
 
 const TAGS = ["All", "Experience", "Question", "Strategy", "Interview", "Win"];
 const FEED_LIMIT = 60;
@@ -344,6 +345,10 @@ export default function Community() {
     }
   };
 
+  if (isLoading) {
+    return <CommunitySkeleton />;
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1280px] space-y-4">
       <div className="flex flex-col gap-3 border-b border-white/[0.06] pb-4 md:flex-row md:items-end md:justify-between">
@@ -415,12 +420,7 @@ export default function Community() {
             </div>
           )}
 
-          {isLoading ? (
-            <div className="flex min-h-[360px] items-center justify-center text-sm text-neutral-500">
-              <Loader2 size={18} className="mr-2 animate-spin" />
-              Loading discussions
-            </div>
-          ) : filteredPosts.length === 0 ? (
+          {filteredPosts.length === 0 ? (
             <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
               <MessageSquare size={24} className="mb-3 text-neutral-600" />
               <p className="text-sm font-medium text-neutral-200">No discussions found</p>

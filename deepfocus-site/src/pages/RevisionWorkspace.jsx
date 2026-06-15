@@ -13,7 +13,7 @@ import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink 
 import { getAiSummary, getAiPseudoCode } from "../services/aiService";
 import ReactMarkdown from "react-markdown";
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { WorkspaceSkeleton, Bone } from "../components/Boneyard";
 import DeepFocusLogo from "../components/DeepFocusLogo";
 
 // Helper function to parse notes from database string format
@@ -697,7 +697,7 @@ export default function RevisionWorkspace() {
 
   // Render empty state if loading or no problems
   if (loading && problems.length === 0) {
-    return <DeepFocusLoader message="" fullScreen={false} />;
+    return <WorkspaceSkeleton />;
   }
 
   return (
@@ -1372,7 +1372,11 @@ export default function RevisionWorkspace() {
                         <span>{insightTab === 'mistake' ? 'Common Mistakes & Friction Points' : 'Key Strategy & Takeaways'}</span>
                       </div>
                       {aiLoading ? (
-                        <DeepFocusLoader message="" fullScreen={false} size="sm" className="min-h-[8rem] bg-transparent" />
+                        <div className="space-y-3 py-4 min-h-[8rem] w-full">
+                          <Bone className="h-4 w-3/4" />
+                          <Bone className="h-4 w-5/6" />
+                          <Bone className="h-4 w-2/3" />
+                        </div>
                       ) : insightBody ? (
                         <div className="max-w-5xl space-y-1 text-sm leading-6 text-zinc-200">
                           {insightBody.split('\n').map((line, idx) => renderParagraph(line, idx))}

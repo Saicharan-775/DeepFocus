@@ -17,7 +17,7 @@ import {
   TimerReset
 } from 'lucide-react';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
-import DeepFocusLoader from '../components/DeepFocusLoader';
+import { RevisionSkeleton } from '../components/Boneyard';
 import { DEFAULT_WEAK_TOPICS, PATTERN_MAPPING, PATTERN_WEIGHTS, TOPIC_WEIGHTS } from '../features/ai-planner/plannerConstants';
 import {
   diffColor,
@@ -333,7 +333,9 @@ export default function AiPlanner() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black"
           >
-            <DeepFocusLoader message="" />
+            <div className="mx-auto max-w-[1180px] px-6 pt-10">
+              <RevisionSkeleton />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

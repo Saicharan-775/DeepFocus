@@ -27,6 +27,17 @@ function getAiKeys() {
 function finishAiResponse(content) {
   const value = content?.trim();
   if (!value) return null;
+  
+  try {
+    const currentCount = parseInt(localStorage.getItem('df_ai_usage_count') || '0', 10);
+    localStorage.setItem('df_ai_usage_count', (currentCount + 1).toString());
+    
+    // Dispatch a custom event so UI can update immediately if needed
+    window.dispatchEvent(new Event("df_ai_usage_updated"));
+  } catch (e) {
+    // Ignore if localStorage fails
+  }
+
   return value;
 }
 

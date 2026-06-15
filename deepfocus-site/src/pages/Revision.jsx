@@ -6,7 +6,7 @@ import {
   Brain, Code, Lightbulb, AlertTriangle, Clock, Database, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { RevisionSkeleton } from "../components/Boneyard";
 import { refreshRevisionProblems, subscribeRevisionStore, updateRevisionProblem } from "../store/revisionStore";
 import { setProblemRevisionNeeded } from "../services/revisionService";
 import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from "../utils/patternMatcher";
@@ -463,7 +463,7 @@ export default function Revision() {
     }
   };
   if (dataLoading) {
-    return <DeepFocusLoader message="" />;
+    return <RevisionSkeleton />;
   }
 
   return (

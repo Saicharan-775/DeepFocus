@@ -23,7 +23,7 @@ import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import DeepFocusLoader from '../components/DeepFocusLoader';
+import { DashboardSkeleton } from '../components/Boneyard';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
 import { getProblemPattern } from '../utils/patternMatcher';
@@ -208,7 +208,7 @@ function MissionDial({ progress }) {
 
 function StatPill({ icon: Icon, label, value }) {
   return (
-    <div className="min-h-[106px] rounded-xl border border-white/[0.065] bg-[#0D0C10] p-3.5 transition duration-300 hover:border-white/[0.12] hover:bg-white/[0.025]">
+    <div className="min-h-[82px] rounded-xl border border-white/[0.065] bg-[#0D0C10] p-3.5 transition duration-300 hover:border-white/[0.12] hover:bg-white/[0.025]">
       <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
         <Icon size={13} className="text-zinc-400" />
         {label}
@@ -421,19 +421,75 @@ function QualityDistribution({ cleanCount, weakCount, abandonedCount, totalCount
 
 /* ─── Smart Insight ─── */
 
-function SmartInsight({ insight }) {
-  if (!insight) return null;
-  const { title, description } = insight;
+function SmartInsight({ insights }) {
+  const navigate = useNavigate();
+  if (!insights || insights.length === 0) return null;
+
   return (
     <Panel className="overflow-hidden">
-      <div className="flex items-start gap-3 px-5 py-4">
-        <div className="mt-0.5 shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-amber-300/15 bg-amber-300/[0.06]">
-          <span className="text-sm">⚠</span>
+      {/* Header */}
+      <div className="border-b border-white/[0.04] px-6 py-4 flex items-center justify-between bg-white/[0.002]">
+        <div className="flex items-center gap-2">
+          <Radar size={13} className="text-zinc-400 animate-pulse" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">Personalised Revision Strategy</p>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-white">{title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-400">{description}</p>
-        </div>
+      </div>
+
+      {/* Grid of 3 columns */}
+      <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+        {insights.map((insight, idx) => {
+          const hasAction = !!(insight.problemId || insight.externalLink);
+          const handleClick = () => {
+            if (insight.problemId) {
+              navigate(`/workspace?id=${insight.problemId}`);
+            } else if (insight.externalLink) {
+              window.open(insight.externalLink, '_blank', 'noopener,noreferrer');
+            }
+          };
+
+          return (
+            <div 
+              key={idx} 
+              onClick={hasAction ? handleClick : undefined}
+              className={`relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-full overflow-hidden ring-1 ring-white/[0.018] ${
+                hasAction 
+                  ? 'cursor-pointer group bg-[#0D0C10] border-white/[0.065] hover:border-[#a78bfa]/35 hover:bg-white/[0.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:-translate-y-1' 
+                  : 'bg-[#0D0C10]/60 border-white/[0.04]'
+              }`}
+            >
+              <div className="relative z-10 flex flex-col h-full justify-between items-start w-full">
+                <div className="w-full">
+                  {/* Category Tag - unified Violet theme */}
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] shadow-[0_0_8px_rgba(167,139,250,0.6)]" />
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-zinc-500">
+                      {insight.category || 'REVISION'}
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight mb-2 leading-snug">
+                    {insight.title}
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed font-normal mb-4">
+                    {insight.description}
+                  </p>
+                </div>
+                
+                {/* Action CTA Button at bottom - unified Violet theme */}
+                {insight.actionText && (
+                  <div className="mt-auto pt-5 w-full">
+                    <div 
+                      className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] group-hover:bg-[#a78bfa]/[0.06] group-hover:border-[#a78bfa]/30 px-3 py-2 text-xs font-semibold text-zinc-300 group-hover:text-white transition-all duration-200"
+                    >
+                      <span>{insight.actionText}</span>
+                      <span className="transform group-hover:translate-x-0.5 transition-transform duration-200 text-zinc-450 group-hover:text-white">→</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </Panel>
   );
@@ -639,32 +695,158 @@ export default function Dashboard() {
         return aPct - bPct; // weakest first
       });
 
-    // ─── Smart insight ───
-    let insight = null;
+    // ─── Smart insights algorithm ───
+    const insights = [];
+
+    // Helper to find the weakest solved problem in a pattern
+    const getWeakestProblemInPattern = (pat) => {
+      const patProblems = problems.filter(p => derivePattern(p.title) === pat);
+      if (patProblems.length === 0) return null;
+      return [...patProblems].sort((a, b) => {
+        // Prioritize unfinished solves
+        const aAbandoned = a.focus_status === 'Give Up' || a.focus_status === 'Cheated' ? 1 : 0;
+        const bAbandoned = b.focus_status === 'Give Up' || b.focus_status === 'Cheated' ? 1 : 0;
+        if (aAbandoned !== bAbandoned) return bAbandoned - aAbandoned;
+
+        // Prioritize lowest focus score
+        const aScore = a.focus_score ?? 100;
+        const bScore = b.focus_score ?? 100;
+        return aScore - bScore;
+      })[0];
+    };
+
     if (totalSolved === 0) {
-      insight = {
-        title: 'Start your journey',
-        description: 'Solve your first problem to unlock personalised recommendations.'
-      };
-    } else if (patternEntries.length > 0 && patternEntries[0].total >= 2) {
-      const weakest = patternEntries[0];
-      const weakPct = Math.round(((weakest.total - weakest.strong) / weakest.total) * 100);
-      insight = {
-        title: `${shortenPattern(weakest.pattern)} needs attention`,
-        description: `${weakPct}% of your ${weakest.pattern} solves are weak or unfinished. Do a short revision pass on this pattern next.`
-      };
-      if (weakPct < 30 && currentStreak >= 3) {
-        insight = {
-          title: `${shortenPattern(weakest.pattern)} is stabilising`,
-          description: `Your ${weakest.pattern} solves are trending clean. Keep the momentum — consistency locks mastery.`
-        };
+      insights.push({
+        category: 'GETTING STARTED',
+        title: 'Welcome to DeepFocus',
+        description: 'Solve your first LeetCode problem to unlock revision tracking and personalized strategy suggestions.',
+        type: 'info'
+      });
+      // Suggest starting with a popular curated Easy problem
+      const easyCurated = curatedQuestions.find(q => q.difficulty === 'Easy') || curatedQuestions[0];
+      if (easyCurated) {
+        insights.push({
+          category: 'FOUNDATION PATH',
+          title: easyCurated.title,
+          description: `Tackle this popular curated problem (${easyCurated.difficulty}) to establish your baseline.`,
+          actionText: `Attempt problem`,
+          externalLink: `https://leetcode.com/problems/${easyCurated.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+          type: 'info'
+        });
       }
+      insights.push({
+        category: 'EXTENSION SETUP',
+        title: 'Browser Extension',
+        description: 'Ensure the Chrome extension is active to track your LeetCode attempts in real time.',
+        type: 'info'
+      });
     } else {
-      insight = {
-        title: 'Keep going',
-        description: `You've solved ${totalSolved} problems across ${patternEntries.length} patterns. More data means sharper picks.`
-      };
+      // 1. Look for unresolved abandoned solves
+      const abandonedProblems = problems.filter(p => p.focus_status === 'Give Up' || p.focus_status === 'Cheated');
+      if (abandonedProblems.length > 0) {
+        // Sort by latest solved/attempted
+        const latestAbandoned = [...abandonedProblems].sort((a, b) => {
+          return new Date(b.solved_at || b.created_at || 0) - new Date(a.solved_at || a.created_at || 0);
+        })[0];
+        
+        insights.push({
+          category: 'UNFINISHED SESSION',
+          title: latestAbandoned.title,
+          description: 'You left this problem unresolved. Re-attempting abandoned solves blocks bad habits.',
+          actionText: 'Resume solving',
+          problemId: latestAbandoned.id,
+          type: 'warning'
+        });
+      }
+
+      // 2. Identify weak patterns (highest failure rate first)
+      const allPatternStats = Object.values(patternMap)
+        .map(p => {
+          const weakPct = p.total > 0 ? Math.round(((p.total - p.strong) / p.total) * 100) : 0;
+          return { ...p, weakPct };
+        })
+        .filter(p => p.weakPct > 0)
+        .sort((a, b) => b.weakPct - a.weakPct || b.total - a.total);
+
+      // Add insights for up to the top 2 weakest patterns
+      allPatternStats.slice(0, 2).forEach(wp => {
+        const weakestProblem = getWeakestProblemInPattern(wp.pattern);
+        if (weakestProblem) {
+          const isAbandoned = weakestProblem.focus_status === 'Give Up' || weakestProblem.focus_status === 'Cheated';
+          insights.push({
+            category: `${wp.pattern.toUpperCase()} WEAKNESS`,
+            title: weakestProblem.title,
+            description: isAbandoned
+              ? 'You left this pattern problem unfinished. Re-attempt it to build pattern strength.'
+              : `Your previous solve attempt was weak (${weakestProblem.focus_score ?? 0}%). Revisit to lock in understanding.`,
+            actionText: isAbandoned ? 'Re-attempt solve' : 'Start revision',
+            problemId: weakestProblem.id,
+            type: wp.weakPct > 60 ? 'danger' : 'warning'
+          });
+        }
+      });
+
+      // 3. Fallback/additional insights if we have fewer than 3
+      if (insights.length < 3) {
+        // Suggest a curated problem for a weak pattern that hasn't been solved yet
+        for (const wp of allPatternStats) {
+          const attemptedTitles = new Set(problems.map(p => p.title.toLowerCase()));
+          const unattemptedCurated = curatedQuestions.find(cq => 
+            cq.primary_pattern === wp.pattern && 
+            !attemptedTitles.has(cq.title.toLowerCase())
+          );
+          if (unattemptedCurated && insights.length < 3) {
+            insights.push({
+              category: 'CURATED CHALLENGE',
+              title: unattemptedCurated.title,
+              description: `Tackle this high-frequency curated question to strengthen your ${wp.pattern} foundation.`,
+              actionText: 'Practice challenge',
+              externalLink: `https://leetcode.com/problems/${unattemptedCurated.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+              type: 'info'
+            });
+          }
+        }
+      }
+
+      // If still fewer than 3, suggest revising the oldest completed solve
+      if (insights.length < 3) {
+        const cleanProblems = problems.filter(p => p.focus_status !== 'Give Up' && p.focus_status !== 'Cheated');
+        if (cleanProblems.length > 0) {
+          const oldestClean = [...cleanProblems].sort((a, b) => {
+            return new Date(a.solved_at || a.created_at || 0) - new Date(b.solved_at || b.created_at || 0);
+          })[0];
+          
+          if (oldestClean && insights.length < 3) {
+            insights.push({
+              category: 'RETENTION CHECK',
+              title: oldestClean.title,
+              description: 'Verify your long-term retention by re-solving this problem (last completed a while ago).',
+              actionText: 'Verify retention',
+              problemId: oldestClean.id,
+              type: 'info'
+            });
+          }
+        }
+      }
+
+      // If still fewer than 3, suggest a high-frequency curated pattern the user has never attempted
+      if (insights.length < 3) {
+        const attemptedPatterns = new Set(Object.keys(patternMap));
+        const unattemptedCurated = curatedQuestions.find(cq => !attemptedPatterns.has(cq.primary_pattern));
+        if (unattemptedCurated && insights.length < 3) {
+          insights.push({
+            category: 'EXPLORE PATTERN',
+            title: unattemptedCurated.title,
+            description: `Build early exposure to ${unattemptedCurated.primary_pattern} by trying this curated challenge.`,
+            actionText: 'Start challenge',
+            externalLink: `https://leetcode.com/problems/${unattemptedCurated.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+            type: 'info'
+          });
+        }
+      }
     }
+
+    const limitedInsights = insights.slice(0, 3);
 
     return {
       totalSolved,
@@ -688,12 +870,12 @@ export default function Dashboard() {
       hardCount,
       cleanCount,
       patternEntries,
-      insight
+      insights: limitedInsights
     };
   }, [calendarMonth, dailyGoal, problems, sessions]);
 
   if (isLoading) {
-    return <DeepFocusLoader message="" fullScreen={false} />;
+    return <DashboardSkeleton />;
   }
 
   const displayName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0];
@@ -782,7 +964,7 @@ export default function Dashboard() {
         {/* ── ROW 3: Smart Insight + Pattern Weakness + Quality Distribution ── */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <SmartInsight insight={state.insight} />
+            <SmartInsight insights={state.insights} />
           </div>
           <div>
             <QualityDistribution

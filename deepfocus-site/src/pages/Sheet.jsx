@@ -7,7 +7,7 @@ import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import subpatternFilters from '../constants/Patterns/subpattern_filters.json';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, Check, X, FileText, Sparkles } from 'lucide-react';
-import DeepFocusLoader from "../components/DeepFocusLoader";
+import { SheetSkeleton } from '../components/Boneyard';
 
 function parseDbNotes(dbNotes) {
   if (!dbNotes || typeof dbNotes !== 'string') {
@@ -67,9 +67,9 @@ const PATTERN_TIPS = {
   'Sweep Line': 'Coordinate events sorted along an axis. Track active intervals sequentially to solve overlap, scheduling, or boundary coverage problems.',
 };
 
-// Unified style metadata (Sky Blue accent color throughout)
-const UNIFIED_ACCENT = '#0ea5e9'; // sky-500
-const UNIFIED_GLOW = 'rgba(14,165,233,0.02)';
+// Unified style metadata (Violet accent color throughout)
+const UNIFIED_ACCENT = '#a78bfa'; // violet-400
+const UNIFIED_GLOW = 'rgba(167,139,250,0.02)';
 
 function groupItemsBySubpattern(items, subpatterns) {
   const groups = {};
@@ -308,7 +308,7 @@ export default function Sheet() {
   }
 
   if (loading) {
-    return <DeepFocusLoader message="" />;
+    return <SheetSkeleton />;
   }
 
   const totalProblems = mergedData.length;
@@ -348,11 +348,11 @@ export default function Sheet() {
 
             {/* Flat Statistics Counter */}
             <div className="flex items-center gap-6 shrink-0 font-mono text-sm">
-              <div className="px-5 py-3.5 rounded-xl bg-white/[0.01] border border-white/[0.04]">
+              <div className="px-5 py-3.5 rounded-xl bg-[#0c0d12]/80 border border-white/[0.06] shadow-lg backdrop-blur-sm">
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Progress</p>
                 <p className="font-semibold text-zinc-200">{overallProgress}% ({totalCompleted}/{totalProblems})</p>
               </div>
-              <div className="px-5 py-3.5 rounded-xl bg-white/[0.01] border border-white/[0.04]">
+              <div className="px-5 py-3.5 rounded-xl bg-[#0c0d12]/80 border border-white/[0.06] shadow-lg backdrop-blur-sm">
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Strength Profile</p>
                 <p className="font-semibold text-zinc-200">
                   <span className="text-emerald-400">{strongPatterns} Strong</span>
@@ -369,14 +369,14 @@ export default function Sheet() {
           
           {/* Raycast-style Clean Search Bar */}
           <div className="relative flex-1 max-w-sm group">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-[#a78bfa] transition-colors" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="Search concepts or patterns…"
-              className="w-full bg-white/[0.01] border border-white/[0.05] rounded-xl py-2.5 pl-10 pr-12 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-white/10 focus:bg-white/[0.015] transition-all"
+              className="w-full bg-[#0c0d12]/80 border border-white/[0.06] focus:border-[#a78bfa]/40 focus:bg-[#0c0d12] rounded-xl py-2.5 pl-10 pr-12 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none transition-all focus:ring-1 focus:ring-[#a78bfa]/20 shadow-inner"
             />
             <AnimatePresence>
               {!searchFocused && !searchQuery && (
@@ -384,7 +384,7 @@ export default function Sheet() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-500 font-mono font-bold pointer-events-none"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.04] text-[10px] text-zinc-400 font-mono font-bold pointer-events-none"
                 >
                   <span>/</span>
                 </motion.div>
@@ -393,15 +393,15 @@ export default function Sheet() {
           </div>
 
           {/* Switcher Tab Capsule */}
-          <div className="flex p-1 rounded-xl bg-white/[0.015] border border-white/[0.04] relative shrink-0">
+          <div className="flex p-1 rounded-xl bg-[#0c0d12]/60 border border-white/[0.06] relative shrink-0 backdrop-blur-sm shadow-md">
             <button
               onClick={() => { setActiveView('dashboard'); setSelectedPattern(null); setSearchQuery(""); }}
-              className={`relative z-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeView === 'dashboard' && !searchQuery ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`relative z-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeView === 'dashboard' && !searchQuery ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
             >
               {activeView === 'dashboard' && !searchQuery && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-white/[0.04] border border-white/[0.08] rounded-lg -z-10 shadow-sm"
+                  className="absolute inset-0 bg-[#12141c] border border-white/[0.08] rounded-lg -z-10 shadow-sm"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -409,12 +409,12 @@ export default function Sheet() {
             </button>
             <button
               onClick={() => { setActiveView('smart'); setSelectedPattern(null); setSearchQuery(""); }}
-              className={`relative z-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeView === 'smart' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`relative z-10 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeView === 'smart' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
             >
               {activeView === 'smart' && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-white/[0.04] border border-white/[0.08] rounded-lg -z-10 shadow-sm"
+                  className="absolute inset-0 bg-[#12141c] border border-white/[0.08] rounded-lg -z-10 shadow-sm"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -487,11 +487,12 @@ function ProgressRing({ progress, color = UNIFIED_ACCENT, size = 52 }) {
   const offset = circ - (progress / 100) * circ;
   return (
     <svg width={size} height={size} className="shrink-0 -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="2.5" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2.5" />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="2.5"
         strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
         className="transition-all duration-700"
+        style={{ filter: `drop-shadow(0 0 2px ${color}44)` }}
       />
     </svg>
   );
@@ -515,22 +516,28 @@ function PatternDashboard({ patternsMap, onSelect }) {
             type="button"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { delay: index * 0.015, duration: 0.35 } }}
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -4 }}
             key={p.name}
             onClick={() => onSelect(p)}
-            className={`group relative text-left w-full overflow-hidden rounded-xl border border-white/[0.04] bg-white/[0.002] hover:bg-white/[0.01] hover:border-white/[0.08] transition-all duration-300 ${isFeatured ? 'sm:col-span-2 xl:col-span-1' : ''}`}
+            className={`group relative text-left w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0d12]/80 backdrop-blur-md hover:bg-[#12141c]/90 hover:border-white/[0.12] hover:shadow-[0_0_24px_-12px_rgba(167,139,250,0.35)] transition-all duration-300 shadow-md ${isFeatured ? 'sm:col-span-2 xl:col-span-1' : ''}`}
           >
-            <div className="flex items-center justify-between gap-6 p-7 h-full">
+            {/* Premium Top Glow */}
+            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#a78bfa]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            {/* Ambient Inner Glow */}
+            <div className="absolute -inset-px bg-gradient-to-br from-white/[0.01] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            <div className="flex items-center justify-between gap-6 p-7 h-full relative z-10">
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-zinc-200 group-hover:text-white truncate">{p.name}</h3>
-                <p className="text-[13px] text-zinc-400 mt-1.5 font-mono">{p.completed} / {p.total} solved</p>
+                <h3 className="text-base font-bold text-zinc-200 group-hover:text-white truncate tracking-tight mb-2.5">{p.name}</h3>
+                <p className="text-[13px] text-zinc-400 font-mono">{p.completed} / {p.total} solved</p>
                 <div className="mt-3">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${
                     p.strength === 'Strong' 
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                       : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                   }`}>
-                    <span className={`w-1 h-1 rounded-full ${p.strength === 'Strong' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${p.strength === 'Strong' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                     {p.strength}
                   </span>
                 </div>
@@ -558,11 +565,11 @@ function SubpatternAccordion({ title, items, defaultOpen, toggleMastered, setNot
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-white/[0.04] bg-white/[0.002] overflow-hidden">
+    <div className="rounded-xl border border-white/[0.06] bg-[#0c0d12]/40 transition-all duration-300 overflow-hidden shadow-sm">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-5 px-6 py-4.5 text-left hover:bg-white/[0.01] transition-colors"
+        className="w-full flex items-center gap-5 px-6 py-4.5 text-left hover:bg-[#12141c]/50 transition-colors"
       >
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-bold text-zinc-200 truncate">{title}</h4>
@@ -625,7 +632,7 @@ function PatternDetail({ pattern, onBack, toggleMastered, setNotesModal }) {
       {/* Premium Frameless Hero Header */}
       <div className="relative pb-8 border-b border-white/[0.06] overflow-hidden">
         {/* Subtle background radial glow */}
-        <div className="absolute top-[-50px] left-[-20px] w-80 h-80 bg-[#0ea5e9]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-[-50px] left-[-20px] w-80 h-80 bg-[#a78bfa]/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
@@ -676,9 +683,9 @@ function PatternDetail({ pattern, onBack, toggleMastered, setNotesModal }) {
         {/* Pattern Focus Tip Card */}
         {PATTERN_TIPS[pattern.name] && (
           <div className="mt-8 bg-zinc-950/40 border border-white/[0.04] rounded-xl p-5 relative overflow-hidden z-10 max-w-3xl">
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#0ea5e9]" />
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#a78bfa]" />
             <h4 className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-1.5 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0ea5e9]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]" />
               Study Tip
             </h4>
             <p className="text-xs md:text-sm text-zinc-300 leading-relaxed font-medium pl-3 italic">
@@ -791,8 +798,8 @@ function ProblemList({ items, toggleMastered, setNotesModal, showPattern = false
               onClick={() => toggleMastered(item.id, item.isCurated)}
               className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center transition-all ${
                 item.revised
-                  ? 'bg-[#0ea5e9]/10 border-[#0ea5e9]/30 text-[#0ea5e9]'
-                  : 'border-zinc-700 hover:border-[#0ea5e9]/40 text-transparent hover:text-[#0ea5e9]/30'
+                  ? 'bg-[#a78bfa]/10 border-[#a78bfa]/30 text-[#a78bfa]'
+                  : 'border-zinc-700 hover:border-[#a78bfa]/40 text-transparent hover:text-[#a78bfa]/30'
               }`}
               title={item.revised ? 'Mastered' : 'Mark mastered'}
             >
@@ -854,7 +861,7 @@ function ProblemList({ items, toggleMastered, setNotesModal, showPattern = false
                   hasAiSummary
                     ? 'text-violet-400 bg-violet-500/10 border-violet-500/30 shadow-[0_0_8px_rgba(139,92,246,0.2)] hover:bg-violet-500/20 hover:border-violet-500/40'
                     : (hasUserNotes || hasCode)
-                    ? 'text-[#0ea5e9] bg-[#0ea5e9]/8 border-[#0ea5e9]/20 hover:bg-[#0ea5e9]/15'
+                    ? 'text-[#a78bfa] bg-[#a78bfa]/8 border-[#a78bfa]/20 hover:bg-[#a78bfa]/15'
                     : 'text-zinc-500 border-transparent hover:bg-white/[0.03] hover:text-zinc-300'
                 }`}
                 title={hasAiSummary ? 'View AI Summary & Notes' : (hasUserNotes || hasCode) ? 'View/Edit Note' : 'Add Note'}

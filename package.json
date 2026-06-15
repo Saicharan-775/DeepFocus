@@ -1,5 +1,9 @@
 {
+  "scripts": {
+    "verify": "node scripts/verify_all.js"
+  },
   "dependencies": {
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "@supabase/supabase-js": "^2.39.0"
   }
 }
