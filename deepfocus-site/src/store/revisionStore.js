@@ -112,12 +112,18 @@ export async function refreshRevisionProblems() {
   state = { ...state, loading: true };
   emit();
 
-  const data = await getRevisionProblems();
-  if (seq !== refreshSeq) return getRevisionSnapshot();
-
-  mergeRevisionProblems(data);
-  state = { ...state, loading: false };
-  emit();
+  try {
+    const data = await getRevisionProblems();
+    if (seq !== refreshSeq) return getRevisionSnapshot();
+    mergeRevisionProblems(data);
+  } catch (err) {
+    console.error("Failed to refresh revision store:", err);
+  } finally {
+    if (seq === refreshSeq) {
+      state = { ...state, loading: false };
+      emit();
+    }
+  }
   return getRevisionSnapshot();
 }
 

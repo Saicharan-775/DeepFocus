@@ -25,8 +25,9 @@ export default async (req: Request) => {
     if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
     // Verify session
-    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (userError || !user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders });
+    const { data, error: userError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userError || !data?.user) return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401, headers: corsHeaders });
+    const user = data.user;
 
     // 1. Generate secure token
     const rawToken = "dfx_" + crypto.randomUUID().replace(/-/g, "");

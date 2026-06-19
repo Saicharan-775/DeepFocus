@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { getSafeSession } from '../utils/authHelpers';
 
 const AuthContext = createContext({});
 
@@ -50,14 +51,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check active sessions and sets the user
     const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      setSession(session);
-      const user = session?.user ?? null;
-      setUser(user);
-      syncUserScopedLocalStorage(user);
-      
-      setLoading(false);
+      try {
+        const session = await getSafeSession();
+        setSession(session);
+        const user = session?.user ?? null;
+        setUser(user);
+        syncUserScopedLocalStorage(user);
+      } catch (err) {
+        console.error("[Auth Context Error]:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

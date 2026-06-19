@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
+import crypto from 'crypto';
 
-function buildEmailHtml({ title, message, ctaText, ctaUrl, imageUrl, email }) {
+function buildEmailHtml({ title, message, ctaText, ctaUrl, imageUrl, email, secret }) {
+  const unsubscribeToken = crypto
+    .createHash('sha256')
+    .update(secret + email.toLowerCase())
+    .digest('hex');
+  const unsubscribeUrl = `https://deepfocus.app/unsubscribe?email=${encodeURIComponent(email)}&token=${unsubscribeToken}`;
   const ctaSection = ctaText && ctaUrl ? `
     <div style="margin-top: 32px; text-align: center;">
       <a href="${ctaUrl}" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 600; color: #ffffff; background-image: linear-gradient(135deg, #7c3aed, #4f46e5); text-decoration: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35); transition: all 0.2s ease;">
@@ -15,8 +21,6 @@ function buildEmailHtml({ title, message, ctaText, ctaUrl, imageUrl, email }) {
       <img src="${imageUrl}" alt="Broadcast Media" style="width: 100%; display: block; object-cover: cover;" />
     </div>
   ` : '';
-
-  const unsubscribeUrl = `https://deepfocus.app/unsubscribe?email=${encodeURIComponent(email)}`;
 
   return `
     <!DOCTYPE html>
@@ -96,8 +100,29 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
     );
 
+    // Validate UNSUBSCRIBE_SECRET in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    const activeSecret = process.env.UNSUBSCRIBE_SECRET;
+    if (!activeSecret && isProduction) {
+      console.error('[Broadcast Dispatcher Error] UNSUBSCRIBE_SECRET environment variable is not configured.');
+      return res.status(500).json({ error: 'Server configuration error: UNSUBSCRIBE_SECRET is required in production.' });
+    }
+    const secretToUse = activeSecret || 'fallback-secret-key-for-development';
+
+    // Sync the unsubscribe secret to the database to ensure single source of truth
+    const { error: syncError } = await supabase
+      .from('app_settings')
+      .upsert(
+        { key: 'unsubscribe_secret', value: secretToUse },
+        { onConflict: 'key' }
+      );
+    if (syncError) {
+      console.warn('[Broadcast Dispatcher Warning] Failed to sync UNSUBSCRIBE_SECRET to database:', syncError.message);
+    }
+
     // Verify User Role using JWT
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data, error: authError } = await supabase.auth.getUser(token);
+    const user = data?.user;
     if (authError || !user) {
       return res.status(401).json({ error: 'Invalid authentication credentials' });
     }
@@ -163,10 +188,11 @@ export default async function handler(req, res) {
           ctaText: notification.cta_text,
           ctaUrl: notification.cta_url,
           imageUrl: notification.image_url,
-          email: emailToUse
+          email: emailToUse,
+          secret: secretToUse
         });
 
-        const res = await fetch("https://api.resend.com/emails", {
+        const fetchRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -178,17 +204,17 @@ export default async function handler(req, res) {
             subject: `[TEST SEND] ${notification.title}`,
             html: emailHtml,
             headers: {
-              "List-Unsubscribe": `<https://deepfocus.app/unsubscribe?email=${encodeURIComponent(emailToUse)}>`,
+              "List-Unsubscribe": `<https://deepfocus.app/unsubscribe?email=${encodeURIComponent(emailToUse)}&token=${crypto.createHash('sha256').update(secretToUse + emailToUse.toLowerCase()).digest('hex')}>`,
               "X-Entity-Ref-ID": `test-${notificationId}`
             }
           }),
         });
 
-        const data = await res.json();
-        if (res.ok) {
+        const data = await fetchRes.json();
+        if (fetchRes.ok) {
           return res.status(200).json({ success: true, message: `Test email successfully dispatched to ${emailToUse}` });
         } else {
-          return res.status(res.status).json({ error: data.message || 'Resend provider error during test dispatch' });
+          return res.status(fetchRes.status).json({ error: data.message || 'Resend provider error during test dispatch' });
         }
       } catch (err) {
         return res.status(500).json({ error: `Test send failed: ${err.message}` });
@@ -241,69 +267,104 @@ export default async function handler(req, res) {
     let successCount = 0;
     let failedCount = 0;
 
-    // Send emails sequentially or in small parallel batches to prevent rate limits
-    for (const delivery of queuedDeliveries) {
-      try {
+    // Send emails in parallel batches of 100 via Resend Batch API to prevent serverless timeouts
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < queuedDeliveries.length; i += BATCH_SIZE) {
+      const batch = queuedDeliveries.slice(i, i + BATCH_SIZE);
+      const emailPayloads = batch.map(delivery => {
         const emailHtml = buildEmailHtml({
           title: notification.title,
           message: notification.message,
           ctaText: notification.cta_text,
           ctaUrl: notification.cta_url,
           imageUrl: notification.image_url,
-          email: delivery.email
+          email: delivery.email,
+          secret: secretToUse
         });
 
-        const res = await fetch("https://api.resend.com/emails", {
+        const unsubToken = crypto
+          .createHash('sha256')
+          .update(secretToUse + delivery.email.toLowerCase())
+          .digest('hex');
+
+        return {
+          from: senderIdentity,
+          to: [delivery.email],
+          subject: notification.title,
+          html: emailHtml,
+          headers: {
+            "List-Unsubscribe": `<https://deepfocus.app/unsubscribe?email=${encodeURIComponent(delivery.email)}&token=${unsubToken}>`,
+            "X-Entity-Ref-ID": notificationId
+          }
+        };
+      });
+
+      try {
+        const fetchRes = await fetch("https://api.resend.com/emails/batch", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            from: senderIdentity,
-            to: [delivery.email],
-            subject: notification.title,
-            html: emailHtml,
-            headers: {
-              "List-Unsubscribe": `<https://deepfocus.app/unsubscribe?email=${encodeURIComponent(delivery.email)}>`,
-              "X-Entity-Ref-ID": notificationId
-            }
-          }),
+          body: JSON.stringify(emailPayloads),
         });
 
-        const data = await res.json();
+        const data = await fetchRes.json();
 
-        if (res.ok) {
-          await supabase
-            .from('broadcast_deliveries')
-            .update({ 
-              status: 'sent', 
-              resend_id: data.id, 
-              updated_at: new Date().toISOString() 
-            })
-            .eq('id', delivery.id);
-          successCount++;
+        if (fetchRes.ok && data.data && Array.isArray(data.data)) {
+          for (let j = 0; j < batch.length; j++) {
+            const delivery = batch[j];
+            const resendResponse = data.data[j];
+            if (resendResponse && resendResponse.id) {
+              await supabase
+                .from('broadcast_deliveries')
+                .update({ 
+                  status: 'sent', 
+                  resend_id: resendResponse.id, 
+                  updated_at: new Date().toISOString() 
+                })
+                .eq('id', delivery.id);
+              successCount++;
+            } else {
+              await supabase
+                .from('broadcast_deliveries')
+                .update({ 
+                  status: 'failed', 
+                  error_message: resendResponse?.error?.message || 'Resend batch delivery failed item', 
+                  updated_at: new Date().toISOString() 
+                })
+                .eq('id', delivery.id);
+              failedCount++;
+            }
+          }
         } else {
+          const errorMsg = data.message || 'Resend provider batch error';
+          console.error('[Broadcast Batch Dispatcher Error]', errorMsg);
+          for (const delivery of batch) {
+            await supabase
+              .from('broadcast_deliveries')
+              .update({ 
+                status: 'failed', 
+                error_message: errorMsg, 
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', delivery.id);
+            failedCount++;
+          }
+        }
+      } catch (err) {
+        console.error('[Broadcast Batch Network Error]', err);
+        for (const delivery of batch) {
           await supabase
             .from('broadcast_deliveries')
             .update({ 
               status: 'failed', 
-              error_message: data.message || 'Resend provider error', 
+              error_message: err.message || 'Network error during batch dispatch', 
               updated_at: new Date().toISOString() 
             })
             .eq('id', delivery.id);
           failedCount++;
         }
-      } catch (err) {
-        await supabase
-          .from('broadcast_deliveries')
-          .update({ 
-            status: 'failed', 
-            error_message: err.message || 'Network error during dispatch', 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', delivery.id);
-        failedCount++;
       }
     }
 

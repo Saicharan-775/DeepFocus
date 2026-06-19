@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RevisionSkeleton } from "../components/Boneyard";
 import { refreshRevisionProblems, subscribeRevisionStore, updateRevisionProblem } from "../store/revisionStore";
 import { setProblemRevisionNeeded } from "../services/revisionService";
+import { getSafeUser } from "../utils/authHelpers";
 import { getProblemPattern, patternPriorityMap, normalizeTitle, getSlugFromLink } from "../utils/patternMatcher";
 import { getAiSummary } from "../services/aiService";
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
@@ -240,22 +241,29 @@ export default function Revision() {
     const loadSeq = ++loadSeqRef.current;
     if (!silent) setDataLoading(true);
 
-    const snapshot = await refreshRevisionProblems();
-    if (loadSeq !== loadSeqRef.current) return;
-    setProblems(mapRawProblems(snapshot.items));
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: conn } = await supabase
-        .from('extension_connections')
-        .select('created_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
+    try {
+      const snapshot = await refreshRevisionProblems();
       if (loadSeq !== loadSeqRef.current) return;
-      setExtensionLinked(!!conn);
-    }
+      setProblems(mapRawProblems(snapshot.items));
 
-    if (!silent) setDataLoading(false);
+      const user = await getSafeUser();
+      if (user) {
+        const { data: conn, error: connErr } = await supabase
+          .from('extension_connections')
+          .select('created_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (connErr) throw connErr;
+        if (loadSeq !== loadSeqRef.current) return;
+        setExtensionLinked(!!conn);
+      }
+    } catch (err) {
+      console.error("Failed to load revision problems:", err);
+    } finally {
+      if (!silent && loadSeq === loadSeqRef.current) {
+        setDataLoading(false);
+      }
+    }
   }
 
   const filtered = useMemo(() => {

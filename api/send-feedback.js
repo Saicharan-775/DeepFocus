@@ -1,11 +1,28 @@
-// Vercel Serverless Function: Send Feedback via Resend API
-// Handles secure server-side email dispatch for DeepFocus MVP (Root Version)
+import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
   // 1. Enforce POST method
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  // 1b. Enforce JWT authentication
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Authorization credentials required" });
+  }
+  const token = authHeader.split(" ")[1];
+
+  const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY
+  );
+
+  const { data, error: authError } = await supabase.auth.getUser(token);
+  const user = data?.user;
+  if (authError || !user) {
+    return res.status(401).json({ error: "Invalid authentication credentials" });
   }
 
   try {

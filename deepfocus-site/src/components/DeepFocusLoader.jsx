@@ -1,7 +1,6 @@
 import React from "react";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
-export const HANDS_LOADER_SRC = "https://lottie.host/5a449ee2-c5f8-439b-9455-6e83cde25682/XXzIGAxwx3.lottie";
+export const HANDS_LOADER_SRC = ""; // placeholder removed
 
 export default function DeepFocusLoader({
   message = "Loading...",
@@ -16,11 +15,10 @@ export default function DeepFocusLoader({
     : `${hasCustomMinHeight ? "" : "min-h-[calc(100vh-8rem)]"} w-full bg-transparent`;
 
   return (
-    <div
-      className={`${shellClass} flex flex-col items-center justify-center text-center ${className}`}
-    >
-      <div className={sizeClass}>
-        <DotLottieReact src={HANDS_LOADER_SRC} loop autoplay />
+    <div className={`${shellClass} flex flex-col items-center justify-center text-center ${className}`}>
+      <div className={`${sizeClass} flex items-center justify-center`}>
+        {/* Simple CSS spinner */}
+        <div className="animate-spin rounded-full border-4 border-t-emerald-400 border-b-emerald-200 w-full h-full" />
       </div>
       {message && (
         <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400">

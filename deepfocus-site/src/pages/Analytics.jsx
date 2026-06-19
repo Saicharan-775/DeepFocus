@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
+import { getSafeUser } from '../utils/authHelpers';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AnalyticsSkeleton } from '../components/Boneyard';
@@ -191,7 +192,7 @@ export default function Analytics() {
 
    useEffect(() => {
       async function loadData() {
-         const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+         const supabaseUser = await getSafeUser();
          if (!supabaseUser) return;
          setUser(supabaseUser);
 
@@ -200,13 +201,20 @@ export default function Analytics() {
             getRevisionProblems()
          ]);
 
+         if (sRes.error) throw sRes.error;
+
          setData({ sessions: sRes.data || [], problems: pRes || [] });
       }
 
       const init = async () => {
          setLoading(true);
-         await loadData();
-         setLoading(false);
+         try {
+            await loadData();
+         } catch (err) {
+            console.error("[Analytics Load Error] Could not retrieve statistics:", err);
+         } finally {
+            setLoading(false);
+         }
       };
 
       init();

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { getSafeSession } from '../utils/authHelpers';
 
 export function normalizeProblemUrl(url) {
   if (!url || typeof url !== 'string') return '';
@@ -18,7 +19,7 @@ function revisionTimestamp(problem) {
  * RLS on the `revision_problems` table ensures users only see their own data.
  */
 export async function getRevisionProblems() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = await getSafeSession();
   if (!session) return [];
 
   let { data, error } = await supabase
@@ -48,7 +49,7 @@ export async function getRevisionProblems() {
  * Validates required fields before sending to the database.
  */
 export async function addRevisionProblem(problem) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = await getSafeSession();
   if (!session) return null;
 
   // Input validation
@@ -152,16 +153,19 @@ export async function addRevisionProblem(problem) {
  * Update problem notes for a given problem ID.
  */
 export async function updateProblemNotes(id, notes) {
-  if (!id) return;
+  if (!id) return { data: null, error: new Error('Missing problem id') };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('revision_problems')
     .update({ notes })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) {
     console.error('[revisionService] Error updating notes:', error.message);
   }
+  return { data, error };
 }
 
 /**
@@ -171,7 +175,7 @@ export async function updateProblemNotesByLink(link, summaryToAppend, title = nu
   const normalizedLink = normalizeProblemUrl(link);
   if (!normalizedLink || !summaryToAppend) return;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = await getSafeSession();
   if (!session) return;
 
   // Find problem by link
@@ -208,16 +212,19 @@ export async function updateProblemNotesByLink(link, summaryToAppend, title = nu
  * Toggle whether a problem needs revision.
  */
 export async function toggleProblemMarked(id, revision_needed) {
-  if (!id) return;
+  if (!id) return { data: null, error: new Error('Missing problem id') };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('revision_problems')
     .update({ revision_needed })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) {
     console.error('[revisionService] Error toggling revision status:', error.message);
   }
+  return { data, error };
 }
 
 export async function setProblemRevisionNeeded(id, revisionNeeded) {

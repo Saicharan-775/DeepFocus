@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { getSafeUser, getSafeSession } from "../utils/authHelpers";
 import {
   User,
   BrainCircuit,
@@ -349,8 +350,8 @@ export default function Settings() {
 
     setIsTesting(true);
     try {
-      const sessionRes = await supabase.auth.getSession();
-      const token = sessionRes.data.session?.access_token;
+      const session = await getSafeSession();
+      const token = session?.access_token;
       if (!token) throw new Error("Missing active session JWT token.");
 
       // Save as draft/unpublished first
@@ -426,8 +427,8 @@ export default function Settings() {
     setIsConfirmOpen(false);
     setIsDeploying(true);
     try {
-      const sessionRes = await supabase.auth.getSession();
-      const token = sessionRes.data.session?.access_token;
+      const session = await getSafeSession();
+      const token = session?.access_token;
       if (!token) throw new Error("Missing active session JWT token.");
 
       const isEmailCampaign = composer.delivery_method === "email" || composer.delivery_method === "both";
@@ -559,88 +560,110 @@ export default function Settings() {
     };
     window.addEventListener("deepfocus_connection_changed", handleConnectionChange);
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        setSelectedAvatarUrl(user.user_metadata?.avatar_url || "");
-        setFullName(user.user_metadata?.full_name || "");
-        setTestEmailAddress(user.email || "");
-        checkExtensionConnection(user.id);
+    const initSettings = async () => {
+      try {
+        const user = await getSafeUser();
+        setUser(user);
+        if (user) {
+          setSelectedAvatarUrl(user.user_metadata?.avatar_url || "");
+          setFullName(user.user_metadata?.full_name || "");
+          setTestEmailAddress(user.email || "");
+          checkExtensionConnection(user.id);
 
-        // Fetch User RBAC Role
-        supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single()
-          .then(({ data }) => {
-            if (data && data.role === "admin") {
-              setIsAdmin(true);
-              fetchCampaigns();
-              fetchAuditLogs();
-              fetchFeatureFlags();
-              fetchDeliveryFailures();
-            }
-          });
+          // Fetch User RBAC Role
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
 
-        const loadStats = async () => {
-          const [pRes, sRes] = await Promise.all([
-            supabase.from("revision_problems").select("*").eq("user_id", user.id),
-            supabase.from("focus_sessions").select("*").eq("user_id", user.id),
-          ]);
-
-          const problems = pRes.data || [];
-          const sessions = sRes.data || [];
-
-          const problemScores = problems.filter((p) => p.focus_score !== undefined && p.focus_score !== null);
-          let avgFocusScore = 0;
-          if (problemScores.length > 0) {
-            avgFocusScore = Math.round(problemScores.reduce((acc, p) => acc + p.focus_score, 0) / problemScores.length);
-          } else if (sessions.length > 0) {
-            avgFocusScore = Math.round(sessions.reduce((acc, s) => acc + (s.focus_score || 0), 0) / sessions.length);
+          if (profileData && profileData.role === "admin") {
+            setIsAdmin(true);
+            fetchCampaigns();
+            fetchAuditLogs();
+            fetchFeatureFlags();
+            fetchDeliveryFailures();
           }
 
-          const activityMap = {};
-          problems.forEach((p) => {
-            const dateKey = dayjs(p.created_at).format("YYYY-MM-DD");
-            activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
-          });
-          sessions.forEach((s) => {
-            const dateKey = dayjs(s.start_time || s.created_at).format("YYYY-MM-DD");
-            activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
-          });
+          const loadStats = async () => {
+            try {
+              const [pRes, sRes] = await Promise.all([
+                supabase.from("revision_problems").select("*").eq("user_id", user.id),
+                supabase.from("focus_sessions").select("*").eq("user_id", user.id),
+              ]);
 
-          let currentStreak = 0;
-          const today = dayjs().format("YYYY-MM-DD");
-          const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+              const problems = pRes.data || [];
+              const sessions = sRes.data || [];
 
-          if (activityMap[today] || activityMap[yesterday]) {
-            let checkDate = activityMap[today] ? dayjs(today) : dayjs(yesterday);
-            while (activityMap[checkDate.format("YYYY-MM-DD")]) {
-              currentStreak++;
-              checkDate = checkDate.subtract(1, "day");
+              const problemScores = problems.filter((p) => p.focus_score !== undefined && p.focus_score !== null);
+              let avgFocusScore = 0;
+              if (problemScores.length > 0) {
+                avgFocusScore = Math.round(problemScores.reduce((acc, p) => acc + p.focus_score, 0) / problemScores.length);
+              } else if (sessions.length > 0) {
+                avgFocusScore = Math.round(sessions.reduce((acc, s) => acc + (s.focus_score || 0), 0) / sessions.length);
+              }
+
+              const activityMap = {};
+              problems.forEach((p) => {
+                const dateKey = dayjs(p.created_at).format("YYYY-MM-DD");
+                activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+              });
+              sessions.forEach((s) => {
+                const dateKey = dayjs(s.start_time || s.created_at).format("YYYY-MM-DD");
+                activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+              });
+
+              let currentStreak = 0;
+              const today = dayjs().format("YYYY-MM-DD");
+              const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+              if (activityMap[today] || activityMap[yesterday]) {
+                let checkDate = activityMap[today] ? dayjs(today) : dayjs(yesterday);
+                while (activityMap[checkDate.format("YYYY-MM-DD")]) {
+                  currentStreak++;
+                  checkDate = checkDate.subtract(1, "day");
+                }
+              }
+
+              setStats({
+                focusScore: avgFocusScore,
+                sessions: sessions.length,
+                dayStreak: currentStreak,
+                problems: problems.length,
+                aiUsageCount: parseInt(localStorage.getItem('df_ai_usage_count') || '0', 10),
+                loading: false,
+              });
+            } catch (err) {
+              console.error("[Settings Stats Load Error]:", err);
+              setStats((prev) => ({ ...prev, loading: false }));
             }
-          }
+          };
 
-          setStats({
-            focusScore: avgFocusScore,
-            sessions: sessions.length,
-            dayStreak: currentStreak,
-            problems: problems.length,
-            aiUsageCount: parseInt(localStorage.getItem('df_ai_usage_count') || '0', 10),
-            loading: false,
-          });
-        };
+          loadStats();
 
-        loadStats();
+          const handleSync = async () => {
+            try {
+              await loadStats();
+            } catch (err) {
+              console.error("[Settings Stats Sync Error]:", err);
+            }
+          };
 
-        channel = supabase
-          .channel("settings_sync")
-          .on("postgres_changes", { event: "*", schema: "public", table: "revision_problems" }, () => loadStats())
-          .on("postgres_changes", { event: "*", schema: "public", table: "focus_sessions" }, () => loadStats())
-          .subscribe();
+          channel = supabase
+            .channel("settings_sync")
+            .on("postgres_changes", { event: "*", schema: "public", table: "revision_problems" }, handleSync)
+            .on("postgres_changes", { event: "*", schema: "public", table: "focus_sessions" }, handleSync)
+            .subscribe();
+        } else {
+          setStats((prev) => ({ ...prev, loading: false }));
+        }
+      } catch (err) {
+        console.error("[Settings Init Error]:", err);
+        setStats((prev) => ({ ...prev, loading: false }));
       }
-    });
+    };
+
+    initSettings();
 
     setDailyGoal(parseInt(localStorage.getItem("dailyRevisionGoal")) || 5);
 

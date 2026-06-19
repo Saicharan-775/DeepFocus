@@ -1,6 +1,7 @@
 import { updateProblemNotesByLink } from './revisionService';
 import { supabase } from '../lib/supabaseClient';
 import { installRevisionMessageBridge, refreshRevisionProblems } from '../store/revisionStore';
+import { getSafeSession } from '../utils/authHelpers';
 
 export function startExtensionSync() {
   installRevisionMessageBridge();
@@ -41,8 +42,10 @@ export function startExtensionSync() {
     }, 2000);
   }
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
+  getSafeSession().then((session) => {
     if (session) checkAndConnect(session);
+  }).catch((err) => {
+    console.error("[Extension Sync Auth Error]:", err);
   });
 
   supabase.auth.onAuthStateChange((_event, session) => {
@@ -73,7 +76,7 @@ export function startExtensionSync() {
 
     if (event.data.type === "DEEPFOCUS_PONG_EXTENSION") {
       pongReceived = true;
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSafeSession();
       if (!session?.user) return;
 
       if (event.data.connected) {

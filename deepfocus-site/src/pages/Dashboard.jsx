@@ -26,6 +26,7 @@ import { useAuth } from '../hooks/useAuth';
 import { DashboardSkeleton } from '../components/Boneyard';
 import { supabase } from '../lib/supabaseClient';
 import { getRevisionProblems } from '../services/revisionService';
+import { getSafeUser } from '../utils/authHelpers';
 import { getProblemPattern } from '../utils/patternMatcher';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import patternPriority from '../constants/Patterns/pattern_priority.json';
@@ -540,35 +541,48 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const [data, authResult] = await Promise.all([
-        getRevisionProblems(),
-        supabase.auth.getUser()
+      const user = await getSafeUser();
+      
+      const [data] = await Promise.all([
+        getRevisionProblems()
       ]);
-
       setProblems(data);
 
-      const authUser = authResult?.data?.user;
-      if (authUser) {
-        const { data: sessionData } = await supabase
+      if (user) {
+        const { data: sessionData, error: sessionErr } = await supabase
           .from('focus_sessions')
           .select('*')
-          .eq('user_id', authUser.id);
+          .eq('user_id', user.id);
+        if (sessionErr) throw sessionErr;
         setSessions(sessionData || []);
       }
     }
 
     async function init() {
       setIsLoading(true);
-      await loadData();
-      setIsLoading(false);
+      try {
+        await loadData();
+      } catch (err) {
+        console.error("Dashboard init error:", err);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     init();
 
+    const handleSync = async () => {
+      try {
+        await loadData();
+      } catch (err) {
+        console.error("Dashboard realtime sync error:", err);
+      }
+    };
+
     const channel = supabase
       .channel('dashboard_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_problems' }, handleSync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions' }, handleSync)
       .subscribe();
 
     return () => {

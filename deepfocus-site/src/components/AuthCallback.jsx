@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeepFocusLoader from './DeepFocusLoader';
 import { supabase } from '../lib/supabaseClient';
+import { getSafeSession } from '../utils/authHelpers';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -10,30 +11,30 @@ export default function AuthCallback() {
     let isMounted = true;
 
     const finishAuth = async () => {
-      const url = new URL(window.location.href);
+      try {
+        const url = new URL(window.location.href);
 
-      if (url.searchParams.has('error')) {
-        if (isMounted) navigate('/auth', { replace: true });
-        return;
-      }
-
-      const code = url.searchParams.get('code');
-
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
+        if (url.searchParams.has('error')) {
           if (isMounted) navigate('/auth', { replace: true });
           return;
         }
+
+        const code = url.searchParams.get('code');
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        }
+
+        const session = await getSafeSession();
+
+        if (!isMounted) return;
+
+        navigate(session?.user ? '/revision' : '/auth', { replace: true });
+      } catch (err) {
+        console.error("Callback authentication failed:", err);
+        if (isMounted) navigate('/auth', { replace: true });
       }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!isMounted) return;
-
-      navigate(session?.user ? '/revision' : '/auth', { replace: true });
     };
 
     finishAuth();

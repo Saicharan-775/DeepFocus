@@ -12,7 +12,7 @@ const CATEGORIES = [
 ];
 
 export default function Feedback() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const fileInputRef = useRef(null);
   
   const [category, setCategory] = useState("bug");
@@ -148,6 +148,7 @@ export default function Feedback() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`,
         },
         body: JSON.stringify(payload),
       });

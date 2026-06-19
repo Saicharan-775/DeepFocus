@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { getProblemPattern, patternPriorityMap } from "../utils/patternMatcher";
 import { RevisionSkeleton } from "../components/Boneyard";
+import { getSafeUser } from "../utils/authHelpers";
 import { getAiPseudoCode } from "../services/aiService";
 
 function parseRevisionNotes(dbNotes) {
@@ -174,14 +175,26 @@ export default function TodaysRevision() {
   }, [suggestedProblems, activeProblem]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) loadDashboardData(user.id);
-    });
+    async function init() {
+      try {
+        const user = await getSafeUser();
+        setUser(user);
+        if (user) {
+          await loadDashboardData(user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("TodaysRevision init error:", err);
+        setLoading(false);
+      }
+    }
+    init();
   }, []);
 
   async function loadDashboardData(userId) {
-    const todayStr = dayjs().format('YYYY-MM-DD');
+    try {
+      const todayStr = dayjs().format('YYYY-MM-DD');
     
     const [pRes, sRes] = await Promise.all([
       supabase.from('revision_problems').select('*').eq('user_id', userId),
@@ -299,7 +312,11 @@ export default function TodaysRevision() {
       retentionRate: retention
     });
 
-    setLoading(false);
+    } catch (err) {
+      console.error("Failed to load dashboard data in TodaysRevision:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const markAsReviewed = async (id) => {
