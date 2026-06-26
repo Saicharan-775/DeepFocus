@@ -141,7 +141,7 @@ export default function Header() {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-[#000000]/80 backdrop-blur-md sticky top-0 z-30">
+    <header className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-[#000000]/80 backdrop-blur-md sticky top-0 z-50">
       
       {/* Breadcrumbs / Page Title */}
       <div className="flex items-center gap-2 text-sm">

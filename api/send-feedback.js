@@ -1,5 +1,47 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Simple in-memory rate limiting cache
+const rateLimitCache = new Map();
+
+function isRateLimited(userId, ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const limit = 5; // 5 requests
+
+  const keys = [];
+  if (userId) keys.push(`user_${userId}`);
+  if (ip) keys.push(`ip_${ip}`);
+
+  let limited = false;
+  for (const key of keys) {
+    let requests = rateLimitCache.get(key) || [];
+    // Filter out requests older than the 15-minute window
+    requests = requests.filter(timestamp => now - timestamp < windowMs);
+    
+    if (requests.length >= limit) {
+      limited = true;
+    }
+    
+    // Add current request timestamp
+    requests.push(now);
+    rateLimitCache.set(key, requests);
+  }
+  return limited;
+}
+
+function cleanupCache() {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  for (const [key, requests] of rateLimitCache.entries()) {
+    const validRequests = requests.filter(timestamp => now - timestamp < windowMs);
+    if (validRequests.length === 0) {
+      rateLimitCache.delete(key);
+    } else {
+      rateLimitCache.set(key, validRequests);
+    }
+  }
+}
+
 export default async function handler(req, res) {
   // 1. Enforce POST method
   if (req.method !== "POST") {
@@ -23,6 +65,13 @@ export default async function handler(req, res) {
   const user = data?.user;
   if (authError || !user) {
     return res.status(401).json({ error: "Invalid authentication credentials" });
+  }
+
+  // 1c. Enforce Rate Limiting (5 requests per 15 minutes)
+  const ip = req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "";
+  cleanupCache();
+  if (isRateLimited(user.id, ip)) {
+    return res.status(429).json({ error: "Too many feedback submissions. Please wait 15 minutes before trying again." });
   }
 
   try {

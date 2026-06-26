@@ -6,11 +6,16 @@
   if (window.__dfInterceptInstalled) return;
   window.__dfInterceptInstalled = true;
 
+  const currentScript = document.currentScript;
+  const handshakeSecret = (currentScript ? currentScript.getAttribute('data-df-secret') : null) || 
+                          (document.querySelector('script[data-df-secret]')?.getAttribute('data-df-secret')) || '';
+
   function notifyResult(status_msg, state) {
     window.postMessage({
       type: '__DEEPFOCUS_SUBMISSION_RESULT__',
       status_msg: status_msg,
-      state: state || ''
+      state: state || '',
+      secret: handshakeSecret
     }, window.location.origin);
   }
 
@@ -88,7 +93,8 @@
       if (code && code.trim()) {
         window.postMessage({
           type: '__DEEPFOCUS_EXTRACTED_CODE__',
-          code: code
+          code: code,
+          secret: handshakeSecret
         }, window.location.origin);
       }
     } catch (e) {}
@@ -108,7 +114,8 @@
     lastInternalText = text;
     window.postMessage({
       type: '__DEEPFOCUS_INTERNAL_COPY__',
-      text: text
+      text: text,
+      secret: handshakeSecret
     }, window.location.origin);
   }
 
@@ -167,7 +174,7 @@
         return text;
       }
 
-      window.postMessage({ type: '__DEEPFOCUS_PASTE_BLOCKED__' }, window.location.origin);
+      window.postMessage({ type: '__DEEPFOCUS_PASTE_BLOCKED__', secret: handshakeSecret }, window.location.origin);
       return "";
     };
   }
@@ -186,7 +193,8 @@
             if (submittedCode && submittedCode.trim()) {
               window.postMessage({
                 type: '__DEEPFOCUS_SUBMITTED_CODE__',
-                code: submittedCode
+                code: submittedCode,
+                secret: handshakeSecret
               }, window.location.origin);
             }
           } catch (e) {}
@@ -228,7 +236,8 @@
           if (submittedCode && submittedCode.trim()) {
             window.postMessage({
               type: '__DEEPFOCUS_SUBMITTED_CODE__',
-              code: submittedCode
+              code: submittedCode,
+              secret: handshakeSecret
             }, window.location.origin);
           }
         } catch (e) {}
@@ -250,6 +259,5 @@
   };
 
   // Signal ready
-  window.postMessage({ type: '__DEEPFOCUS_INTERCEPTOR_READY__' }, window.location.origin);
+  window.postMessage({ type: '__DEEPFOCUS_INTERCEPTOR_READY__', secret: handshakeSecret }, window.location.origin);
 })();
-

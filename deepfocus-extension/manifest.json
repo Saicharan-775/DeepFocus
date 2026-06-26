@@ -5,7 +5,6 @@
   "description": "A focus environment for LeetCode to prevent cheating and maintain discipline via timer and score.",
   "permissions": [
     "storage",
-    "tabs",
     "scripting",
     "webNavigation"
   ],

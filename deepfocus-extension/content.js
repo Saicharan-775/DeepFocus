@@ -4,6 +4,8 @@ if (window.__DEEPFOCUS_CONTENT_LOADED__) {
 }
 window.__DEEPFOCUS_CONTENT_LOADED__ = true;
 
+let pageInterceptorSecret = '';
+
 // =============================================
 // INSTANT BLOCK — runs before DOM renders
 // We read focus active from local storage via a
@@ -794,6 +796,7 @@ window.addEventListener('message', (e) => {
   if (!e.data) return;
 
   if (e.data.type === '__DEEPFOCUS_EXTRACTED_CODE__') {
+    if (!pageInterceptorSecret || e.data.secret !== pageInterceptorSecret) return;
     if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(e)) return;
     if (e.data.code && e.data.code.trim()) {
       lastInterceptedCode = e.data.code;
@@ -801,6 +804,7 @@ window.addEventListener('message', (e) => {
   }
 
   if (e.data.type === '__DEEPFOCUS_SUBMITTED_CODE__') {
+    if (!pageInterceptorSecret || e.data.secret !== pageInterceptorSecret) return;
     if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(e)) return;
     if (e.data.code && e.data.code.trim()) {
       lastInterceptedCode = e.data.code;
@@ -1715,8 +1719,10 @@ function setupAcceptedDetection() {
     // ========== STRATEGY 1: Intercept LeetCode's Network Responses ==========
     try {
       if (!chrome.runtime?.id) return;
+      pageInterceptorSecret = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
       const interceptScript = document.createElement('script');
       interceptScript.src = chrome.runtime.getURL('utils/pageInterceptor.js');
+      interceptScript.setAttribute('data-df-secret', pageInterceptorSecret);
       interceptScript.onload = function () {
         this.remove();
       };
@@ -1727,6 +1733,7 @@ function setupAcceptedDetection() {
 
     window.addEventListener('message', (event) => {
       if (event.data?.type !== '__DEEPFOCUS_SUBMISSION_RESULT__') return;
+      if (!pageInterceptorSecret || event.data.secret !== pageInterceptorSecret) return;
       if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(event)) return;
       if (!waitingForSubmit) return;
 
@@ -1740,6 +1747,7 @@ function setupAcceptedDetection() {
 
     window.addEventListener('message', (event) => {
       if (event.data?.type !== '__DEEPFOCUS_INTERNAL_COPY__') return;
+      if (!pageInterceptorSecret || event.data.secret !== pageInterceptorSecret) return;
       if (!window.location.hostname.includes('leetcode.com') || !isSameWindowMessage(event)) return;
       lastLocalCopy = event.data.text;
     });

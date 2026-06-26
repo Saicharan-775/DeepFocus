@@ -279,22 +279,80 @@ export default function RevisionWorkspace() {
       const dbProblems = await getRevisionProblems();
       const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]');
       
-      const mapped = dbProblems.map(p => {
-        const cqMatch = findCuratedQuestion(p.title, p.link);
-
-        return {
-          ...p,
-          id: p.id,
-          isCurated: !!cqMatch,
-          revised: masteredIds.includes(p.id),
-          pattern: cqMatch ? cqMatch.primary_pattern : getProblemPattern(p.title),
-          dbNotes: p.notes || "",
-          code: p.code || "",
-          added: p.created_at ? new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''
-        };
+      // Map DB problems to normalized keys for robust matching
+      const dbMatchMap = {};
+      dbProblems.forEach(p => {
+        const normTitle = normalizeTitle(p.title);
+        const normSlug = getSlugFromLink(p.link);
+        if (normTitle) dbMatchMap[normTitle] = p;
+        if (normSlug) dbMatchMap[normSlug] = p;
       });
 
-      setProblems(mapped);
+      const usedDbIds = new Set();
+      const combined = [];
+
+      // 1. Add all Curated Questions (both attempted and unattempted)
+      curatedQuestions.forEach(cq => {
+        const normCqTitle = normalizeTitle(cq.title);
+        const cqSlug = cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const normCqSlug = getSlugFromLink(`/problems/${cqSlug}/`);
+        
+        const dbMatch = dbMatchMap[normCqTitle] || dbMatchMap[normCqSlug];
+        let status = "Unattempted";
+        let focusScore = null;
+        let revised = false;
+        let dbId = null;
+        let dbNotes = "";
+        let code = "";
+        let added = "";
+
+        if (dbMatch) {
+          status = dbMatch.focus_status;
+          focusScore = dbMatch.focus_score;
+          revised = masteredIds.includes(dbMatch.id);
+          dbId = dbMatch.id;
+          dbNotes = dbMatch.notes || "";
+          code = dbMatch.code || "";
+          added = dbMatch.created_at ? new Date(dbMatch.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+          usedDbIds.add(dbMatch.id);
+        }
+
+        combined.push({
+          id: dbId || `cq-${cq.leetcode_id}`,
+          title: cq.title,
+          difficulty: cq.difficulty,
+          pattern: cq.primary_pattern,
+          hiddenTags: cq.hidden_tags || [],
+          status,
+          focus_status: status,
+          focus_score: focusScore,
+          focusScore,
+          revised,
+          isCurated: true,
+          dbNotes,
+          code,
+          link: dbMatch?.link || `https://leetcode.com/problems/${cq.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+          added
+        });
+      });
+
+      // 2. Add dynamic/non-curated database problems
+      dbProblems.forEach(p => {
+        if (!usedDbIds.has(p.id)) {
+          combined.push({
+            ...p,
+            id: p.id,
+            isCurated: false,
+            revised: masteredIds.includes(p.id),
+            pattern: getProblemPattern(p.title, [], p.link),
+            dbNotes: p.notes || "",
+            code: p.code || "",
+            added: p.created_at ? new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''
+          });
+        }
+      });
+
+      setProblems(combined);
     } catch (e) {
       console.error("Error loading problems for workspace:", e);
     } finally {
@@ -325,23 +383,8 @@ export default function RevisionWorkspace() {
           if (!activeProblem || String(activeProblem.id) !== String(problemId)) {
             selectProblem(found);
           }
-        } else if (String(problemId).startsWith("cq-")) {
-          const leetcodeId = String(problemId).replace("cq-", "");
-          const cq = curatedQuestions.find(q => String(q.leetcode_id) === leetcodeId);
-          const problemName = cq ? cq.title : "this curated question";
-          
-          setAlertModal({
-            open: true,
-            message: `You need to solve or attempt "${problemName}" using the DeepFocus extension first before viewing it in the workspace.`
-          });
-          
-          // Select first available problem
-          const firstProblem = problems[0];
-          if (firstProblem) {
-            selectProblem(firstProblem);
-          }
         } else {
-          // Normal ID not found, select first
+          // If it was not found (maybe an invalid id), default to first problem
           const firstProblem = problems[0];
           if (firstProblem) {
             selectProblem(firstProblem);
@@ -716,7 +759,7 @@ export default function RevisionWorkspace() {
       </div>
 
       {/* HEADER BAR */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#09090a]/82 px-6 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#09090a]/82 px-6 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1500px] flex-col items-stretch justify-between gap-4 md:flex-row md:items-center">
           
           {/* Left info & Dropdown Selector */}

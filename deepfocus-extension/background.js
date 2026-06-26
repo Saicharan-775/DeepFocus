@@ -4,6 +4,45 @@ const DEEPFOCUS_CONFIG = {
   FOCUS_EVENT_ENDPOINT: 'functions/v1/focus-event'
 };
 
+// ==============================================================
+// ERROR MONITORING & METRICS FRAMEWORK
+// ==============================================================
+const errorMonitor = {
+  logError: (error, context = {}) => {
+    const errorDetails = {
+      message: error?.message || String(error),
+      stack: error?.stack || '',
+      context: {
+        ...context,
+        timestamp: new Date().toISOString(),
+        environment: 'production',
+        platform: 'chrome-extension'
+      }
+    };
+    console.error("[DeepFocus ServiceWorker Error]", errorDetails);
+  },
+
+  logMetric: (metricName, value = 1, tags = {}) => {
+    const metricPayload = {
+      metric: metricName,
+      value,
+      tags: {
+        ...tags,
+        timestamp: new Date().toISOString()
+      }
+    };
+    console.info(`[DeepFocus ServiceWorker Metric] ${metricName}:`, metricPayload);
+  }
+};
+
+self.addEventListener('error', (event) => {
+  errorMonitor.logError(event.error || event.message, { type: 'unhandled_error' });
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+  errorMonitor.logError(event.reason, { type: 'unhandled_rejection' });
+});
+
 // Default Focus State
 const defaultState = {
   focusActive: false,
@@ -89,8 +128,17 @@ function isDashboardUrl(url = '') {
   return /^(https:\/\/deepfocus\.app|https:\/\/www\.deepfocus\.app|http:\/\/localhost(?::\d+)?|http:\/\/127\.0\.0\.1(?::\d+)?)(\/|$)/.test(url);
 }
 
+const TARGET_URLS = [
+  "*://leetcode.com/*",
+  "*://*.leetcode.com/*",
+  "http://localhost/*",
+  "http://127.0.0.1/*",
+  "https://deepfocus.app/*",
+  "https://www.deepfocus.app/*"
+];
+
 function broadcastRevisionUpdate(problem, syncState = 'optimistic') {
-  chrome.tabs.query({}, (tabs) => {
+  chrome.tabs.query({ url: TARGET_URLS }, (tabs) => {
     (tabs || []).forEach((tab) => {
       if (!tab.id || !isDashboardUrl(tab.url || '')) return;
       sendTabMessage(tab.id, {
@@ -103,7 +151,7 @@ function broadcastRevisionUpdate(problem, syncState = 'optimistic') {
 }
 
 function broadcastRevisionRefresh() {
-  chrome.tabs.query({}, (tabs) => {
+  chrome.tabs.query({ url: TARGET_URLS }, (tabs) => {
     (tabs || []).forEach((tab) => {
       if (!tab.id || !isDashboardUrl(tab.url || '')) return;
       sendTabMessage(tab.id, { type: 'REVISION_REFRESH' });
@@ -142,11 +190,18 @@ function createSessionId() {
 }
 
 // Initialize State and Self-Inject into open tabs for "No Refresh" feel
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(['focusState', 'analytics', 'history'], (res) => {
+chrome.runtime.onInstalled.addListener((details) => {
+  const currentVersion = chrome.runtime.getManifest().version;
+  chrome.storage.local.get(['installedVersion', 'focusState', 'analytics', 'history'], (res) => {
     if (!res.focusState) chrome.storage.local.set({ focusState: defaultState });
     if (!res.analytics) chrome.storage.local.set({ analytics: { streak: 0, lastFocusDay: null, avgScore: 100, totalSessions: 0 } });
     if (!res.history) chrome.storage.local.set({ history: [] });
+
+    if (details.reason === 'update') {
+      const prevVersion = details.previousVersion;
+      runStorageSchemaMigrations(prevVersion, currentVersion);
+    }
+    chrome.storage.local.set({ installedVersion: currentVersion });
   });
   sanitizeFocusState();
   processPendingEvents();
@@ -163,6 +218,11 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 });
+
+function runStorageSchemaMigrations(fromVersion, toVersion) {
+  console.log(`[DeepFocus Migration] Upgrading local storage schema from ${fromVersion} to ${toVersion}`);
+  // Schema migrations can be added here when the extension version is upgraded in production.
+}
 
 chrome.runtime.onStartup.addListener(() => {
   sanitizeFocusState();
@@ -415,7 +475,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'INTERNAL_COPY') {
     chrome.storage.local.set({ lastInternalCopy: message.text });
     // Broadcast copy to other tabs so they can paste it if focus mode is active
-    chrome.tabs.query({}, (tabs) => {
+    chrome.tabs.query({ url: ['*://leetcode.com/*', '*://*.leetcode.com/*'] }, (tabs) => {
       if (tabs) {
         tabs.forEach((t) => {
           if (t.id && t.url && /^https:\/\/(?:www\.)?leetcode\.com\//.test(t.url)) {
@@ -557,17 +617,21 @@ ${code || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
+            errorMonitor.logMetric("ai_request_success", 1, { provider: 'OpenRouter', model });
             return content.trim();
           }
         } else {
           const message = await readProviderError(`OpenRouter ${model}`, res);
           providerErrors.push(message);
           console.warn(message);
+          errorMonitor.logMetric("ai_request_failed", 1, { provider: 'OpenRouter', model, status: res.status, error: message });
         }
       } catch (err) {
         const message = `OpenRouter ${model} request failed: ${err?.message || 'Network request failed'}`;
         providerErrors.push(message);
         console.warn(message);
+        errorMonitor.logError(err, { provider: 'OpenRouter', model });
+        errorMonitor.logMetric("ai_request_failed", 1, { provider: 'OpenRouter', model, error: err?.message || 'Network error' });
       }
     }
   }
@@ -602,17 +666,21 @@ ${code || "No code or notes provided yet."}`;
           const data = await res.json();
           const content = data?.choices?.[0]?.message?.content;
           if (content) {
+            errorMonitor.logMetric("ai_request_success", 1, { provider: 'Groq', model });
             return content.trim();
           }
         } else {
           const message = await readProviderError(`Groq ${model}`, res);
           providerErrors.push(message);
           console.warn(message);
+          errorMonitor.logMetric("ai_request_failed", 1, { provider: 'Groq', model, status: res.status, error: message });
         }
       } catch (err) {
         const message = `Groq ${model} request failed: ${err?.message || 'Network request failed'}`;
         providerErrors.push(message);
         console.warn(message);
+        errorMonitor.logError(err, { provider: 'Groq', model });
+        errorMonitor.logMetric("ai_request_failed", 1, { provider: 'Groq', model, error: err?.message || 'Network error' });
       }
     }
   }
@@ -640,11 +708,13 @@ ${code || "No code or notes provided yet."}`;
         const data = await res.json();
         const content = data?.choices?.[0]?.message?.content;
         if (content) {
+          errorMonitor.logMetric("ai_request_success", 1, { provider: 'OpenAI', model: 'gpt-4o-mini' });
           return content.trim();
         }
       } else {
         const message = await readProviderError("OpenAI", res);
         providerErrors.push(message);
+        errorMonitor.logMetric("ai_request_failed", 1, { provider: 'OpenAI', model: 'gpt-4o-mini', status: res.status, error: message });
         if (!openrouterKey && !groqKey) throw new Error(message);
         console.warn(message);
       }
@@ -653,6 +723,8 @@ ${code || "No code or notes provided yet."}`;
         ? err.message
         : `OpenAI request failed: ${err?.message || "Network request failed"}`;
       providerErrors.push(message);
+      errorMonitor.logError(err, { provider: 'OpenAI', model: 'gpt-4o-mini' });
+      errorMonitor.logMetric("ai_request_failed", 1, { provider: 'OpenAI', model: 'gpt-4o-mini', error: err?.message || 'Network error' });
       if (!openrouterKey && !groqKey) throw new Error(message);
       console.warn(message);
     }
@@ -1018,6 +1090,13 @@ async function handleStopFocus(customStatus = null, skipSync = false) {
       if (syncRes && syncRes.success) {
         syncResult = { saved: true, queued: false, error: null };
         console.log("[DeepFocus] Sync direct from background succeeded.");
+        errorMonitor.logMetric("focus_session_completed", 1, {
+          status: finalStatus,
+          score: state.score,
+          duration: elapsedSecs,
+          switches: state.tabSwitches,
+          sync: 'immediate'
+        });
         broadcastRevisionUpdate(problemObject, 'synced');
         broadcastRevisionRefresh();
         if (state.focusTabId) {
@@ -1026,6 +1105,14 @@ async function handleStopFocus(customStatus = null, skipSync = false) {
       } else {
         const errMsg = syncRes && syncRes.error ? syncRes.error : "Sync failed";
         console.warn("[DeepFocus] Revision sync queued:", errMsg);
+        errorMonitor.logMetric("focus_session_completed", 1, {
+          status: finalStatus,
+          score: state.score,
+          duration: elapsedSecs,
+          switches: state.tabSwitches,
+          sync: 'queued',
+          error: errMsg
+        });
         await queuePendingEvent(problemObject);
         broadcastRevisionUpdate(problemObject, 'queued');
         processPendingEvents();
@@ -1039,6 +1126,14 @@ async function handleStopFocus(customStatus = null, skipSync = false) {
       }
     } else {
       console.warn("[DeepFocus] No connection token. Queuing event.");
+      errorMonitor.logMetric("focus_session_completed", 1, {
+        status: finalStatus,
+        score: state.score,
+        duration: elapsedSecs,
+        switches: state.tabSwitches,
+        sync: 'queued',
+        error: 'Missing connection token'
+      });
       if (state.focusTabId) {
         sendTabMessage(state.focusTabId, { type: 'SHOW_TOAST', text: "Not connected. Queued.", variant: 'queued' });
       }

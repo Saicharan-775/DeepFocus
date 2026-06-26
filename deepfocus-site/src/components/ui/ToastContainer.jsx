@@ -31,7 +31,7 @@ const progressColors = {
 
 export default function ToastContainer({ toasts, removeToast }) {
   return (
-    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+    <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
       <AnimatePresence>
         {toasts.map((toast) => {
           const Icon = icons[toast.type] || icons.system;

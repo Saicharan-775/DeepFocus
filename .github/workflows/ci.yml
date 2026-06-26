@@ -1,0 +1,42 @@
+name: DeepFocus CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: './package-lock.json'
+
+    - name: Install root dependencies
+      run: npm install
+
+    - name: Run security audit (warnings only)
+      run: npm audit --audit-level=high || echo "Audit completed with warnings."
+
+    - name: Install and verify web application
+      run: |
+        cd deepfocus-site
+        npm install
+        npm run lint
+        npm run build
+
+    - name: Run verification suite
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      run: |
+        node scripts/verify_all.js

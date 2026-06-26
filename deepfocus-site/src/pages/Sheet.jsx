@@ -296,13 +296,6 @@ export default function Sheet() {
   function openNotes(itemOrId) {
     const id = (itemOrId && typeof itemOrId === 'object') ? itemOrId.id : itemOrId;
     if (id) {
-      if (String(id).startsWith('cq-')) {
-        setAlertModal({ 
-          open: true, 
-          message: "You need to solve or attempt this problem using the DeepFocus extension first before viewing it in the workspace." 
-        });
-        return;
-      }
       navigate(`/workspace?id=${id}`);
     }
   }

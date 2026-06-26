@@ -34,9 +34,11 @@ export default function Footer() {
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-xs font-semibold text-gray-300 tracking-wider uppercase mb-1">Legal</p>
-              <a href="#" className="text-sm text-zinc-400 hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="text-sm text-zinc-400 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-sm text-zinc-400 hover:text-white transition-colors">Contact</a>
+              <Link to="/privacy" className="text-sm text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="text-sm text-zinc-400 hover:text-white transition-colors">Terms of Service</Link>
+              <Link to="/cookies" className="text-sm text-zinc-400 hover:text-white transition-colors">Cookie Policy</Link>
+              <Link to="/deletion" className="text-sm text-zinc-400 hover:text-white transition-colors">Data Deletion</Link>
+              <Link to="/contact" className="text-sm text-zinc-400 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
         </div>

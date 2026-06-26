@@ -25,6 +25,11 @@ const UpdatePassword = lazy(() => import("./pages/UpdatePassword.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const AuthPage = lazy(() => import("./components/AuthPage.jsx"));
 const AuthCallback = lazy(() => import("./components/AuthCallback.jsx"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
+const DataDeletionPolicy = lazy(() => import("./pages/DataDeletionPolicy.jsx"));
+const Contact = lazy(() => import("./pages/Contact.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
 import {
@@ -56,6 +61,11 @@ function App() {
             <Route path="/" element={<MainLayout />}>
               <Route index element={<LandingPage />} />
               <Route path="guide" element={<Guide />} />
+              <Route path="privacy" element={<PrivacyPolicy />} />
+              <Route path="terms" element={<TermsOfService />} />
+              <Route path="cookies" element={<CookiePolicy />} />
+              <Route path="deletion" element={<DataDeletionPolicy />} />
+              <Route path="contact" element={<Contact />} />
             </Route>
 
             {/* Dashboard Routes */}

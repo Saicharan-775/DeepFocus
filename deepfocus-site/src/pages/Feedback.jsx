@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Send, CheckCircle2, History, Upload, X, Image, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import confetti from "canvas-confetti";
+import { useToast } from "../hooks/useToast";
 
 const CATEGORIES = [
   { id: "bug", label: "Bug Report" },
@@ -14,6 +15,7 @@ const CATEGORIES = [
 export default function Feedback() {
   const { user, session } = useAuth();
   const fileInputRef = useRef(null);
+  const { showToast } = useToast();
   
   const [category, setCategory] = useState("bug");
   const [rating, setRating] = useState(0);
@@ -54,7 +56,7 @@ export default function Feedback() {
 
     // Limit to 5MB
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size exceeds 5MB limit.");
+      showToast("File size exceeds 5MB limit.", "error");
       return;
     }
 

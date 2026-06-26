@@ -6,12 +6,12 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: require('path').join(__dirname, '..', 'deepfocus-site', '.env') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // service role for admin access
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase URL or Service Role key not set in .env');
-  process.exit(1);
+  console.warn('⚠️ Skipping Database schema verification: VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not defined in the environment.');
+  process.exit(0);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);

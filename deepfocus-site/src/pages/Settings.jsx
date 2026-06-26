@@ -30,6 +30,7 @@ import {
   Mail,
   Send,
   Activity,
+  Download,
 } from "lucide-react";
 import { useToast } from "../hooks/useToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,7 +42,7 @@ import { SettingsSkeleton } from "../components/Boneyard";
 const tabs = [
   {
     id: "account",
-    label: "Personal",
+    label: "Account",
     icon: User,
   },
   {
@@ -133,6 +134,10 @@ export default function Settings() {
 
   const [saveState, setSaveState] = useState("saved");
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [fullName, setFullName] = useState("");
 
   // Custom Avatar Builder States
@@ -791,6 +796,121 @@ export default function Settings() {
     }
   };
 
+  const handleExportData = async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      // 1. Fetch revision problems
+      const { data: revisionProblems, error: revErr } = await supabase
+        .from('revision_problems')
+        .select('*');
+      if (revErr) throw revErr;
+        
+      // 2. Fetch focus sessions
+      const { data: focusSessions, error: sessErr } = await supabase
+        .from('focus_sessions')
+        .select('*');
+      if (sessErr) throw sessErr;
+
+      // 3. Fetch extension connections
+      const { data: connections, error: connErr } = await supabase
+        .from('extension_connections')
+        .select('*');
+      if (connErr) throw connErr;
+
+      const exportObj = {
+        exportedAt: new Date().toISOString(),
+        schemaVersion: "1.0.0",
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: fullName
+        },
+        settings: {
+          dailyGoal,
+          selectedAvatarUrl
+        },
+        revisionProblems: revisionProblems || [],
+        focusSessions: focusSessions || [],
+        connections: connections || []
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `deepfocus_data_export_${user.email.replace(/[@.]/g, '_')}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      
+      showToast("Data exported successfully!", "success");
+    } catch (e) {
+      console.error("Export data failed:", e);
+      showToast("Failed to compile user data export.", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteConfirmInput("");
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    const cleanedInput = deleteConfirmInput.trim().toLowerCase();
+    const requiredMatch = "delete my account";
+    const emailMatch = user?.email || "";
+
+    if (cleanedInput !== requiredMatch && deleteConfirmInput.trim() !== emailMatch) {
+      showToast("Confirmation input did not match. Please verify your entry.", "error");
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      const session = await getSafeSession();
+      const response = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`
+        }
+      });
+
+      // Safely read response text and parse JSON to prevent crash on HTML error pages
+      const responseText = await response.text();
+      let errorData = {};
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        // Fallback for non-JSON responses (like local Vite 404 pages)
+      }
+
+      if (!response.ok) {
+        const isLocalHost = window.location.hostname === "localhost" || 
+                            window.location.hostname === "127.0.0.1" || 
+                            window.location.hostname.startsWith("192.168.");
+        
+        if (response.status === 404 && isLocalHost) {
+          throw new Error("API endpoint not found (404). Note: Vite local dev server does not host serverless API functions. Please test using 'vercel dev' instead of 'npm run dev'.");
+        }
+        throw new Error(errorData?.error || "Deletion API failed.");
+      }
+
+      // Successful deletion. Clear all local storage and sign out.
+      localStorage.clear();
+      setIsDeleteModalOpen(false);
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (e) {
+      console.error("Deletion failed:", e);
+      showToast(`Account deletion failed: ${e.message}`, "error");
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
   if (stats.loading) {
     return <SettingsSkeleton />;
   }
@@ -878,8 +998,81 @@ export default function Settings() {
         )}
       </AnimatePresence>
 
+      {/* DELETE ACCOUNT CONFIRM MODAL (GitHub-Style delete philosophy) */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-zinc-950 border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl p-6 text-left"
+            >
+              <h3 className="text-base font-bold text-rose-500 flex items-center gap-2 mb-2">
+                <AlertTriangle className="text-rose-500" size={18} />
+                Delete DeepFocus Account
+              </h3>
+              
+              <div className="bg-rose-500/5 border border-rose-500/10 rounded-lg p-4 mb-4 text-xs text-rose-300 leading-relaxed">
+                <strong>Warning:</strong> This action is completely irreversible. All of your revision notes, LeetCode focus sessions, statistics, and connected extension integrations will be wiped out from both local storage and our database vaults.
+              </div>
+
+              <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+                To proceed, please type <strong className="text-white">delete my account</strong> or your email address (<strong className="text-zinc-200">{user?.email}</strong>) below to confirm:
+              </p>
+
+              <input 
+                type="text" 
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder="Type 'delete my account' or your email..."
+                className="w-full bg-[#151515] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs mb-6"
+              />
+
+              <div className="flex gap-3 justify-end text-xs">
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] text-zinc-300 font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleConfirmDeleteAccount}
+                  disabled={
+                    deletingAccount ||
+                    (deleteConfirmInput.trim().toLowerCase() !== "delete my account" &&
+                      deleteConfirmInput.trim() !== user?.email)
+                  }
+                  className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-rose-600/20 flex items-center gap-2"
+                >
+                  {deletingAccount ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Deleting Account...</span>
+                    </>
+                  ) : (
+                    <span>Permanently Delete Account</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* TOP BAR */}
-      <div className="sticky top-0 z-50 border-b border-white/[0.04] backdrop-blur-xl bg-black/30">
+      <div className="sticky top-0 z-20 border-b border-white/[0.04] backdrop-blur-xl bg-black/30">
         <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-6">
           <div>
             <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 font-semibold">
@@ -952,6 +1145,17 @@ export default function Settings() {
                 </button>
               );
             })}
+            
+            <div className="h-[1px] bg-white/[0.06] my-4" />
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-rose-400 hover:bg-rose-500/[0.04] hover:text-rose-300 transition-colors duration-200 cursor-pointer"
+            >
+              <Trash2 size={16} className="text-rose-400" />
+              <span className="text-sm font-medium">Delete Account</span>
+            </button>
           </div>
         </aside>
 
@@ -971,7 +1175,7 @@ export default function Settings() {
               >
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight text-white">
-                    Personal Profile
+                    Account Settings
                   </h1>
                   <p className="mt-1 text-sm text-zinc-400">
                     Manage your workspace profile, learning goals, and public presence.
@@ -1236,6 +1440,72 @@ export default function Settings() {
                       <span>Balanced (7)</span>
                       <span>Intense (15)</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* DATA & PRIVACY CARD */}
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0c] overflow-hidden">
+                  <div className="px-6 py-4 border-b border-white/[0.06] bg-white/[0.01]">
+                    <h3 className="text-sm font-medium text-white">Data & Privacy</h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      In compliance with GDPR and Chrome Web Store requirements, you can request a complete data export of all your notes, sessions, and connections at any time.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleExportData}
+                      disabled={exporting}
+                      className="px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white text-zinc-300 font-bold transition-all text-xs cursor-pointer flex items-center gap-2"
+                    >
+                      {exporting ? (
+                        <>
+                          <svg className="animate-spin h-3.5 w-3.5 text-zinc-300" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span>Exporting Data...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download size={13} />
+                          <span>Request Data Export (JSON)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* DANGER ZONE CARD */}
+                <div className="rounded-xl border border-rose-500/20 bg-[#0c0c0c] overflow-hidden">
+                  <div className="px-6 py-4 border-b border-rose-500/10 bg-rose-500/[0.02]">
+                    <h3 className="text-sm font-medium text-rose-400">Danger Zone</h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Permanently delete your DeepFocus account and all associated data, including notes, code snippets, statistics, and tokens. This action is absolute and cannot be undone.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deletingAccount}
+                      className="px-4 py-2 rounded-lg bg-rose-950/20 border border-rose-500/30 hover:bg-rose-900/30 text-rose-300 font-bold transition-all text-xs cursor-pointer flex items-center gap-2"
+                    >
+                      {deletingAccount ? (
+                        <>
+                          <svg className="animate-spin h-3.5 w-3.5 text-rose-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span>Deleting Account...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 size={13} />
+                          <span>Delete Account Permanently</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </motion.div>
