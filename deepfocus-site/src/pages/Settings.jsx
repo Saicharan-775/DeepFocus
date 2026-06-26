@@ -881,10 +881,11 @@ export default function Settings() {
       // Safely read response text and parse JSON to prevent crash on HTML error pages
       const responseText = await response.text();
       let errorData = {};
+      let parseFailed = false;
       try {
         errorData = JSON.parse(responseText);
       } catch (e) {
-        // Fallback for non-JSON responses (like local Vite 404 pages)
+        parseFailed = true;
       }
 
       if (!response.ok) {
@@ -895,7 +896,25 @@ export default function Settings() {
         if (response.status === 404 && isLocalHost) {
           throw new Error("API endpoint not found (404). Note: Vite local dev server does not host serverless API functions. Please test using 'vercel dev' instead of 'npm run dev'.");
         }
-        throw new Error(errorData?.error || "Deletion API failed.");
+
+        // Extract a clean error message from JSON, HTML, or raw text
+        let errMsg = errorData?.error || errorData?.message;
+        if (!errMsg) {
+          if (parseFailed) {
+            try {
+              const doc = new DOMParser().parseFromString(responseText, "text/html");
+              const title = doc.querySelector("title")?.textContent;
+              const heading = doc.querySelector("h1, h2")?.textContent;
+              errMsg = title || heading || responseText.substring(0, 150).replace(/<[^>]*>/g, "").trim();
+            } catch (domErr) {
+              errMsg = responseText.substring(0, 150);
+            }
+          }
+          if (!errMsg || errMsg.trim() === "") {
+            errMsg = `Server Error (Status ${response.status})`;
+          }
+        }
+        throw new Error(errMsg);
       }
 
       // Successful deletion. Clear all storage, cookies, and cache.
