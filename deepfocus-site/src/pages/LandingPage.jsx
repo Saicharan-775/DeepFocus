@@ -1,8 +1,9 @@
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import DeepFocusLoader from "../components/DeepFocusLoader";
+import { useToast } from "../hooks/useToast";
 
 const CreativeBackground = () => (
   <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black">
@@ -31,6 +32,21 @@ const Timeline = lazy(() => import("../components/Timeline"));
 const FinalCTA = lazy(() => import("../components/FinalCTA"));
 
 export default function LandingPage() {
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("deleted") === "success") {
+      showToast(
+        "Account Deleted",
+        "Your account and all associated data have been permanently deleted.",
+        "system"
+      );
+      // Clean up query parameters from the browser history bar
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [showToast]);
 
   return (
     <div className="landing-typography relative min-h-screen overflow-x-hidden bg-black text-[#F8FAFC]">

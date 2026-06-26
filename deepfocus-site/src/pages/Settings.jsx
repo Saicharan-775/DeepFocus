@@ -898,11 +898,30 @@ export default function Settings() {
         throw new Error(errorData?.error || "Deletion API failed.");
       }
 
-      // Successful deletion. Clear all local storage and sign out.
+      // Successful deletion. Clear all storage, cookies, and cache.
       localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear cookies
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // Clear caches
+      if (window.caches) {
+        try {
+          const cacheNames = await window.caches.keys();
+          await Promise.all(cacheNames.map((name) => window.caches.delete(name)));
+        } catch (e) {
+          console.warn("Failed to clear browser cache:", e);
+        }
+      }
+
       setIsDeleteModalOpen(false);
       await supabase.auth.signOut();
-      window.location.href = "/";
+      window.location.href = "/?deleted=success";
     } catch (e) {
       console.error("Deletion failed:", e);
       showToast(`Account deletion failed: ${e.message}`, "error");
