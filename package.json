@@ -4,8 +4,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
+    "@types/node": "^20.12.12",
     "@vercel/node": "^5.8.21",
     "dotenv": "^17.4.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "typescript": "^5.4.5"
   }
 }
