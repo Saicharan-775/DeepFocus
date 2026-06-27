@@ -1,4 +1,6 @@
 {
+  "framework": "vite",
+  "devCommand": "npm run dev --prefix deepfocus-site",
   "headers": [
     {
       "source": "/assets/(.*)",
