@@ -175,9 +175,14 @@ const ConsistencyBadge = ({ unlocked }) => (
 
 function EmptyState({ message }) {
   return (
-    <div className="flex flex-col items-center justify-center py-10 border border-dashed border-white/10 rounded-xl bg-black/20 text-center w-full">
-      <Icon icon="solar:history-bold-duotone" width="32" className="text-zinc-600 mb-2" />
-      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{message}</span>
+    <div className="flex flex-col items-center justify-center py-12 px-6 border border-dashed border-white/10 rounded-xl bg-black/20 text-center w-full">
+      <div className="p-3 bg-zinc-800/40 rounded-2xl text-zinc-500 mb-3">
+        <Icon icon="solar:history-bold-duotone" width="24" />
+      </div>
+      <p className="text-sm font-bold text-zinc-300">No Analytics Data Yet</p>
+      <p className="mt-1.5 max-w-xs text-xs text-zinc-500 leading-relaxed">
+        Sync your coding practice using our Chrome extension to view your session history logs and analytics metrics.
+      </p>
     </div>
   );
 }

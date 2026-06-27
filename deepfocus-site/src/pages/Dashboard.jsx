@@ -424,7 +424,27 @@ function QualityDistribution({ cleanCount, weakCount, abandonedCount, totalCount
 
 function SmartInsight({ insights }) {
   const navigate = useNavigate();
-  if (!insights || insights.length === 0) return null;
+  if (!insights || insights.length === 0) {
+    return (
+      <Panel className="overflow-hidden">
+        <div className="border-b border-white/[0.04] px-6 py-4 flex items-center justify-between bg-white/[0.002]">
+          <div className="flex items-center gap-2">
+            <Radar size={13} className="text-zinc-400" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">Personalised Revision Strategy</p>
+          </div>
+        </div>
+        <div className="p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto">
+          <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-400 mb-3 animate-pulse">
+            <Sparkles size={20} />
+          </div>
+          <h3 className="text-sm font-bold text-zinc-200">No Strategy Insights Available</h3>
+          <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-zinc-400">
+            Link the Chrome extension in settings, track your practice sessions, and we will formulate customized review strategies here.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
 
   return (
     <Panel className="overflow-hidden">
@@ -499,7 +519,29 @@ function SmartInsight({ insights }) {
 /* ─── Pattern Weakness Panel ─── */
 
 function PatternWeaknessGrid({ patterns }) {
-  if (patterns.length === 0) return null;
+  if (patterns.length === 0) {
+    return (
+      <Panel className="overflow-hidden">
+        <div className="border-b border-white/[0.06] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-zinc-400" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-650">Weak patterns</p>
+          </div>
+          <p className="mt-1 text-xs text-zinc-500">By solve ratio weakest first</p>
+        </div>
+        <div className="p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto">
+          <div className="p-3 bg-zinc-800/40 rounded-2xl text-zinc-500 mb-3">
+            <Layers size={20} />
+          </div>
+          <h3 className="text-sm font-bold text-zinc-200">No Pattern Analytics Yet</h3>
+          <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-zinc-400">
+            Solve at least 2 questions in any DSA pattern (like Binary Search or Graphs) via the extension to generate pattern weakness analysis.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+
   const maxCount = Math.max(...patterns.map((p) => p.total), 1);
 
   return (
@@ -1044,9 +1086,13 @@ export default function Dashboard() {
 
             {runway.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <BookOpen size={30} className="text-zinc-700" />
-                <p className="mt-3 text-sm font-medium text-zinc-300">No solved problems yet</p>
-                <p className="mt-1 max-w-sm text-xs leading-5 text-zinc-600">Complete one protected session and this becomes your revision runway.</p>
+                <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-400 mb-3 animate-pulse">
+                  <BookOpen size={20} />
+                </div>
+                <p className="text-sm font-bold text-zinc-200">No Solved Problems Yet</p>
+                <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-zinc-400">
+                  Link the DeepFocus extension in Settings, then solve questions on LeetCode. We will track your focus and list your problems here.
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.055]">
@@ -1131,8 +1177,13 @@ export default function Dashboard() {
 
               {state.recentActivity.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
-                  <History className="h-8 w-8 text-zinc-700" />
-                  <p className="mt-3 text-sm font-medium text-zinc-400">No recent activity.</p>
+                  <div className="p-2.5 bg-zinc-800/40 rounded-xl text-zinc-505 mb-3">
+                    <History className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm font-bold text-zinc-300">No recent activity</p>
+                  <p className="mt-1 max-w-xs text-xs text-zinc-500 leading-relaxed">
+                    Attempt LeetCode problems to sync your coding sessions to the dashboard.
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-white/[0.055]">

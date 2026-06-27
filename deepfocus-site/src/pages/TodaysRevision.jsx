@@ -48,6 +48,7 @@ export default function TodaysRevision() {
   const [loading, setLoading] = useState(true);
   const [suggestedProblems, setSuggestedProblems] = useState([]);
   const [algorithmExplanation, setAlgorithmExplanation] = useState(false);
+  const [hasNoProblems, setHasNoProblems] = useState(false);
   
   const [viewMode, setViewMode] = useState("list");
   const [expandedPattern, setExpandedPattern] = useState(null);
@@ -203,6 +204,7 @@ export default function TodaysRevision() {
     
     const problems = pRes.data || [];
     const sessions = sRes.data || [];
+    setHasNoProblems(problems.length === 0);
     
     const problemIds = new Set(problems.map((p) => p.id));
     const masteredIds = JSON.parse(localStorage.getItem('df_mastered') || '[]')
@@ -517,11 +519,29 @@ export default function TodaysRevision() {
 
             <div className="flex-1 overflow-y-auto p-2">
               {suggestedProblems.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                  <CheckCircle2 size={34} className="mb-3 text-emerald-300/50" />
-                  <h4 className="text-sm font-semibold text-zinc-300">All caught up</h4>
-                  <p className="mt-2 text-xs leading-5 text-zinc-600">No problems are scheduled for review right now.</p>
-                </div>
+                hasNoProblems ? (
+                  <div className="flex h-full flex-col items-center justify-center px-6 text-center py-12">
+                    <div className="p-4 bg-violet-500/10 rounded-2xl text-violet-400 mb-4 animate-bounce">
+                      <Sparkles size={28} />
+                    </div>
+                    <h4 className="text-sm font-bold text-zinc-200">Start Your Spaced Repetition Queue</h4>
+                    <p className="mt-2 max-w-sm text-xs leading-relaxed text-zinc-400">
+                      Link the DeepFocus extension in settings and start solving LeetCode problems. We will automatically compute your memory decay and schedule them here when you need to review them.
+                    </p>
+                    <Link
+                      to="/settings"
+                      className="mt-5 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-violet-600/20 cursor-pointer"
+                    >
+                      Connect Extension
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                    <CheckCircle2 size={34} className="mb-3 text-emerald-400" />
+                    <h4 className="text-sm font-semibold text-zinc-300">All caught up</h4>
+                    <p className="mt-2 text-xs leading-5 text-zinc-600">No problems are scheduled for review right now.</p>
+                  </div>
+                )
               ) : viewMode === 'pattern' ? (() => {
                 const pMap = {};
                 suggestedProblems.forEach(p => {
