@@ -51,3 +51,5 @@ deepfocus_landing_page_prompt.txt
 build_icons.py
 large_files.json
 
+.vercel
+.env*
