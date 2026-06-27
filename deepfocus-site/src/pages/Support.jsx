@@ -10,8 +10,8 @@ import { supabase } from "../lib/supabaseClient";
 // ─── LOCAL PRESETS (Aligned to Visual Design) ───
 const PRESETS = [
   { id: "coffee", Icon: Coffee, amount: 99, label: "Coffee" },
-  { id: "pizza", Icon: Zap, amount: 299, label: "Power Boost" },
-  { id: "lightning", Icon: Heart, amount: 499, label: "Founder Love" },
+  { id: "pizza", Icon: Zap, amount: 299, label: "Boost" },
+  { id: "lightning", Icon: Heart, amount: 499, label: "Founder" },
   { id: "custom", Icon: Sliders, amount: 0, label: "Custom" },
 ];
 
@@ -411,13 +411,13 @@ export default function Support() {
 
             {/* Metrics Pills */}
             <div className="flex gap-4 mb-2">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111113] border border-white/5 shadow-sm">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-transparent border border-violet-500/20 shadow-[0_0_15px_rgba(124,58,237,0.05)]">
                 <Users size={14} className="text-violet-400" />
-                <span className="text-xs font-bold text-zinc-200">{loadingStats ? "..." : totalSupporters} Supporters</span>
+                <span className="text-xs font-bold text-zinc-350">{loadingStats ? "..." : totalSupporters} Supporters</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111113] border border-white/5 shadow-sm">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]">
                 <Flame size={14} className="text-purple-400" />
-                <span className="text-xs font-bold text-zinc-200">₹{loadingStats ? "..." : totalAmount.toLocaleString("en-IN")} Raised</span>
+                <span className="text-xs font-bold text-zinc-350">₹{loadingStats ? "..." : totalAmount.toLocaleString("en-IN")} Raised</span>
               </div>
             </div>
 
@@ -437,17 +437,17 @@ export default function Support() {
                       setSelectedPreset(preset.id);
                       setStatusMessage(null);
                     }}
-                    className={`relative py-4 rounded-[18px] border transition-all flex items-center justify-between px-5 gap-3 group active:scale-[0.98] cursor-pointer ${
+                    className={`relative py-4 rounded-[16px] border transition-all flex items-center justify-between px-5 gap-3 group active:scale-[0.98] cursor-pointer ${
                       selectedPreset === preset.id
-                        ? "border-violet-500/50 bg-violet-600 shadow-[0_0_30px_-5px_rgba(124,58,237,0.4)] z-10 text-white"
-                        : "border-white/5 bg-black/20 hover:border-white/10 hover:bg-black/40 text-zinc-300"
+                        ? "bg-violet-950/20 border-violet-500 shadow-[0_0_20px_rgba(124,58,237,0.15)] z-10 text-white"
+                        : "border-white/5 bg-black/35 hover:border-white/10 hover:bg-black/50 text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <preset.Icon size={16} className={selectedPreset === preset.id ? "text-white" : "text-violet-400 group-hover:text-violet-350 transition-colors"} />
+                      <preset.Icon size={15} className={selectedPreset === preset.id ? "text-violet-300" : "text-zinc-500 group-hover:text-zinc-400 transition-colors"} />
                       <span className="text-xs font-bold uppercase tracking-wider">{preset.label}</span>
                     </div>
-                    <span className="text-sm font-black">
+                    <span className="text-xs font-black">
                       {preset.id === "custom" ? "..." : `₹${preset.amount}`}
                     </span>
                   </button>
@@ -462,9 +462,9 @@ export default function Support() {
                       initial={{ opacity: 0, height: 0, y: -10 }} 
                       animate={{ opacity: 1, height: "auto", y: 0 }} 
                       exit={{ opacity: 0, height: 0, y: -10 }} 
-                      className="overflow-hidden mb-4"
+                      className="overflow-hidden mb-2"
                     >
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Custom Amount (₹)</label>
+                      <label className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Custom Amount (₹)</label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-500">₹</span>
                         <input
@@ -473,39 +473,54 @@ export default function Support() {
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
                           placeholder="Enter amount (10 - 100,000)"
-                          className="w-full pl-8 pr-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all placeholder:text-zinc-600 shadow-inner"
+                          className="w-full pl-8 pr-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all placeholder:text-zinc-600 shadow-inner"
                         />
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={anonymous}
-                  placeholder="Name or @twitter (optional)"
-                  className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all disabled:opacity-30 placeholder:text-zinc-600 shadow-inner"
-                />
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email (optional)"
-                  className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all placeholder:text-zinc-600 shadow-inner"
-                />
-
-                <div className="relative">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value.slice(0, 150))}
-                    placeholder="Say something nice... (optional)"
-                    rows={3}
-                    className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all resize-none placeholder:text-zinc-600 shadow-inner"
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                    <User size={10} className="text-zinc-600" /> Name or Twitter
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={anonymous}
+                    placeholder="Name or @twitter (optional)"
+                    className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all disabled:opacity-30 placeholder:text-zinc-600 shadow-inner"
                   />
-                  <span className="absolute bottom-4 right-4 text-[10px] font-bold text-zinc-600">{message.length}/150</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                    <Mail size={10} className="text-zinc-600" /> Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="alex@example.com (optional)"
+                    className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all placeholder:text-zinc-600 shadow-inner"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                    <MessageSquare size={10} className="text-zinc-600" /> Backer Message
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value.slice(0, 150))}
+                      placeholder="Say something nice... (optional)"
+                      rows={3}
+                      className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all resize-none placeholder:text-zinc-600 shadow-inner"
+                    />
+                    <span className="absolute bottom-3 right-4 text-[9px] font-bold text-zinc-600">{message.length}/150</span>
+                  </div>
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer group py-2 w-max">
@@ -527,7 +542,7 @@ export default function Support() {
 
                 <AnimatePresence>
                   {statusMessage && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`p-4 rounded-[14px] text-sm flex gap-3 ${
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`p-4 rounded-xl text-sm flex gap-3 ${
                       statusMessage.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                       : statusMessage.type === "error" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                       : "bg-white/5 text-zinc-400 border border-white/10"
@@ -541,7 +556,7 @@ export default function Support() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white rounded-[18px] font-bold text-sm tracking-wide transition-all shadow-[0_0_20px_rgba(124,58,237,0.2)] hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] active:scale-[0.98] flex items-center justify-center"
+                  className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white rounded-[16px] font-bold text-sm tracking-wide transition-all shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_30px_rgba(124,58,237,0.45)] active:scale-[0.98] flex items-center justify-center cursor-pointer border border-violet-400/20"
                 >
                   {loading ? "Processing..." : `Support ₹${activeAmount || 0}`}
                 </button>
