@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #030303;
+  --foreground: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Custom checkbox dark styling override */
+input[type="checkbox"] {
+  appearance: none;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 1rem;
+  height: 1rem;
+  border-radius: 4px;
+  display: inline-grid;
+  place-content: center;
+  transition: all 0.2s;
+}
+
+input[type="checkbox"]:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+input[type="checkbox"]:checked {
+  background-color: #7c3aed;
+  border-color: #8b5cf6;
+}
+
+input[type="checkbox"]::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em white;
+  transform-origin: center;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}

@@ -6,21 +6,21 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Clock3,
+  Clock,
   Gauge,
   LayoutGrid,
-  ListChecks,
+  List,
   RotateCcw,
-  Route,
-  Sparkles,
+  BookOpen,
+  Settings2,
   Target,
-  TimerReset
+  BarChart,
+  ExternalLink
 } from 'lucide-react';
 import curatedQuestions from '../constants/Patterns/curated_questions.json';
 import { RevisionSkeleton } from '../components/Boneyard';
 import { DEFAULT_WEAK_TOPICS, PATTERN_MAPPING, PATTERN_WEIGHTS, TOPIC_WEIGHTS } from '../features/ai-planner/plannerConstants';
 import {
-  diffColor,
   generateLocalPlan,
   getCandidateAllocations,
   getDefaultTopicsForFocus,
@@ -38,29 +38,29 @@ import {
 const FOCUS_OPTIONS = [
   {
     id: 'faang',
-    title: 'Top product interviews',
-    goal: 'Crack FAANG Interviews',
-    summary: 'Medium-heavy plan with hard pattern exposure and strict revision pressure.'
+    title: 'Top Tier (FAANG)',
+    goal: 'FAANG Preparation',
+    summary: 'Heavy load. Hard pattern exposure and strict revision pressure.'
   },
   {
     id: 'startup',
-    title: 'Fast startup rounds',
-    goal: 'Crack Product Startup Interviews',
-    summary: 'Speed, breadth, and strong medium-level pattern fluency.'
+    title: 'Fast-paced Startups',
+    goal: 'Startup Preparation',
+    summary: 'Speed and breadth. Strong medium-level pattern fluency.'
   },
   {
     id: 'service',
-    title: 'Core company screens',
-    goal: 'Crack Service Company Screenings',
-    summary: 'Fundamentals first: arrays, pointers, trees, stacks, and binary search.'
+    title: 'Core Screening',
+    goal: 'Standard Interviews',
+    summary: 'Fundamentals: arrays, pointers, trees, stacks, and binary search.'
   }
 ];
 
 const COMMITMENTS = ['1 hour / day', '2 hours / day', '4 hours / day', '6 hours / day'];
 const TAB_OPTIONS = [
-  { id: 'plan', label: 'Plan', icon: ListChecks },
+  { id: 'plan', label: 'Curriculum', icon: List },
   { id: 'board', label: 'Board', icon: LayoutGrid },
-  { id: 'timeline', label: 'Timeline', icon: Route }
+  { id: 'timeline', label: 'Timeline', icon: BarChart }
 ];
 
 const ALL_TOPICS = [
@@ -78,10 +78,19 @@ const ALL_TOPICS = [
 ];
 
 const statusMeta = {
-  PENDING: { label: 'Queued', dot: 'bg-zinc-500', chip: 'border-white/[0.08] bg-white/[0.025] text-zinc-400' },
-  ACTIVE: { label: 'In progress', dot: 'bg-amber-300', chip: 'border-amber-300/20 bg-amber-300/[0.08] text-amber-200' },
-  DONE: { label: 'Complete', dot: 'bg-emerald-300', chip: 'border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-200' }
+  PENDING: { label: 'Queued', border: 'border-zinc-800', bg: 'bg-zinc-900', text: 'text-zinc-400', dot: 'bg-zinc-600' },
+  ACTIVE: { label: 'In Progress', border: 'border-blue-500/30', bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-500' },
+  DONE: { label: 'Completed', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-500' }
 };
+
+function getDifficultyStyle(difficulty) {
+  switch (difficulty?.toLowerCase()) {
+    case 'easy': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+    case 'medium': return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+    case 'hard': return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
+    default: return 'text-zinc-400 bg-zinc-800 border-zinc-700';
+  }
+}
 
 function commitmentHours(commitment) {
   const value = Number.parseInt(commitment, 10);
@@ -150,40 +159,23 @@ function getPhaseProgress(phase) {
   return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };
 }
 
-function TopicPill({ topic, selected, onClick }) {
-  const pattern = getTopicPattern(topic);
-  const weight = PATTERN_WEIGHTS[pattern] || TOPIC_WEIGHTS[topic] || 1;
-
+function Metric({ icon: Icon, label, value, subtext }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg border px-3 py-2 text-left transition ${
-        selected
-          ? 'border-violet-300/45 bg-violet-300/[0.08] text-white'
-          : 'border-white/[0.06] bg-white/[0.018] text-zinc-500 hover:border-white/[0.12] hover:text-zinc-300'
-      }`}
-    >
-      <span className="block text-xs font-semibold">{topic}</span>
-      <span className="mt-1 block text-[10px] text-zinc-600">weight {weight.toFixed(1)}x</span>
-    </button>
-  );
-}
-
-function Metric({ icon: Icon, label, value }) {
-  return (
-    <div className="rounded-lg border border-white/[0.065] bg-white/[0.025] px-4 py-3">
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-        <Icon size={14} />
+    <div className="flex flex-col justify-between rounded-lg border border-zinc-800 bg-[#0f0f11] p-4">
+      <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
+        <Icon size={14} className="text-zinc-500" />
         {label}
       </div>
-      <p className="text-sm font-semibold text-zinc-100">{value}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-semibold text-zinc-100 font-mono tracking-tight">{value}</span>
+        {subtext && <span className="text-xs text-zinc-500">{subtext}</span>}
+      </div>
     </div>
   );
 }
 
 export default function AiPlanner() {
-  const [goal, setGoal] = useState('Crack FAANG Interviews');
+  const [goal, setGoal] = useState('FAANG Preparation');
   const [targetDate, setTargetDate] = useState('2026-12-31');
   const [commitment, setCommitment] = useState('2 hours / day');
   const [focus, setFocus] = useState('faang');
@@ -202,7 +194,7 @@ export default function AiPlanner() {
     try {
       const migrated = migrateSavedPhases(savedPlan.phases || []);
       setPhases(migrated);
-      setGoal(savedPlan.goal || 'Crack FAANG Interviews');
+      setGoal(savedPlan.goal || 'FAANG Preparation');
       setTargetDate(savedPlan.targetDate || '2026-12-31');
       setCommitment(savedPlan.commitment || '2 hours / day');
       setFocus(savedPlan.focus || 'faang');
@@ -229,15 +221,7 @@ export default function AiPlanner() {
   );
 
   const savePlan = (nextPhases) => {
-    savePlannerData({
-      phases: nextPhases,
-      goal,
-      targetDate,
-      commitment,
-      focus,
-      topics,
-      weeks
-    });
+    savePlannerData({ phases: nextPhases, goal, targetDate, commitment, focus, topics, weeks });
   };
 
   const handleFocusChange = (nextFocus) => {
@@ -257,23 +241,17 @@ export default function AiPlanner() {
 
   const buildPlan = () => {
     if (topics.length === 0) return;
-
     setIsGenerating(true);
     window.setTimeout(() => {
       const generated = generateLocalPlan({
-        focus,
-        weakTopics: topics,
-        weeks,
-        commitment,
-        selectedQuestionIds: preview.selectedIds
+        focus, weakTopics: topics, weeks, commitment, selectedQuestionIds: preview.selectedIds
       });
-
       setPhases(generated);
       setOpenPhase(0);
       setIsSetupOpen(false);
       savePlan(generated);
       setIsGenerating(false);
-    }, 550);
+    }, 400); // reduced delay for snappy feel
   };
 
   const resetPlanner = () => {
@@ -293,7 +271,6 @@ export default function AiPlanner() {
       const status = done === problems.length && problems.length > 0 ? 'DONE' : done > 0 ? 'ACTIVE' : 'PENDING';
       return { ...phase, problems, status };
     });
-
     setPhases(updated);
     savePlan(updated);
   };
@@ -302,172 +279,154 @@ export default function AiPlanner() {
     const updated = phases.map((phase, pIndex) => {
       if (pIndex !== phaseIndex) return phase;
       const problems = (phase.problems || []).map((problem) => ({
-        ...problem,
-        completed: status === 'DONE' ? true : status === 'PENDING' ? false : problem.completed
+        ...problem, completed: status === 'DONE' ? true : status === 'PENDING' ? false : problem.completed
       }));
       return { ...phase, status, problems };
     });
-
     setPhases(updated);
     savePlan(updated);
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#070708] pb-14 text-zinc-100">
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.12),transparent_34%),radial-gradient(circle_at_80%_22%,rgba(255,255,255,0.035),transparent_24%)]" />
-        <div
-          className="absolute inset-0 opacity-[0.17]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)',
-            backgroundSize: '28px 28px'
-          }}
-        />
-      </div>
-
+    <div className="min-h-screen bg-[#09090b] text-zinc-300 font-sans selection:bg-blue-500/30">
+      
+      {/* Loading Overlay */}
       <AnimatePresence>
         {isGenerating && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black"
+            className="fixed inset-0 z-50 bg-[#09090b] flex flex-col pt-24 px-8"
           >
-            <div className="mx-auto max-w-[1180px] px-6 pt-10">
+            <div className="max-w-6xl w-full mx-auto">
               <RevisionSkeleton />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <main className="relative z-10 mx-auto max-w-[1180px] px-6 pt-10">
-        <header className="mb-8 flex flex-col gap-5 border-b border-white/[0.07] pb-7 lg:flex-row lg:items-end lg:justify-between">
+      <main className="max-w-[1200px] mx-auto px-6 py-10">
+        
+        {/* Simple, grounded header */}
+        <header className="mb-8 flex flex-col gap-4 border-b border-zinc-800 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              <Route size={13} />
-              Study planner
+            <div className="flex items-center gap-2 text-zinc-400 mb-2">
+              <BookOpen size={16} />
+              <span className="text-sm font-medium">DSA Study Plan</span>
             </div>
-            <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">
-              Build a revision roadmap that respects your time.
+            <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
+              Revision Planner
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
-              DeepFocus ranks topics by prerequisite order, pattern weight, difficulty mix, and weekly capacity, then turns them into a practical revision plan.
-            </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-3">
             <button
-              type="button"
-              onClick={() => setIsSetupOpen((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.035] px-4 py-2.5 text-xs font-semibold text-zinc-200 transition hover:border-white/[0.16] hover:bg-white/[0.06]"
+              onClick={() => setIsSetupOpen(!isSetupOpen)}
+              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors border ${
+                isSetupOpen ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-[#0f0f11] border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+              }`}
             >
-              <Sparkles size={14} />
-              {isSetupOpen ? 'Hide setup' : 'Tune plan'}
+              <Settings2 size={16} />
+              Configuration
             </button>
             <button
-              type="button"
               onClick={resetPlanner}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-xs font-semibold text-zinc-500 transition hover:border-white/[0.14] hover:text-zinc-200"
+              className="flex items-center gap-2 rounded-md bg-[#0f0f11] border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
             >
-              <RotateCcw size={14} />
-              Reset
+              <RotateCcw size={16} />
+              Reset Data
             </button>
           </div>
         </header>
 
-        <section className="mb-8 grid gap-3 md:grid-cols-4">
-          <Metric icon={Gauge} label="Progress" value={`${summary.progress}% complete`} />
-          <Metric icon={ListChecks} label="Problem load" value={`${phases.length ? summary.problems : preview.selectedCount} problems`} />
-          <Metric icon={TimerReset} label="Revision passes" value={`${phases.length ? summary.revisionPasses : Math.ceil(preview.selectedCount * 1.6)} planned`} />
-          <Metric icon={Clock3} label="Capacity" value={`${preview.weeklyCapacity} problems / week`} />
+        {/* Dense Dashboard Metrics */}
+        <section className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Metric icon={Gauge} label="Completion" value={`${summary.progress}%`} subtext="Overall progress" />
+          <Metric icon={Target} label="Total Problems" value={phases.length ? summary.problems : preview.selectedCount} subtext="Allocated tasks" />
+          <Metric icon={Clock} label="Target" value={preview.weeklyCapacity} subtext="Problems per week" />
+          <Metric icon={BarChart} label="Est. Duration" value={weeks} subtext="Weeks required" />
         </section>
 
+        {/* Configuration Panel */}
         <AnimatePresence initial={false}>
           {isSetupOpen && (
             <motion.section
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mb-8 overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0d10]/92 shadow-[0_22px_70px_rgba(0,0,0,0.34)]"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mb-8 overflow-hidden rounded-xl border border-zinc-800 bg-[#0c0c0e]"
             >
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_360px]">
-                <div className="border-b border-white/[0.07] p-5 lg:border-b-0 lg:border-r">
-                  <div className="mb-5 flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-base font-bold text-white">Planner setup</h2>
-                      <p className="mt-1 text-xs leading-5 text-zinc-500">Choose the target, weak patterns, and deadline.</p>
-                    </div>
+              <div className="grid md:grid-cols-[1fr_300px]">
+                <div className="p-6 md:border-r border-zinc-800">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-base font-semibold text-zinc-100">Plan Settings</h2>
                     <button
-                      type="button"
                       onClick={buildPlan}
                       disabled={topics.length === 0}
-                      className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md bg-zinc-100 text-zinc-900 px-4 py-2 text-sm font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      Build roadmap
-                      <ArrowUpRight size={14} />
+                      Generate Curriculum
                     </button>
                   </div>
 
                   <div className="space-y-6">
+                    {/* Goal Selection */}
                     <div>
-                      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Interview target</p>
+                      <label className="text-xs font-semibold text-zinc-500 mb-3 block">TARGET PROFILE</label>
                       <div className="grid gap-3 md:grid-cols-3">
                         {FOCUS_OPTIONS.map((item) => (
                           <button
                             key={item.id}
-                            type="button"
                             onClick={() => handleFocusChange(item.id)}
-                            className={`rounded-lg border p-4 text-left transition ${
-                              focus === item.id
-                                ? 'border-violet-300/45 bg-violet-300/[0.08]'
-                                : 'border-white/[0.06] bg-white/[0.018] hover:border-white/[0.12]'
+                            className={`text-left p-3 rounded-lg border transition-colors ${
+                              focus === item.id 
+                              ? 'bg-blue-500/10 border-blue-500/50' 
+                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                             }`}
                           >
-                            <span className="text-sm font-bold text-white">{item.title}</span>
-                            <span className="mt-2 block text-xs leading-5 text-zinc-500">{item.summary}</span>
+                            <div className={`text-sm font-semibold mb-1 ${focus === item.id ? 'text-blue-400' : 'text-zinc-200'}`}>
+                              {item.title}
+                            </div>
+                            <div className="text-xs text-zinc-500 leading-relaxed">{item.summary}</div>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Goal name</span>
+                    {/* Basic Inputs */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold text-zinc-500 mb-2 block">PLAN TITLE</label>
                         <input
                           value={goal}
-                          onChange={(event) => setGoal(event.target.value)}
-                          className="w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-violet-300/45"
+                          onChange={(e) => setGoal(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
                         />
-                      </label>
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Target date</span>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-zinc-500 mb-2 block">TARGET DATE</label>
                         <input
                           type="date"
                           value={targetDate}
-                          onChange={(event) => setTargetDate(event.target.value)}
-                          className="w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-violet-300/45"
+                          onChange={(e) => setTargetDate(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-blue-500"
                         />
-                      </label>
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Plan length</span>
-                        <div className="rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2.5 text-sm text-zinc-100">
-                          {weeks} weeks
-                        </div>
-                      </label>
+                      </div>
                     </div>
 
+                    {/* Bandwidth */}
                     <div>
-                      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Daily commitment</p>
-                      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                      <label className="text-xs font-semibold text-zinc-500 mb-3 block">DAILY BANDWIDTH</label>
+                      <div className="flex flex-wrap gap-2">
                         {COMMITMENTS.map((item) => (
                           <button
                             key={item}
-                            type="button"
                             onClick={() => setCommitment(item)}
-                            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                              commitment === item
-                                ? 'border-violet-300/45 bg-violet-300/[0.08] text-white'
-                                : 'border-white/[0.06] bg-white/[0.018] text-zinc-500 hover:border-white/[0.12] hover:text-zinc-300'
+                            className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                              commitment === item 
+                              ? 'bg-zinc-100 text-zinc-900 border-zinc-100' 
+                              : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800'
                             }`}
                           >
                             {item}
@@ -476,251 +435,278 @@ export default function AiPlanner() {
                       </div>
                     </div>
 
+                    {/* Topics */}
                     <div>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Patterns to include</p>
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => setTopics(ALL_TOPICS)} className="text-xs text-zinc-500 transition hover:text-zinc-200">Select all</button>
-                          <button type="button" onClick={() => setTopics([])} className="text-xs text-zinc-500 transition hover:text-zinc-200">Clear</button>
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="text-xs font-semibold text-zinc-500">DSA PATTERNS TO INCLUDE</label>
+                        <div className="flex gap-3 text-xs">
+                          <button onClick={() => setTopics(ALL_TOPICS)} className="text-blue-400 hover:text-blue-300">Select All</button>
+                          <button onClick={() => setTopics([])} className="text-zinc-500 hover:text-zinc-300">Clear</button>
                         </div>
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {ALL_TOPICS.map((topic) => (
-                          <TopicPill
-                            key={topic}
-                            topic={topic}
-                            selected={topics.includes(topic)}
-                            onClick={() => toggleTopic(topic)}
-                          />
-                        ))}
+                      <div className="flex flex-wrap gap-2">
+                        {ALL_TOPICS.map((topic) => {
+                          const isSelected = topics.includes(topic);
+                          return (
+                            <button
+                              key={topic}
+                              onClick={() => toggleTopic(topic)}
+                              className={`px-3 py-1.5 rounded-md border text-xs transition-colors ${
+                                isSelected 
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' 
+                                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
+                              }`}
+                            >
+                              {topic}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <aside className="p-5">
-                  <div className="mb-5 rounded-lg border border-white/[0.07] bg-black/25 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Plan forecast</p>
-                    <h3 className="mt-3 text-2xl font-black text-white">{weeks} weeks</h3>
-                    <p className="mt-2 text-xs leading-6 text-zinc-500">
-                      {preview.selectedCount} curated problems, {preview.hard} hard, {preview.medium} medium, {preview.easy} easy.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {preview.candidates.map((candidate) => (
-                      <div key={candidate.pattern} className="rounded-lg border border-white/[0.06] bg-white/[0.018] p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-semibold text-zinc-200">{candidate.pattern}</span>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">{candidate.allocated} wk</span>
-                        </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                          <div
-                            className="h-full rounded-full bg-violet-300"
-                            style={{ width: `${Math.min(100, (candidate.allocated / Math.max(1, weeks)) * 100)}%` }}
-                          />
-                        </div>
+                
+                {/* Forecast Sidebar */}
+                <div className="bg-[#0f0f11] p-6 border-t md:border-t-0 border-zinc-800">
+                  <h3 className="text-xs font-semibold text-zinc-500 mb-4">ALLOCATION PREVIEW</h3>
+                  <div className="space-y-4">
+                    <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-lg">
+                      <div className="text-sm text-zinc-400 mb-1">Total Dataset</div>
+                      <div className="text-2xl font-semibold text-zinc-100 font-mono">{preview.selectedCount} <span className="text-sm font-normal text-zinc-500">problems</span></div>
+                      <div className="flex gap-2 mt-2 text-xs">
+                        <span className="text-emerald-400">{preview.easy} E</span>
+                        <span className="text-amber-400">{preview.medium} M</span>
+                        <span className="text-rose-400">{preview.hard} H</span>
                       </div>
-                    ))}
+                    </div>
+                    
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                      {preview.candidates.map(candidate => (
+                        <div key={candidate.pattern} className="flex justify-between items-center text-xs p-2 rounded bg-zinc-900 border border-zinc-800/50">
+                          <span className="text-zinc-300 truncate pr-2">{candidate.pattern}</span>
+                          <span className="text-zinc-500 font-mono">{candidate.allocated}w</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </aside>
+                </div>
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
+        {/* State: No Plan Generated */}
         {phases.length === 0 ? (
-          <section className="rounded-xl border border-dashed border-white/[0.09] bg-white/[0.018] px-6 py-20 text-center">
-            <Target size={34} className="mx-auto mb-4 text-zinc-600" />
-            <h2 className="text-lg font-bold text-white">No roadmap yet</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">Tune the planner inputs and build your first revision roadmap.</p>
-          </section>
+          <div className="border border-dashed border-zinc-800 rounded-xl bg-[#0c0c0e] p-12 text-center">
+            <List size={32} className="mx-auto text-zinc-600 mb-4" />
+            <h3 className="text-lg font-medium text-zinc-300 mb-2">No Curriculum Generated</h3>
+            <p className="text-sm text-zinc-500 max-w-md mx-auto">
+              Use the configuration panel above to select your target topics and availability, then generate your study plan.
+            </p>
+          </div>
         ) : (
-          <section className="space-y-5">
-            <div className="flex flex-col gap-4 border-b border-white/[0.07] pb-4 lg:flex-row lg:items-center lg:justify-between">
+          /* Main Generated Content */
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-4 gap-4">
               <div>
-                <h2 className="text-2xl font-black text-white">{goal}</h2>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
-                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {formatDate(targetDate)}</span>
-                  <span className="inline-flex items-center gap-1.5"><Clock3 size={14} /> {commitment}</span>
+                <h2 className="text-xl font-semibold text-zinc-100">{goal}</h2>
+                <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+                  <span className="flex items-center gap-1.5"><CalendarDays size={14} /> Due {formatDate(targetDate)}</span>
+                  <span className="flex items-center gap-1.5"><Clock size={14} /> {commitment}</span>
                 </div>
               </div>
 
-              <div className="flex rounded-lg border border-white/[0.07] bg-white/[0.025] p-1">
-                {TAB_OPTIONS.map(({ id, label, icon: Icon }) => (
+              <div className="flex bg-[#0f0f11] p-1 rounded-lg border border-zinc-800">
+                {TAB_OPTIONS.map(tab => (
                   <button
-                    key={id}
-                    type="button"
-                    onClick={() => setActiveTab(id)}
-                    className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition ${
-                      activeTab === id ? 'bg-white/[0.08] text-white' : 'text-zinc-500 hover:text-zinc-300'
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === tab.id ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <Icon size={14} />
-                    {label}
+                    <tab.icon size={14} />
+                    {tab.label}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Curriculum List Tab */}
             {activeTab === 'plan' && (
-              <div className="space-y-3">
-                {phases.map((phase, phaseIndex) => {
-                  const isOpen = openPhase === phaseIndex;
+              <div className="space-y-4">
+                {phases.map((phase, phaseIdx) => {
+                  const isOpen = openPhase === phaseIdx;
                   const progress = getPhaseProgress(phase);
                   const meta = statusMeta[phase.status] || statusMeta.PENDING;
 
                   return (
-                    <article key={`${phase.week}-${phase.title}`} className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0d10]/90">
+                    <div key={phaseIdx} className="border border-zinc-800 rounded-lg bg-[#0c0c0e] overflow-hidden">
                       <button
-                        type="button"
-                        onClick={() => setOpenPhase(isOpen ? -1 : phaseIndex)}
-                        className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-white/[0.02]"
+                        onClick={() => setOpenPhase(isOpen ? -1 : phaseIdx)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-zinc-900/50 transition-colors"
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <ChevronRight size={17} className={`shrink-0 text-zinc-500 transition ${isOpen ? 'rotate-90 text-violet-300' : ''}`} />
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-600">{phase.week}</p>
-                            <h3 className="truncate text-sm font-bold text-zinc-100">{phase.title}</h3>
+                        <div className="flex items-center gap-4">
+                          <ChevronRight size={16} className={`text-zinc-500 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                          <div className="text-left">
+                            <div className="text-[10px] font-semibold text-zinc-500 mb-1">{phase.week.toUpperCase()}</div>
+                            <h3 className="text-sm font-medium text-zinc-200">{phase.title}</h3>
                           </div>
                         </div>
-
-                        <div className="flex shrink-0 items-center gap-3">
-                          <span className="hidden text-xs font-mono text-zinc-500 sm:inline">{progress.done}/{progress.total}</span>
-                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${meta.chip}`}>{meta.label}</span>
-                          <ChevronDown size={16} className="text-zinc-600" />
+                        <div className="flex items-center gap-6">
+                          <div className="hidden sm:flex items-center gap-3">
+                            <div className="text-xs text-zinc-500 font-mono">{progress.done}/{progress.total}</div>
+                            <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500" style={{ width: `${progress.pct}%` }} />
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded text-[10px] font-semibold border ${meta.border} ${meta.bg} ${meta.text}`}>
+                            {meta.label}
+                          </div>
                         </div>
                       </button>
 
-                      <AnimatePresence initial={false}>
-                        {isOpen && (
-                          <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
-                            <div className="border-t border-white/[0.07] p-4">
-                              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                <p className="max-w-2xl text-xs leading-6 text-zinc-500">{phase.description}</p>
-                                <select
-                                  value={phase.status}
-                                  onChange={(event) => changePhaseStatus(phaseIndex, event.target.value)}
-                                  className="rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-violet-300/45"
-                                >
-                                  <option value="PENDING">Queued</option>
-                                  <option value="ACTIVE">In progress</option>
-                                  <option value="DONE">Complete</option>
-                                </select>
-                              </div>
+                      {isOpen && (
+                        <div className="border-t border-zinc-800 p-4 bg-[#0a0a0c]">
+                          <div className="flex justify-between items-start mb-6 gap-4">
+                            <p className="text-sm text-zinc-400 leading-relaxed max-w-3xl">{phase.description}</p>
+                            <select
+                              value={phase.status}
+                              onChange={(e) => changePhaseStatus(phaseIdx, e.target.value)}
+                              className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded px-2 py-1.5 outline-none focus:border-blue-500"
+                            >
+                              <option value="PENDING">Queued</option>
+                              <option value="ACTIVE">In Progress</option>
+                              <option value="DONE">Completed</option>
+                            </select>
+                          </div>
 
-                              <div className="space-y-2">
-                                {(phase.problems || []).map((problem, problemIndex) => (
-                                  <div key={`${problem.leetcode_id}-${problemIndex}`} className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.055] bg-black/25 p-3">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                      <button
-                                        type="button"
-                                        onClick={() => toggleProblem(phaseIndex, problemIndex)}
-                                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
-                                          problem.completed ? 'border-violet-300 bg-violet-300 text-black' : 'border-white/[0.12] bg-white/[0.02] text-transparent hover:border-violet-300/40'
-                                        }`}
-                                      >
-                                        <Check size={13} strokeWidth={3} />
-                                      </button>
-                                      <div className="min-w-0">
-                                        <p className={`truncate text-sm ${problem.completed ? 'text-zinc-600 line-through' : 'text-zinc-200'}`}>{problem.name}</p>
-                                        <p className="mt-0.5 truncate text-[11px] text-zinc-600">{problem.subpattern}</p>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex shrink-0 items-center gap-2">
-                                      <span className={`rounded border px-2 py-0.5 text-[10px] font-semibold ${diffColor(problem.difficulty)}`}>{problem.difficulty}</span>
-                                      {problem.link && (
-                                        <a href={problem.link} target="_blank" rel="noopener noreferrer" className="text-zinc-600 transition hover:text-violet-300">
-                                          <ArrowUpRight size={15} />
-                                        </a>
-                                      )}
-                                    </div>
+                          <div className="flex flex-col gap-2">
+                            {(phase.problems || []).map((prob, probIdx) => (
+                              <div key={probIdx} className="group flex items-center justify-between p-3 rounded-md border border-zinc-800/60 bg-zinc-900/40 hover:bg-zinc-900 transition-colors">
+                                <div className="flex items-center gap-4">
+                                  <button
+                                    onClick={() => toggleProblem(phaseIdx, probIdx)}
+                                    className={`flex items-center justify-center w-5 h-5 rounded border transition-colors ${
+                                      prob.completed ? 'bg-emerald-500 border-emerald-500 text-[#09090b]' : 'border-zinc-600 hover:border-zinc-400 text-transparent'
+                                    }`}
+                                  >
+                                    <Check size={14} strokeWidth={3} />
+                                  </button>
+                                  <div>
+                                    <a
+                                      href={prob.link || '#'}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-blue-400 ${
+                                        prob.completed ? 'text-zinc-500 line-through' : 'text-zinc-200'
+                                      }`}
+                                    >
+                                      {prob.name}
+                                      {prob.link && <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 text-zinc-500" />}
+                                    </a>
+                                    <div className="text-[11px] text-zinc-600 mt-0.5">{prob.subpattern}</div>
                                   </div>
-                                ))}
+                                </div>
+                                <div className={`px-2 py-0.5 text-[10px] font-medium rounded border ${getDifficultyStyle(prob.difficulty)}`}>
+                                  {prob.difficulty}
+                                </div>
                               </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-
-            {activeTab === 'board' && (
-              <div className="grid gap-4 md:grid-cols-3">
-                {['PENDING', 'ACTIVE', 'DONE'].map((status) => {
-                  const meta = statusMeta[status];
-                  const items = phases.filter((phase) => phase.status === status);
-
-                  return (
-                    <div key={status} className="rounded-xl border border-white/[0.07] bg-[#0d0d10]/82 p-3">
-                      <div className="mb-3 flex items-center justify-between border-b border-white/[0.06] pb-3">
-                        <span className="inline-flex items-center gap-2 text-xs font-bold text-zinc-300">
-                          <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-                          {meta.label}
-                        </span>
-                        <span className="text-xs text-zinc-600">{items.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {items.map((phase) => {
-                          const progress = getPhaseProgress(phase);
-                          return (
-                            <div key={phase.title} className="rounded-lg border border-white/[0.06] bg-black/25 p-3">
-                              <p className="text-xs font-bold text-zinc-200">{phase.title}</p>
-                              <p className="mt-1 text-[11px] text-zinc-600">{phase.week}</p>
-                              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                                <div className="h-full rounded-full bg-violet-300" style={{ width: `${progress.pct}%` }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             )}
 
-            {activeTab === 'timeline' && (
-              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0d10]/90">
-                <div className="grid border-b border-white/[0.07] bg-white/[0.025]" style={{ gridTemplateColumns: `220px repeat(${weeks}, minmax(52px, 1fr))` }}>
-                  <div className="border-r border-white/[0.07] p-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Phase</div>
-                  {Array.from({ length: weeks }, (_, index) => (
-                    <div key={index} className="border-r border-white/[0.045] p-3 text-center text-[10px] font-mono text-zinc-600 last:border-r-0">W{index + 1}</div>
-                  ))}
-                </div>
-
-                <div>
-                  {phases.map((phase, index) => {
-                    const { start, span } = parseWeekRange(phase.week);
-                    const clampedStart = Math.max(1, Math.min(start, weeks));
-                    const clampedSpan = Math.max(1, Math.min(span, weeks + 1 - clampedStart));
-                    const meta = statusMeta[phase.status] || statusMeta.PENDING;
-
-                    return (
-                      <div key={`${phase.title}-${index}`} className="grid border-b border-white/[0.055] last:border-b-0" style={{ gridTemplateColumns: `220px repeat(${weeks}, minmax(52px, 1fr))` }}>
-                        <div className="border-r border-white/[0.07] p-3">
-                          <p className="truncate text-xs font-bold text-zinc-200">{phase.title}</p>
-                          <p className="mt-1 text-[10px] text-zinc-600">{phase.week}</p>
+            {/* Board Tab */}
+            {activeTab === 'board' && (
+              <div className="grid md:grid-cols-3 gap-6">
+                {['PENDING', 'ACTIVE', 'DONE'].map((status) => {
+                  const meta = statusMeta[status];
+                  const colPhases = phases.filter(p => p.status === status);
+                  return (
+                    <div key={status} className="bg-[#0c0c0e] border border-zinc-800 rounded-xl p-4">
+                      <div className="flex justify-between items-center mb-4 pb-3 border-b border-zinc-800">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                          <span className="text-xs font-semibold text-zinc-300">{meta.label}</span>
                         </div>
-                        <div className="col-span-full row-start-1 grid items-center px-0 py-3" style={{ gridColumn: `2 / span ${weeks}`, gridTemplateColumns: `repeat(${weeks}, minmax(52px, 1fr))` }}>
-                          <div
-                            className={`mx-1 h-7 rounded-md border px-2 text-[10px] font-semibold leading-7 ${meta.chip}`}
-                            style={{ gridColumn: `${clampedStart} / span ${clampedSpan}` }}
-                          >
-                            {meta.label}
+                        <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{colPhases.length}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {colPhases.map((p, idx) => {
+                          const progress = getPhaseProgress(p);
+                          return (
+                            <div key={idx} className="bg-zinc-900 border border-zinc-800/50 p-3 rounded-lg cursor-default">
+                              <div className="text-xs font-medium text-zinc-200 mb-1">{p.title}</div>
+                              <div className="text-[10px] text-zinc-500 mb-3">{p.week}</div>
+                              <div className="flex justify-between items-center text-[10px] text-zinc-400 mb-1.5 font-mono">
+                                <span>{progress.pct}%</span>
+                                <span>{progress.done}/{progress.total}</span>
+                              </div>
+                              <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500" style={{ width: `${progress.pct}%` }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {colPhases.length === 0 && (
+                          <div className="text-center py-6 text-xs text-zinc-600 border border-dashed border-zinc-800 rounded-lg">
+                            Empty
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Timeline Tab */}
+            {activeTab === 'timeline' && (
+              <div className="bg-[#0c0c0e] border border-zinc-800 rounded-xl overflow-x-auto custom-scrollbar">
+                <div className="min-w-[800px]">
+                  {/* Header */}
+                  <div className="grid border-b border-zinc-800 bg-zinc-900/50" style={{ gridTemplateColumns: `250px repeat(${weeks}, 1fr)` }}>
+                    <div className="p-3 text-xs font-medium text-zinc-500 border-r border-zinc-800">Module</div>
+                    {Array.from({ length: weeks }, (_, i) => (
+                      <div key={i} className="p-3 text-[10px] font-medium text-zinc-500 text-center border-r border-zinc-800/50 last:border-0">W{i + 1}</div>
+                    ))}
+                  </div>
+                  {/* Rows */}
+                  <div>
+                    {phases.map((phase, i) => {
+                      const { start, span } = parseWeekRange(phase.week);
+                      const s = Math.max(1, Math.min(start, weeks));
+                      const sp = Math.max(1, Math.min(span, weeks + 1 - s));
+                      const meta = statusMeta[phase.status] || statusMeta.PENDING;
+                      return (
+                        <div key={i} className="grid border-b border-zinc-800 last:border-0" style={{ gridTemplateColumns: `250px repeat(${weeks}, 1fr)` }}>
+                          <div className="p-3 border-r border-zinc-800">
+                            <div className="text-xs font-medium text-zinc-200 truncate">{phase.title}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5">{phase.week}</div>
+                          </div>
+                          <div className="col-span-full row-start-1 grid items-center px-0 py-2" style={{ gridColumn: `2 / span ${weeks}`, gridTemplateColumns: `repeat(${weeks}, 1fr)` }}>
+                            <div 
+                              className={`mx-2 h-6 rounded text-[10px] font-medium flex items-center px-2 border ${meta.border} ${meta.bg} ${meta.text}`}
+                              style={{ gridColumn: `${s} / span ${sp}` }}
+                            >
+                              <span className="truncate">{meta.label}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             )}
-          </section>
+            
+          </div>
         )}
       </main>
     </div>
