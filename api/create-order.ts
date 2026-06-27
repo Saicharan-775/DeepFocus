@@ -13,9 +13,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { amount, name, email, message, anonymous } = req.body || {};
 
     // 2. Server-side Input Validation
-    const donationAmount = Number(amount);
-    if (isNaN(donationAmount) || donationAmount < 10 || donationAmount > 100000) {
-      return res.status(400).json({ error: "Invalid donation amount. Min is ₹10 and Max is ₹100,000." });
+    const donationAmount = Number(amount); // Amount in INR
+    if (isNaN(donationAmount) || donationAmount < 1) {
+      return res.status(400).json({ error: "Invalid donation amount. Minimum amount is ₹1 (100 paise)." });
     }
 
     const sanitizedMessage = typeof message === "string" ? message.trim().slice(0, 200) : null;
@@ -33,18 +33,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("[Create Order Error] Supabase credentials (URL/Service Role Key) are missing on server.");
-      return res.status(500).json({ error: "Server configuration error: Supabase credentials missing." });
-    }
-
     // 3. Initialize Razorpay
-    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
       console.error("[Create Order Error] Razorpay credentials (ID/Secret) are missing on server.");
-      return res.status(500).json({ error: "Server configuration error: Razorpay keys missing." });
+      return res.status(401).json({ error: "Server configuration error: Razorpay keys missing." });
     }
 
     const razorpay = new Razorpay({
@@ -53,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // 4. Create Razorpay Order
-    // Amount is in paisa (1 INR = 100 paisa)
+    // Amount is in paise (1 INR = 100 paise)
     const order = await razorpay.orders.create({
       amount: donationAmount * 100,
       currency: "INR",
@@ -64,34 +59,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    // 5. Initialize Supabase Admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    // 5. If Supabase is configured, log pending order
+    if (supabaseUrl && supabaseServiceKey) {
+      try {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+        });
 
-    // 6. Save Pending Donation Record to Supabase
-    const { error: dbError } = await supabaseAdmin.from("donations").insert({
-      name: isAnonymous ? null : sanitizedName,
-      email: sanitizedEmail,
-      amount: donationAmount,
-      currency: "INR",
-      order_id: order.id,
-      anonymous: isAnonymous,
-      message: sanitizedMessage,
-      status: "pending",
-    });
-
-    if (dbError) {
-      console.error("[Create Order Database Error] Failed to log pending donation:", dbError);
-      return res.status(500).json({ error: "Database transaction failed." });
+        await supabaseAdmin.from("donations").insert({
+          name: isAnonymous ? null : sanitizedName,
+          email: sanitizedEmail,
+          amount: donationAmount,
+          currency: "INR",
+          order_id: order.id,
+          anonymous: isAnonymous,
+          message: sanitizedMessage,
+          status: "pending",
+        });
+      } catch (dbErr) {
+        console.error("[Create Order Database Log Warning] Failed to log pending donation:", dbErr);
+      }
     }
 
-    // 7. Return Order Info to Client
+    // 6. Return Order Info to Client
     return res.status(200).json({
-      id: order.id,
+      order_id: order.id,
       amount: order.amount,
       currency: order.currency,
     });

@@ -181,7 +181,7 @@ export default function Support() {
 
     try {
       // 1. Create order on serverless API
-      const res = await fetch("/api/donate-create-order", {
+      const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -206,7 +206,7 @@ export default function Support() {
         currency: orderData.currency,
         name: "DeepFocus",
         description: "Thank you for supporting developer tools.",
-        order_id: orderData.id,
+        order_id: orderData.order_id || orderData.id,
         prefill: {
           name: name || "",
           email: email || "",
@@ -218,7 +218,7 @@ export default function Support() {
           setLoading(true);
           try {
             // 3. Verify signature on serverless API
-            const verifyRes = await fetch("/api/donate-verify", {
+            const verifyRes = await fetch("/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
