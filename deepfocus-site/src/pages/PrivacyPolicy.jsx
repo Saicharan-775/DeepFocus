@@ -105,14 +105,14 @@ export default function PrivacyPolicy() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold text-white tracking-wide">5. Your GDPR and Compliance Rights</h2>
           <p>
-            Under GDPR and Chrome Web Store policies, you have complete control over your data. DeepFocus provides self-service features in your Settings panel:
+            Under GDPR and Chrome Web Store policies, you have complete control over your data. DeepFocus provides these data management options:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-zinc-400">
             <li>
-              <strong className="text-zinc-200">Right to Portability (Export):</strong> You can export all your revision notes, focus sessions, and statistics in a standardized JSON file.
+              <strong className="text-zinc-200">Right to Portability (Export):</strong> You can export all your revision notes, focus sessions, and statistics in a standardized JSON file directly from your Settings panel.
             </li>
             <li>
-              <strong className="text-zinc-200">Right to Erasure (Deletion):</strong> You can delete your account at any time. Clicking "Delete Account" triggers a server-side routine that instantly wipes all database records (notes, history, tokens) associated with your user ID and deletes your auth credentials.
+              <strong className="text-zinc-200">Right to Erasure (Deletion):</strong> You can request permanent account deletion at any time by emailing us at support.deepfocus@gmail.com. This triggers a secure system routine that permanently purges all database records (notes, history, tokens) associated with your user ID and deletes your auth credentials.
             </li>
           </ul>
         </section>

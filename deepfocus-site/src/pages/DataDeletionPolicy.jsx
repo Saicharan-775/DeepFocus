@@ -27,60 +27,16 @@ export default function DataDeletionPolicy() {
           </div>
         </section>
 
-        {/* 1. Self-Service Deletion */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-white tracking-wide">1. Self-Service Account Deletion</h2>
-          <p>
-            The easiest way to purge all your data is using the self-service tool inside the web dashboard:
-          </p>
-          <ol className="list-decimal pl-6 space-y-3 text-zinc-400">
-            <li>
-              Navigate to the <strong className="text-zinc-200">Settings</strong> page on the web dashboard.
-            </li>
-            <li>
-              Scroll to the <strong className="text-zinc-200">Danger Zone</strong> section.
-            </li>
-            <li>
-              Click the <strong className="text-rose-400">Delete Account Permanently</strong> button.
-            </li>
-            <li>
-              Confirm the dialog prompt. The app will automatically sign you out and redirect you to the homepage.
-            </li>
-          </ol>
-        </section>
-
-        {/* 2. Deletion Scope */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400">
-              <AlertCircle size={20} />
-            </div>
-            <h2 className="text-xl font-bold text-white tracking-wide">2. Scope of Deletion (What gets removed)</h2>
-          </div>
-          <p>
-            When you trigger the deletion workflow, a secure serverless script running on Vercel is invoked. It executes administrative database commands using a privileged service role client to completely remove the following:
-          </p>
-          <ul className="list-disc pl-6 space-y-2 text-zinc-400">
-            <li>All saved revision notes, solutions, and code snippets in `revision_problems` table.</li>
-            <li>Your entire focus history, sessions, and violations in `focus_sessions` and `focus_violations` tables.</li>
-            <li>Secure extension tokens stored in `extension_connections` table.</li>
-            <li>Your user authentication record and metadata in Supabase Auth admin system.</li>
-          </ul>
-          <p className="text-xs text-rose-400/90 font-mono mt-2 bg-rose-950/20 border border-rose-500/10 p-3 rounded-lg">
-            WARNING: Account deletion is absolute and irreversible. There are no backups or restoration archives. Once deleted, your notes and session logs are gone forever.
-          </p>
-        </section>
-
-        {/* 3. Manual Requests */}
+        {/* 1. Account Deletion Requests */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400">
               <Mail size={20} />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-wide">3. Manual Deletion Requests</h2>
+            <h2 className="text-xl font-bold text-white tracking-wide">1. How to Request Account Deletion</h2>
           </div>
           <p>
-            If you cannot log in to your account or need help with deletion, you can submit a manual deletion request:
+            To request permanent deletion of your DeepFocus account and all associated data, please submit an email request:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-zinc-400">
             <li>
@@ -97,6 +53,28 @@ export default function DataDeletionPolicy() {
               Once identity is verified, we will process the deletion and send you a confirmation email within 72 hours.
             </li>
           </ul>
+        </section>
+
+        {/* 2. Deletion Scope */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-violet-500/10 rounded-lg text-violet-400">
+              <AlertCircle size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-wide">2. Scope of Deletion (What gets removed)</h2>
+          </div>
+          <p>
+            When an account deletion request is processed, our system executes administrative database routines to completely remove the following:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-zinc-400">
+            <li>All saved revision notes, solutions, and code snippets in `revision_problems` table.</li>
+            <li>Your entire focus history, sessions, and violations in `focus_sessions` and `focus_violations` tables.</li>
+            <li>Secure extension tokens stored in `extension_connections` table.</li>
+            <li>Your user authentication record and metadata in Supabase Auth admin system.</li>
+          </ul>
+          <p className="text-xs text-rose-400/90 font-mono mt-2 bg-rose-950/20 border border-rose-500/10 p-3 rounded-lg">
+            WARNING: Account deletion is absolute and irreversible. There are no backups or restoration archives. Once deleted, your notes and session logs are gone forever.
+          </p>
         </section>
       </div>
     </div>
