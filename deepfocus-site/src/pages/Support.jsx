@@ -7,6 +7,27 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
+// ─── SKELETON LOADER COMPONENT ───
+const CardSkeleton = () => (
+  <div className="break-inside-avoid relative flex flex-col overflow-hidden rounded-[28px] border border-white/5 bg-[#0D0D11]/40 animate-pulse h-[240px] p-6">
+    <div className="flex-grow space-y-3">
+      <div className="h-4 bg-zinc-800 rounded w-5/6" />
+      <div className="h-4 bg-zinc-800 rounded w-4/6" />
+      <div className="h-4 bg-zinc-800 rounded w-2/6" />
+    </div>
+    <div className="h-10 border-t border-white/5 pt-4 flex items-center justify-between mt-auto">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-zinc-800" />
+        <div className="space-y-1.5">
+          <div className="h-3 bg-zinc-800 rounded w-16" />
+          <div className="h-2 bg-zinc-800 rounded w-10" />
+        </div>
+      </div>
+      <div className="h-6 bg-zinc-800 rounded-full w-12" />
+    </div>
+  </div>
+);
+
 // ─── LOCAL PRESETS (Aligned to Visual Design) ───
 const PRESETS = [
   { id: "coffee", Icon: Coffee, amount: 99, label: "Coffee" },
@@ -404,20 +425,28 @@ export default function Support() {
                 <div className="w-10 h-10 rounded-[12px] bg-violet-600 flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.3)]">
                   <Coffee size={20} className="text-white" />
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">DeepFocus</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-white landing-display">DeepFocus</h1>
               </div>
-              <p className="text-sm text-zinc-400 font-medium">Building tools to help developers master their craft.</p>
+              <p className="text-sm text-zinc-400 font-medium landing-copy">Building tools to help developers master their craft.</p>
             </div>
 
             {/* Metrics Pills */}
             <div className="flex gap-4 mb-2">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-transparent border border-violet-500/20 shadow-[0_0_15px_rgba(124,58,237,0.05)]">
                 <Users size={14} className="text-violet-400" />
-                <span className="text-xs font-bold text-zinc-350">{loadingStats ? "..." : totalSupporters} Supporters</span>
+                {loadingStats ? (
+                  <div className="h-3 w-12 bg-zinc-800 animate-pulse rounded" />
+                ) : (
+                  <span className="text-xs font-bold text-zinc-350 landing-copy">{totalSupporters} Supporters</span>
+                )}
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]">
                 <Flame size={14} className="text-purple-400" />
-                <span className="text-xs font-bold text-zinc-350">₹{loadingStats ? "..." : totalAmount.toLocaleString("en-IN")} Raised</span>
+                {loadingStats ? (
+                  <div className="h-3 w-16 bg-zinc-800 animate-pulse rounded" />
+                ) : (
+                  <span className="text-xs font-bold text-zinc-350 landing-copy">₹{totalAmount.toLocaleString("en-IN")} Raised</span>
+                )}
               </div>
             </div>
 
@@ -593,8 +622,39 @@ export default function Support() {
           {/* ─── RIGHT COLUMN: HALL OF FAME (MASONRY) ─── */}
           <div className="flex flex-col">
             
-            {/* Top 3 Supporters Podium */}
-            {top3.length > 0 && (
+            {/* Top 3 Supporters Podium or Loading Skeleton */}
+            {loadingStats ? (
+              <div className="mb-12 border border-white/5 bg-[#0E0E11]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden animate-pulse">
+                <div className="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
+                  <Trophy size={14} className="text-amber-400 animate-bounce" /> Hall of Fame Leaderboard
+                </h3>
+                <div className="grid grid-cols-3 gap-3 items-end max-w-sm mx-auto h-[160px] pb-2">
+                  {/* 2nd Place Slot Skeleton */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 mb-2" />
+                    <div className="h-3 bg-zinc-800 rounded w-12 mb-1.5" />
+                    <div className="h-2 bg-zinc-800 rounded w-8" />
+                    <div className="w-full bg-zinc-800/20 border border-dashed border-zinc-800/40 h-16 rounded-t-xl mt-2" />
+                  </div>
+                  {/* 1st Place Slot Skeleton */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full bg-zinc-800 mb-2" />
+                    <div className="h-3 bg-zinc-800 rounded w-14 mb-1.5" />
+                    <div className="h-3 bg-zinc-850 rounded w-10" />
+                    <div className="w-full bg-zinc-800/30 border border-dashed border-zinc-800/50 h-24 rounded-t-2xl mt-2" />
+                  </div>
+                  {/* 3rd Place Slot Skeleton */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 mb-2" />
+                    <div className="h-3 bg-zinc-800 rounded w-12 mb-1.5" />
+                    <div className="h-2 bg-zinc-800 rounded w-8" />
+                    <div className="w-full bg-zinc-800/10 border border-dashed border-zinc-800/30 h-12 rounded-t-lg mt-2" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              top3.length > 0 && (
               <div className="mb-12 border border-white/5 bg-[#0E0E11]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden">
                 <div className="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
@@ -674,17 +734,17 @@ export default function Support() {
                   )}
                 </div>
               </div>
+            )
             )}
 
             {/* Main Typography Header */}
             <div className="text-center mb-8 pt-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 mb-6">The Wall Remembers</p>
-              <h2 className="text-5xl md:text-6xl font-black tracking-tight text-white mb-4">
-                Words That Echo <span className="font-serif italic text-pink-500 font-normal">Always</span>
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-violet-400 mb-4 landing-copy">WALL OF BACKERS</p>
+              <h2 className="text-5xl md:text-6xl font-black tracking-tight text-white mb-4 landing-display">
+                Fueling the Future of <span className="font-serif italic text-violet-400 font-normal">Focus</span>
               </h2>
-              <div className="text-pink-500 font-bold tracking-widest mb-4">{">>>>>>"}</div>
-              <p className="text-sm text-zinc-400 font-medium">
-                A hall of fame for amazing humans who believe in DeepFocus.
+              <p className="text-sm text-zinc-400 font-medium landing-copy max-w-xl mx-auto leading-relaxed">
+                A hall of gratitude for the amazing engineers, creators, and builders who make DeepFocus possible.
               </p>
             </div>
 
@@ -739,8 +799,16 @@ export default function Support() {
                 </div>
               </motion.div>
 
-              {/* Supporter Cards */}
-              {supporters.map((supporter, idx) => {
+              {/* Supporter Cards or pulsing Skeletons */}
+              {loadingStats && supporters.length === 0 ? (
+                <>
+                  <CardSkeleton />
+                  <CardSkeleton />
+                  <CardSkeleton />
+                  <CardSkeleton />
+                </>
+              ) : (
+                supporters.map((supporter, idx) => {
                 const theme = CARD_THEMES[idx % CARD_THEMES.length];
                 const dec1 = DECORATIONS[(idx * 2) % DECORATIONS.length];
                 const dec2 = DECORATIONS[(idx * 2 + 1) % DECORATIONS.length];
@@ -798,8 +866,9 @@ export default function Support() {
                     </div>
                   </motion.div>
                 );
-              })}
-            </div>
+              })
+            )}
+          </div>
 
             {/* Load More Trigger (Visual only for 1:1 match) */}
             {supporters.length >= 30 && (
