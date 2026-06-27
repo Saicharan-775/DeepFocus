@@ -2,16 +2,17 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, ArrowRight, User, Mail, MessageSquare, ShieldCheck, AlertCircle,
-  Users, Flame, Heart, Share2, Coffee, Zap, Edit3, Code2, Check, Lock, Trophy
+  Users, Flame, Heart, Share2, Coffee, Zap, Edit3, Code2, Check, Lock, Trophy,
+  Sliders, Crown
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 // ─── LOCAL PRESETS (Aligned to Visual Design) ───
 const PRESETS = [
-  { id: "coffee", icon: "☕", amount: 99, label: "Coffee" },
-  { id: "pizza", icon: "🍕", amount: 299, label: "Pizza" },
-  { id: "lightning", icon: "⚡", amount: 499, label: "Power" },
-  { id: "custom", icon: "🛠️", amount: 0, label: "Custom" },
+  { id: "coffee", Icon: Coffee, amount: 99, label: "Coffee" },
+  { id: "pizza", Icon: Zap, amount: 299, label: "Power Boost" },
+  { id: "lightning", Icon: Heart, amount: 499, label: "Founder Love" },
+  { id: "custom", Icon: Sliders, amount: 0, label: "Custom" },
 ];
 
 // ─── WALL OF FAME CARD STYLES ───
@@ -361,6 +362,25 @@ export default function Support() {
     return name.charAt(0).toUpperCase();
   };
 
+  const renderAvatar = (supporter, sizeClass = "w-8 h-8", iconSize = 14) => {
+    const isAnon = supporter?.anonymous;
+    const seed = supporter?.name || supporter?.id || "default";
+
+    return (
+      <div className={`${sizeClass} rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-inner`}>
+        {isAnon ? (
+          <User className="text-zinc-500" size={iconSize} />
+        ) : (
+          <img 
+            src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}`} 
+            alt="Avatar" 
+            className="w-full h-full object-cover opacity-90"
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 relative font-sans selection:bg-violet-500/30">
       
@@ -423,8 +443,8 @@ export default function Support() {
                         : "border-white/5 bg-black/20 hover:border-white/10 hover:bg-black/40 text-zinc-300"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{preset.icon}</span>
+                    <div className="flex items-center gap-2.5">
+                      <preset.Icon size={16} className={selectedPreset === preset.id ? "text-white" : "text-violet-400 group-hover:text-violet-350 transition-colors"} />
                       <span className="text-xs font-bold uppercase tracking-wider">{preset.label}</span>
                     </div>
                     <span className="text-sm font-black">
@@ -559,52 +579,76 @@ export default function Support() {
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
                   <Trophy size={14} className="text-amber-400 animate-bounce" /> Hall of Fame Leaderboard
                 </h3>
-                <div className="grid grid-cols-3 gap-3 items-end max-w-md mx-auto h-[160px] pb-2">
-                  {/* 2nd Place */}
-                  {top3[1] && (
+                <div className="grid grid-cols-3 gap-3 items-end max-w-sm mx-auto h-[160px] pb-2">
+                  {/* 2nd Place Slot */}
+                  {top3[1] ? (
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full border border-zinc-400 bg-zinc-800/80 flex items-center justify-center text-xs font-bold text-zinc-300 shadow-lg relative mb-2 overflow-hidden">
-                        {top3[1].anonymous ? (
-                          <span>🥈</span>
-                        ) : (
-                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[1].name}`} className="w-full h-full rounded-full object-cover" alt="2nd" />
-                        )}
+                      <div className="relative mb-2">
+                        {renderAvatar(top3[1], "w-10 h-10 border border-zinc-500/40", 16)}
+                        <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-zinc-650 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">2</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">{top3[1].anonymous ? "Anonymous" : top3[1].name}</span>
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                        {top3[1].anonymous ? "Anonymous" : top3[1].name}
+                      </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[1].amount}</span>
-                      <div className="w-full bg-zinc-800/40 border border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold">2nd</div>
+                      <div className="w-full bg-zinc-800/40 border border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold shadow-lg">2nd</div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center opacity-40">
+                      <div className="w-10 h-10 rounded-full border border-dashed border-zinc-600 flex items-center justify-center mb-2">
+                        <User size={14} className="text-zinc-600" />
+                      </div>
+                      <span className="text-[10px] font-bold text-zinc-500">Claim 2nd</span>
+                      <div className="w-full border border-dashed border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-600 text-xs font-bold">Empty</div>
                     </div>
                   )}
                   
-                  {/* 1st Place */}
-                  {top3[0] && (
+                  {/* 1st Place Slot */}
+                  {top3[0] ? (
                     <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 rounded-full border-2 border-amber-400 bg-amber-950/80 flex items-center justify-center text-sm font-bold text-amber-300 shadow-2xl relative mb-2 overflow-hidden">
-                        {top3[0].anonymous ? (
-                          <span>👑</span>
-                        ) : (
-                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[0].name}`} className="w-full h-full rounded-full object-cover" alt="1st" />
-                        )}
+                      <div className="relative mb-2">
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-amber-400">
+                          <Crown size={14} className="animate-pulse" />
+                        </div>
+                        {renderAvatar(top3[0], "w-12 h-12 border-2 border-amber-400", 20)}
+                        <span className="absolute -bottom-1 -right-1 text-[10px] bg-amber-500 text-black border border-amber-400 rounded-full w-5 h-5 flex items-center justify-center font-black">1</span>
                       </div>
-                      <span className="text-xs font-black text-white truncate max-w-[90px]">{top3[0].anonymous ? "Anonymous" : top3[0].name}</span>
+                      <span className="text-xs font-black text-white truncate max-w-[90px]">
+                        {top3[0].anonymous ? "Anonymous" : top3[0].name}
+                      </span>
                       <span className="text-xs font-black text-amber-400">₹{top3[0].amount}</span>
                       <div className="w-full bg-gradient-to-t from-amber-600/30 to-amber-500/20 border border-amber-500/30 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-300 text-sm font-black shadow-[0_0_20px_rgba(245,158,11,0.2)]">1st</div>
                     </div>
+                  ) : (
+                    <div className="flex flex-col items-center opacity-40">
+                      <div className="w-12 h-12 rounded-full border border-dashed border-amber-500/50 flex items-center justify-center mb-2">
+                        <Crown size={16} className="text-amber-500/50" />
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-500/70">Claim 1st</span>
+                      <div className="w-full border border-dashed border-amber-500/30 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-500/50 text-sm font-black">Empty</div>
+                    </div>
                   )}
 
-                  {/* 3rd Place */}
-                  {top3[2] && (
+                  {/* 3rd Place Slot */}
+                  {top3[2] ? (
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full border border-amber-600/50 bg-amber-900/50 flex items-center justify-center text-xs font-bold text-amber-600 shadow-lg relative mb-2 overflow-hidden">
-                        {top3[2].anonymous ? (
-                          <span>🥉</span>
-                        ) : (
-                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[2].name}`} className="w-full h-full rounded-full object-cover" alt="3rd" />
-                        )}
+                      <div className="relative mb-2">
+                        {renderAvatar(top3[2], "w-10 h-10 border border-amber-600/30", 16)}
+                        <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-amber-800 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">3</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">{top3[2].anonymous ? "Anonymous" : top3[2].name}</span>
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                        {top3[2].anonymous ? "Anonymous" : top3[2].name}
+                      </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[2].amount}</span>
                       <div className="w-full bg-amber-900/10 border border-amber-900/30 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700 text-xs font-bold">3rd</div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center opacity-40">
+                      <div className="w-10 h-10 rounded-full border border-dashed border-amber-700/50 flex items-center justify-center mb-2">
+                        <User size={14} className="text-amber-700/40" />
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-700/60">Claim 3rd</span>
+                      <div className="w-full border border-dashed border-amber-900/20 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700/50 text-xs font-bold">Empty</div>
                     </div>
                   )}
                 </div>
@@ -662,7 +706,10 @@ export default function Support() {
                 <div className="absolute top-6 right-6 opacity-40">
                   <Sparkles size={24} className="text-violet-300" />
                 </div>
-                <h3 className="text-xl font-serif italic text-white mb-2">“☕ Fuel the Project...”</h3>
+                <div className="flex items-center gap-2 mb-2 text-white">
+                  <Coffee size={20} className="text-violet-400" />
+                  <h3 className="text-xl font-serif italic">“Fuel the Project...”</h3>
+                </div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-violet-300 mb-6 text-center max-w-[200px] leading-relaxed">
                   Every support keeps servers running and code clean.
                 </p>
@@ -701,16 +748,23 @@ export default function Support() {
                     {/* Card Footer */}
                     <div className="h-[68px] bg-[#0A0A0C]/50 backdrop-blur-md px-6 flex items-center justify-between border-t border-white/5 z-10">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/5 overflow-hidden">
-                          {supporter.anonymous ? (
-                            <User size={14} className="text-white/50" />
-                          ) : (
-                            <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${supporter.name || supporter.id}`} alt="Avatar" className="w-full h-full object-cover opacity-80" />
-                          )}
-                        </div>
+                        {renderAvatar(supporter, "w-8 h-8", 14)}
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-white truncate max-w-[120px]">
-                            {supporter.anonymous ? "Anonymous" : supporter.name || "Generous Supporter"}
+                            {supporter.anonymous ? (
+                              "Anonymous"
+                            ) : supporter.name && supporter.name.startsWith("@") ? (
+                              <a 
+                                href={`https://twitter.com/${supporter.name.slice(1)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="hover:text-violet-400 transition-colors underline decoration-dotted decoration-violet-500/50"
+                              >
+                                {supporter.name}
+                              </a>
+                            ) : (
+                              supporter.name || "Generous Supporter"
+                            )}
                           </span>
                           <span className="text-[10px] text-white/40 font-medium">
                             {getRelativeDate(supporter.created_at)}
