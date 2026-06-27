@@ -193,11 +193,16 @@ export default function Support() {
         }),
       });
 
-      const orderData = await res.json();
-
       if (!res.ok) {
-        throw new Error(orderData.error || "Failed to initialize checkout.");
+        let errorMsg = "Failed to initialize checkout.";
+        try {
+          const errData = await res.json();
+          errorMsg = errData.error || errorMsg;
+        } catch (_) {}
+        throw new Error(errorMsg);
       }
+
+      const orderData = await res.json();
 
       // 2. Configure checkout options
       const options = {
@@ -228,20 +233,25 @@ export default function Support() {
               }),
             });
 
+            if (!verifyRes.ok) {
+              let errorMsg = "Signature verification failed.";
+              try {
+                const errData = await verifyRes.json();
+                errorMsg = errData.error || errorMsg;
+              } catch (_) {}
+              throw new Error(errorMsg);
+            }
+
             const verifyData = await verifyRes.json();
 
-            if (verifyRes.ok && verifyData.success) {
-              setStatusMessage({
-                type: "success",
-                text: "Payment verified successfully! Thank you for backing DeepFocus. ❤️",
-              });
-              setCustomAmount("");
-              setName("");
-              setEmail("");
-              setMessage("");
-            } else {
-              throw new Error(verifyData.error || "Signature verification failed.");
-            }
+            setStatusMessage({
+              type: "success",
+              text: "Payment verified successfully! Thank you for backing DeepFocus. ❤️",
+            });
+            setCustomAmount("");
+            setName("");
+            setEmail("");
+            setMessage("");
           } catch (verifyErr) {
             setStatusMessage({
               type: "error",
