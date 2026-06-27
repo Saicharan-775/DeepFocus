@@ -9,21 +9,21 @@ import { supabase } from "../lib/supabaseClient";
 
 // ─── SKELETON LOADER COMPONENT ───
 const CardSkeleton = () => (
-  <div className="break-inside-avoid relative flex flex-col overflow-hidden rounded-[28px] border border-white/5 bg-[#0D0D11]/40 animate-pulse h-[240px] p-6">
+  <div className="break-inside-avoid relative flex flex-col overflow-hidden rounded-[24px] border border-white/[0.04] bg-[#0E0E12]/40 animate-pulse h-[220px] p-6 shadow-inner">
     <div className="flex-grow space-y-3">
-      <div className="h-4 bg-zinc-800 rounded w-5/6" />
-      <div className="h-4 bg-zinc-800 rounded w-4/6" />
-      <div className="h-4 bg-zinc-800 rounded w-2/6" />
+      <div className="h-3.5 bg-zinc-800/80 rounded-md w-5/6" />
+      <div className="h-3.5 bg-zinc-800/80 rounded-md w-4/6" />
+      <div className="h-3.5 bg-zinc-800/80 rounded-md w-2/6" />
     </div>
-    <div className="h-10 border-t border-white/5 pt-4 flex items-center justify-between mt-auto">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-zinc-800" />
-        <div className="space-y-1.5">
-          <div className="h-3 bg-zinc-800 rounded w-16" />
-          <div className="h-2 bg-zinc-800 rounded w-10" />
+    <div className="h-10 border-t border-white/[0.03] pt-4 flex items-center justify-between mt-auto">
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-full bg-zinc-800/80" />
+        <div className="space-y-1">
+          <div className="h-3 bg-zinc-800/80 rounded w-16" />
+          <div className="h-2.5 bg-zinc-800/80 rounded w-10" />
         </div>
       </div>
-      <div className="h-6 bg-zinc-800 rounded-full w-12" />
+      <div className="h-5 bg-zinc-800/80 rounded-full w-12" />
     </div>
   </div>
 );
@@ -38,15 +38,45 @@ const PRESETS = [
 
 // ─── WALL OF FAME CARD STYLES ───
 const CARD_THEMES = [
-  "bg-gradient-to-br from-[#1b0b2e] to-[#0a0412] text-[#e8d5ff]", // Deep Purple
-  "bg-gradient-to-br from-[#0a2416] to-[#030d08] text-[#d1f4e0]", // Forest Green
-  "bg-gradient-to-br from-[#0c1a36] to-[#040914] text-[#d6e4ff]", // Navy Blue
-  "bg-gradient-to-br from-[#330d12] to-[#140507] text-[#ffdce0]", // Wine Red
-  "bg-gradient-to-br from-[#291700] to-[#120a00] text-[#ffe8cc]", // Amber
-  "bg-gradient-to-br from-[#082226] to-[#030d0e] text-[#ccf2f5]", // Dark Teal
+  {
+    body: "bg-[#140C22]/85 border-violet-500/[0.08] text-violet-100 shadow-[0_12px_40px_rgba(124,58,237,0.06)]",
+    footer: "bg-[#0B0614]/80 border-violet-500/5",
+    badge: "text-violet-400 bg-violet-500/10 border-violet-500/20",
+    glow: "bg-violet-500/5",
+  },
+  {
+    body: "bg-[#091B11]/85 border-emerald-500/[0.08] text-emerald-100 shadow-[0_12px_40px_rgba(16,185,129,0.06)]",
+    footer: "bg-[#040E09]/80 border-emerald-500/5",
+    badge: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    glow: "bg-emerald-500/5",
+  },
+  {
+    body: "bg-[#0A1428]/85 border-blue-500/[0.08] text-blue-100 shadow-[0_12px_40px_rgba(59,130,246,0.06)]",
+    footer: "bg-[#050A15]/80 border-blue-500/5",
+    badge: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    glow: "bg-blue-500/5",
+  },
+  {
+    body: "bg-[#200A0D]/85 border-rose-500/[0.08] text-rose-100 shadow-[0_12px_40px_rgba(244,63,94,0.06)]",
+    footer: "bg-[#110507]/80 border-rose-500/5",
+    badge: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+    glow: "bg-rose-500/5",
+  },
+  {
+    body: "bg-[#1D1305]/85 border-amber-500/[0.08] text-amber-100 shadow-[0_12px_40px_rgba(245,158,11,0.06)]",
+    footer: "bg-[#0F0A02]/80 border-amber-500/5",
+    badge: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    glow: "bg-amber-500/5",
+  },
+  {
+    body: "bg-[#100C24]/85 border-indigo-500/[0.08] text-indigo-100 shadow-[0_12px_40px_rgba(99,102,241,0.06)]",
+    footer: "bg-[#080614]/80 border-indigo-500/5",
+    badge: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+    glow: "bg-indigo-500/5",
+  },
 ];
 
-const DECORATIONS = ['⚡', '✨', '⭐', '💜', '❤️', '😊', '☕️', '💻', '🚀', '🎯', '🌙', '🔥', '🎉'];
+const DECORATIONS = ['☕', '🚀', '💜', '⚡', '✨', '🎯', '😊', '🔥', '❤️'];
 
 export default function Support() {
   // Page load & Data states
@@ -402,14 +432,22 @@ export default function Support() {
     );
   };
 
+
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 relative font-sans selection:bg-violet-500/30">
+    <div className="min-h-screen bg-[#060608] text-zinc-100 relative font-sans selection:bg-violet-500/30">
       
       {/* ─── PREMIUM SAAS BACKGROUND FX ─── */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgMGg0MHYxSDB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDExKSIvPgo8L3N2Zz4=')] opacity-50 mix-blend-overlay" />
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-900/10 rounded-full blur-[140px] mix-blend-screen" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-900/5 rounded-full blur-[160px] mix-blend-screen" />
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Fine background grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70" />
+        
+        {/* Faint Grain overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
+
+        {/* Ambient radial glows */}
+        <div className="absolute top-[-25%] left-[-20%] w-[800px] h-[800px] bg-violet-600/[0.04] rounded-full blur-[160px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[900px] h-[900px] bg-indigo-500/[0.03] rounded-full blur-[180px]" />
+        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[140px]" />
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 lg:py-20 relative z-10">
@@ -432,7 +470,7 @@ export default function Support() {
 
             {/* Metrics Pills */}
             <div className="flex gap-4 mb-2">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-transparent border border-violet-500/20 shadow-[0_0_15px_rgba(124,58,237,0.05)]">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0E0E12]/50 border border-white/[0.04] shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
                 <Users size={14} className="text-violet-400" />
                 {loadingStats ? (
                   <div className="h-3 w-12 bg-zinc-800 animate-pulse rounded" />
@@ -440,8 +478,8 @@ export default function Support() {
                   <span className="text-xs font-bold text-zinc-350 landing-copy">{totalSupporters} Supporters</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.05)]">
-                <Flame size={14} className="text-purple-400" />
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0E0E12]/50 border border-white/[0.04] shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                <Flame size={14} className="text-amber-400" />
                 {loadingStats ? (
                   <div className="h-3 w-16 bg-zinc-800 animate-pulse rounded" />
                 ) : (
@@ -451,8 +489,11 @@ export default function Support() {
             </div>
 
             {/* Main Support Card */}
-            <div className="rounded-[32px] bg-[#0E0E11] border border-white/5 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <div className="relative rounded-[24px] bg-[#0E0E12]/80 backdrop-blur-xl border border-white/[0.05] p-6 sm:p-8 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)] overflow-hidden">
+              {/* Ambient glow inside */}
+              <div className="absolute -top-32 -left-32 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+
+              <h2 className="text-md font-bold text-white mb-6 flex items-center gap-2 landing-display">
                 Support the project <span className="text-rose-500">❤️</span>
               </h2>
 
@@ -466,19 +507,23 @@ export default function Support() {
                       setSelectedPreset(preset.id);
                       setStatusMessage(null);
                     }}
-                    className={`relative py-4 rounded-[16px] border transition-all flex items-center justify-between px-5 gap-3 group active:scale-[0.98] cursor-pointer ${
+                    className={`relative py-4 rounded-[16px] border transition-all duration-300 flex flex-col items-start justify-between px-5 min-h-[82px] active:scale-[0.98] cursor-pointer group ${
                       selectedPreset === preset.id
-                        ? "bg-violet-950/20 border-violet-500 shadow-[0_0_20px_rgba(124,58,237,0.15)] z-10 text-white"
-                        : "border-white/5 bg-black/35 hover:border-white/10 hover:bg-black/50 text-zinc-400 hover:text-zinc-200"
+                        ? "bg-violet-500/[0.06] border-violet-500/50 shadow-[0_0_25px_rgba(124,58,237,0.15),inset_0_1px_1px_rgba(255,255,255,0.05)] text-white"
+                        : "border-white/[0.04] bg-[#09090B]/40 hover:bg-[#0E0E11]/60 hover:border-white/[0.08] text-zinc-400 hover:text-zinc-200 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <preset.Icon size={15} className={selectedPreset === preset.id ? "text-violet-300" : "text-zinc-500 group-hover:text-zinc-400 transition-colors"} />
-                      <span className="text-xs font-bold uppercase tracking-wider">{preset.label}</span>
+                    <div className="flex items-center gap-2 mb-auto">
+                      <preset.Icon size={14} className={selectedPreset === preset.id ? "text-violet-400" : "text-zinc-500 group-hover:text-zinc-400 transition-colors"} />
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em]">{preset.label}</span>
                     </div>
-                    <span className="text-xs font-black">
+                    <span className="text-sm font-black mt-2">
                       {preset.id === "custom" ? "..." : `₹${preset.amount}`}
                     </span>
+                    {/* Selected Glow Accent Overlay */}
+                    {selectedPreset === preset.id && (
+                      <div className="absolute inset-px rounded-[15px] border border-violet-500/30 pointer-events-none" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -493,66 +538,82 @@ export default function Support() {
                       exit={{ opacity: 0, height: 0, y: -10 }} 
                       className="overflow-hidden mb-2"
                     >
-                      <label className="block text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Custom Amount (₹)</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-500">₹</span>
+                      <div className="relative group">
                         <input
                           type="number"
                           required min={10} max={100000}
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="Enter amount (10 - 100,000)"
-                          className="w-full pl-8 pr-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all placeholder:text-zinc-600 shadow-inner"
+                          placeholder=" "
+                          id="custom-amount-input"
+                          className="w-full pl-8 pr-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-black focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
                         />
+                        <span className="absolute left-4 top-[25px] text-sm font-black text-zinc-500 transition-all peer-placeholder-shown:top-[15px] peer-focus:top-[25px]">₹</span>
+                        <label 
+                          htmlFor="custom-amount-input"
+                          className="absolute left-4 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
+                        >
+                          Custom Amount
+                        </label>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
-                    <User size={10} className="text-zinc-600" /> Name or Twitter
-                  </label>
+                <div className="relative group">
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={anonymous}
-                    placeholder="Name or @twitter (optional)"
-                    className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all disabled:opacity-30 placeholder:text-zinc-600 shadow-inner"
+                    placeholder=" "
+                    id="name-input"
+                    className="w-full px-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-30 placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
                   />
+                  <label 
+                    htmlFor="name-input" 
+                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
+                  >
+                    <User size={10} /> Name or Twitter
+                  </label>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
-                    <Mail size={10} className="text-zinc-600" /> Email Address
-                  </label>
+                <div className="relative group">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="alex@example.com (optional)"
-                    className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all placeholder:text-zinc-600 shadow-inner"
+                    placeholder=" "
+                    id="email-input"
+                    className="w-full px-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
-                    <MessageSquare size={10} className="text-zinc-600" /> Backer Message
+                  <label 
+                    htmlFor="email-input" 
+                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
+                  >
+                    <Mail size={10} /> Email Address
                   </label>
-                  <div className="relative">
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value.slice(0, 150))}
-                      placeholder="Say something nice... (optional)"
-                      rows={3}
-                      className="w-full px-5 py-3.5 rounded-[16px] border border-white/5 bg-black/45 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all resize-none placeholder:text-zinc-600 shadow-inner"
-                    />
-                    <span className="absolute bottom-3 right-4 text-[9px] font-bold text-zinc-600">{message.length}/150</span>
-                  </div>
                 </div>
 
-                <label className="flex items-center gap-3 cursor-pointer group py-2 w-max">
+                <div className="relative group">
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value.slice(0, 150))}
+                    placeholder=" "
+                    rows={3}
+                    id="message-input"
+                    className="w-full px-5 pt-6 pb-3 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
+                  />
+                  <label 
+                    htmlFor="message-input"
+                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
+                  >
+                    <MessageSquare size={10} /> Backer Message
+                  </label>
+                  <span className="absolute bottom-3 right-4 text-[9px] font-bold text-zinc-600">{message.length}/150</span>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer group py-2 w-max select-none">
                   <div className="relative flex items-center justify-center w-4 h-4">
                     <input
                       type="checkbox"
@@ -564,7 +625,7 @@ export default function Support() {
                       <Check size={10} strokeWidth={4} className="text-white opacity-0 peer-checked:opacity-100" />
                     </div>
                   </div>
-                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                  <span className="text-xs font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors">
                     Make this private
                   </span>
                 </label>
@@ -585,7 +646,7 @@ export default function Support() {
                 <button
                   type="submit"
                   disabled={loading || activeAmount < 10 || activeAmount > 100000}
-                  className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white rounded-[16px] font-bold text-sm tracking-wide transition-all shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_30px_rgba(124,58,237,0.45)] active:scale-[0.98] flex items-center justify-center cursor-pointer border border-violet-400/20"
+                  className="w-full py-4 bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 bg-[length:200%_auto] hover:bg-right text-white rounded-[16px] font-bold text-sm tracking-wide transition-all duration-500 shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_30px_rgba(124,58,237,0.45)] active:scale-[0.98] flex items-center justify-center cursor-pointer border border-violet-400/20"
                 >
                   {loading 
                     ? "Processing..." 
@@ -604,7 +665,7 @@ export default function Support() {
             </div>
 
             {/* Bottom Promo Box */}
-            <div className="mt-4 rounded-[24px] bg-[#0E0E11] border border-white/5 p-6 flex items-center justify-between shadow-lg">
+            <div className="mt-4 rounded-[24px] bg-[#0E0E12]/80 backdrop-blur-xl border border-white/5 p-6 flex items-center justify-between shadow-lg">
               <div className="flex gap-3">
                  <Heart size={20} className="text-violet-500 fill-violet-500" />
                  <p className="text-sm font-medium text-zinc-300 leading-snug max-w-[200px]">
@@ -624,7 +685,7 @@ export default function Support() {
             
             {/* Top 3 Supporters Podium or Loading Skeleton */}
             {loadingStats ? (
-              <div className="mb-12 border border-white/5 bg-[#0E0E11]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden animate-pulse">
+              <div className="mb-12 border border-white/[0.04] bg-[#0E0E12]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden animate-pulse">
                 <div className="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
                   <Trophy size={14} className="text-amber-400 animate-bounce" /> Hall of Fame Leaderboard
@@ -653,9 +714,8 @@ export default function Support() {
                   </div>
                 </div>
               </div>
-            ) : (
-              top3.length > 0 && (
-              <div className="mb-12 border border-white/5 bg-[#0E0E11]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden">
+            ) : top3.length > 0 ? (
+              <div className="mb-12 border border-white/[0.04] bg-[#0E0E12]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden shadow-lg">
                 <div className="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                 <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
                   <Trophy size={14} className="text-amber-400 animate-bounce" /> Hall of Fame Leaderboard
@@ -663,16 +723,16 @@ export default function Support() {
                 <div className="grid grid-cols-3 gap-3 items-end max-w-sm mx-auto h-[160px] pb-2">
                   {/* 2nd Place Slot */}
                   {top3[1] ? (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center animate-fade-in">
                       <div className="relative mb-2">
                         {renderAvatar(top3[1], "w-10 h-10 border border-zinc-500/40", 16)}
                         <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-zinc-650 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">2</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                      <span className="text-xs font-bold text-zinc-305 truncate max-w-[80px]">
                         {top3[1].anonymous ? "Anonymous" : top3[1].name}
                       </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[1].amount}</span>
-                      <div className="w-full bg-zinc-800/40 border border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold shadow-lg">2nd</div>
+                      <div className="w-full bg-[#18181B]/60 border border-zinc-700/30 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold shadow-md">2nd</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center opacity-40">
@@ -686,7 +746,7 @@ export default function Support() {
                   
                   {/* 1st Place Slot */}
                   {top3[0] ? (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center animate-fade-in">
                       <div className="relative mb-2">
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-amber-400">
                           <Crown size={14} className="animate-pulse" />
@@ -698,7 +758,7 @@ export default function Support() {
                         {top3[0].anonymous ? "Anonymous" : top3[0].name}
                       </span>
                       <span className="text-xs font-black text-amber-400">₹{top3[0].amount}</span>
-                      <div className="w-full bg-gradient-to-t from-amber-600/30 to-amber-500/20 border border-amber-500/30 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-300 text-sm font-black shadow-[0_0_20px_rgba(245,158,11,0.2)]">1st</div>
+                      <div className="w-full bg-gradient-to-t from-amber-600/20 to-amber-500/10 border border-amber-500/20 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-300 text-sm font-black shadow-[0_0_20px_rgba(245,158,11,0.15)]">1st</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center opacity-40">
@@ -712,16 +772,16 @@ export default function Support() {
 
                   {/* 3rd Place Slot */}
                   {top3[2] ? (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center animate-fade-in">
                       <div className="relative mb-2">
                         {renderAvatar(top3[2], "w-10 h-10 border border-amber-600/30", 16)}
                         <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-amber-800 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">3</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                      <span className="text-xs font-bold text-zinc-355 truncate max-w-[80px]">
                         {top3[2].anonymous ? "Anonymous" : top3[2].name}
                       </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[2].amount}</span>
-                      <div className="w-full bg-amber-900/10 border border-amber-900/30 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700 text-xs font-bold">3rd</div>
+                      <div className="w-full bg-[#18181B]/40 border border-amber-900/20 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700 text-xs font-bold shadow-sm">3rd</div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center opacity-40">
@@ -734,8 +794,7 @@ export default function Support() {
                   )}
                 </div>
               </div>
-            )
-            )}
+            ) : null}
 
             {/* Main Typography Header */}
             <div className="text-center mb-8 pt-4">
@@ -754,7 +813,7 @@ export default function Support() {
                 onClick={() => setFilterTab("recent")}
                 className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                   filterTab === "recent"
-                    ? "bg-zinc-850 text-white border border-white/10 shadow-lg"
+                    ? "bg-[#18181C] text-white border border-white/10 shadow-lg shadow-black/50"
                     : "text-zinc-500 hover:text-zinc-300 border border-transparent"
                 }`}
               >
@@ -764,7 +823,7 @@ export default function Support() {
                 onClick={() => setFilterTab("top")}
                 className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                   filterTab === "top"
-                    ? "bg-zinc-850 text-white border border-white/10 shadow-lg"
+                    ? "bg-[#18181C] text-white border border-white/10 shadow-lg shadow-black/50"
                     : "text-zinc-500 hover:text-zinc-300 border border-transparent"
                 }`}
               >
@@ -780,24 +839,44 @@ export default function Support() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                whileHover={{ y: -4, rotate: -1 }}
-                className="break-inside-avoid relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#200b3e] to-[#0e041e] border border-violet-500/20 p-8 shadow-2xl min-h-[220px] flex flex-col items-center justify-center group cursor-pointer"
+                whileHover={{ y: -4, rotate: -0.5 }}
+                className="break-inside-avoid relative overflow-hidden rounded-[24px] bg-[#140C22]/80 backdrop-blur-md border border-violet-500/[0.08] p-8 shadow-[0_12px_40px_rgba(124,58,237,0.04)] min-h-[220px] flex flex-col items-center justify-center group cursor-pointer"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               >
-                <div className="absolute top-6 right-6 opacity-40">
+                <div className="absolute top-6 right-6 opacity-30">
                   <Sparkles size={24} className="text-violet-300" />
                 </div>
-                <div className="flex items-center gap-2 mb-2 text-white">
-                  <Coffee size={20} className="text-violet-400" />
-                  <h3 className="text-xl font-serif italic">“Fuel the Project...”</h3>
+                <div className="flex items-center gap-2.5 mb-2 text-white">
+                  <Coffee size={20} className="text-violet-400 animate-pulse" />
+                  <h3 className="text-xl font-serif italic text-violet-100">“Fuel the Project...”</h3>
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-violet-300 mb-6 text-center max-w-[200px] leading-relaxed">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-violet-300/70 mb-6 text-center max-w-[200px] leading-relaxed">
                   Every support keeps servers running and code clean.
                 </p>
-                <div className="px-6 py-2 rounded-full border border-violet-400/30 bg-violet-500/10 text-white text-sm font-medium transition-colors group-hover:bg-violet-500/20">
+                <div className="px-6 py-2 rounded-full border border-violet-500/30 bg-violet-500/5 text-white text-xs font-bold transition-all duration-300 group-hover:bg-violet-500/10">
                   Buy me a coffee
                 </div>
               </motion.div>
+
+              {/* Inviting Empty State (Collectable Card UI) */}
+              {supporters.length === 0 && !loadingStats && (
+                <div className="break-inside-avoid relative overflow-hidden rounded-[24px] border border-white/[0.04] bg-[#0E0E12]/40 p-8 text-center flex flex-col items-center justify-center min-h-[220px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]">
+                  <div className="absolute top-[-20%] left-[-10%] w-48 h-48 bg-violet-500/5 rounded-full blur-[80px] pointer-events-none" />
+                  <div className="w-10 h-10 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
+                    <Heart size={18} className="text-violet-400" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white mb-1.5 landing-display">Be the First Supporter</h4>
+                  <p className="text-xs text-zinc-500 max-w-[240px] leading-relaxed mb-5 landing-copy">
+                    Your voice and backing will echo here forever. Share your message and help build the future of DeepFocus.
+                  </p>
+                  <button 
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="px-5 py-2 rounded-full border border-violet-500/30 bg-violet-500/5 text-violet-300 text-[10px] font-bold uppercase tracking-wider hover:bg-violet-500/10 transition-all cursor-pointer"
+                  >
+                    Fuel the Project
+                  </button>
+                </div>
+              )}
 
               {/* Supporter Cards or pulsing Skeletons */}
               {loadingStats && supporters.length === 0 ? (
@@ -809,71 +888,74 @@ export default function Support() {
                 </>
               ) : (
                 supporters.map((supporter, idx) => {
-                const theme = CARD_THEMES[idx % CARD_THEMES.length];
-                const dec1 = DECORATIONS[(idx * 2) % DECORATIONS.length];
-                const dec2 = DECORATIONS[(idx * 2 + 1) % DECORATIONS.length];
+                  const theme = CARD_THEMES[idx % CARD_THEMES.length];
+                  const dec1 = DECORATIONS[(idx * 2) % DECORATIONS.length];
+                  const dec2 = DECORATIONS[(idx * 2 + 1) % DECORATIONS.length];
 
-                return (
-                  <motion.div
-                    key={supporter.id}
-                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ type: "spring", stiffness: 100, damping: 20, delay: idx * 0.05 }}
-                    whileHover={{ y: -6, rotate: idx % 2 === 0 ? 1 : -1, filter: "brightness(1.1)" }}
-                    className={`break-inside-avoid relative flex flex-col overflow-hidden rounded-[28px] border border-white/5 shadow-xl min-h-[240px] ${theme}`}
-                  >
-                    {/* Floating Decorations */}
-                    <div className="absolute top-6 right-6 text-xl opacity-60 pointer-events-none select-none">{dec1}</div>
-                    <div className="absolute bottom-20 left-6 text-2xl opacity-40 pointer-events-none select-none">{dec2}</div>
-                    
-                    {/* Message Area */}
-                    <div className="flex-grow flex items-center justify-center p-8 text-center relative z-10">
-                      <p className="font-semibold text-[15px] sm:text-base leading-relaxed tracking-wide">
-                        {supporter.message || "Supported the mission!"}
-                      </p>
-                    </div>
+                  return (
+                    <motion.div
+                      key={supporter.id}
+                      initial={{ opacity: 0, y: 30, scale: 0.98 }}
+                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ type: "spring", stiffness: 90, damping: 22, delay: (idx % 4) * 0.05 }}
+                      whileHover={{ y: -5, rotate: idx % 2 === 0 ? 0.5 : -0.5, shadow: "0 20px 40px rgba(0,0,0,0.4)" }}
+                      className={`break-inside-avoid relative flex flex-col overflow-hidden rounded-[24px] border border-white/[0.04] shadow-xl min-h-[220px] transition-all duration-300 ${theme.body}`}
+                    >
+                      {/* Ambient card back-glow */}
+                      <div className={`absolute -right-16 -top-16 w-32 h-32 rounded-full blur-2xl pointer-events-none ${theme.glow}`} />
+                      
+                      {/* Floating Decorations */}
+                      <div className="absolute top-5 right-5 text-lg opacity-25 pointer-events-none select-none">{dec1}</div>
+                      <div className="absolute bottom-16 left-5 text-xl opacity-20 pointer-events-none select-none">{dec2}</div>
+                      
+                      {/* Message Area */}
+                      <div className="flex-grow flex items-center justify-center p-6 text-center relative z-10">
+                        <p className="font-semibold text-sm sm:text-base leading-relaxed tracking-wide font-sans">
+                          {supporter.message || "Supported the mission!"}
+                        </p>
+                      </div>
 
-                    {/* Card Footer */}
-                    <div className="h-[68px] bg-[#0A0A0C]/50 backdrop-blur-md px-6 flex items-center justify-between border-t border-white/5 z-10">
-                      <div className="flex items-center gap-3">
-                        {renderAvatar(supporter, "w-8 h-8", 14)}
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white truncate max-w-[120px]">
-                            {supporter.anonymous ? (
-                              "Anonymous"
-                            ) : supporter.name && supporter.name.startsWith("@") ? (
-                              <a 
-                                href={`https://twitter.com/${supporter.name.slice(1)}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="hover:text-violet-400 transition-colors underline decoration-dotted decoration-violet-500/50"
-                              >
-                                {supporter.name}
-                              </a>
-                            ) : (
-                              supporter.name || "Generous Supporter"
-                            )}
-                          </span>
-                          <span className="text-[10px] text-white/40 font-medium">
-                            {getRelativeDate(supporter.created_at)}
-                          </span>
+                      {/* Card Footer */}
+                      <div className={`h-[60px] px-5 flex items-center justify-between border-t border-white/[0.03] z-10 ${theme.footer}`}>
+                        <div className="flex items-center gap-2.5">
+                          {renderAvatar(supporter, "w-7 h-7 border border-white/10", 12)}
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-white truncate max-w-[110px]">
+                              {supporter.anonymous ? (
+                                "Anonymous"
+                              ) : supporter.name && supporter.name.startsWith("@") ? (
+                                <a 
+                                  href={`https://twitter.com/${supporter.name.slice(1)}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="hover:text-violet-400 transition-colors underline decoration-dotted decoration-violet-500/30"
+                                >
+                                  {supporter.name}
+                                </a>
+                              ) : (
+                                supporter.name || "Generous Supporter"
+                              )}
+                            </span>
+                            <span className="text-[9px] text-white/30 font-medium">
+                              {getRelativeDate(supporter.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${theme.badge}`}>
+                          ₹{supporter.amount}
                         </div>
                       </div>
-                      <div className="text-xs font-black text-violet-400 bg-violet-400/10 px-3 py-1.5 rounded-full border border-violet-500/20">
-                        ₹{supporter.amount}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
 
             {/* Load More Trigger (Visual only for 1:1 match) */}
             {supporters.length >= 30 && (
               <div className="mt-12 flex justify-center">
-                <button className="px-6 py-3 rounded-full bg-[#111113] border border-white/5 text-sm font-bold text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+                <button className="px-6 py-3 rounded-full bg-[#111113] border border-white/5 text-sm font-bold text-zinc-400 hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
                   Load more messages <ArrowRight size={14} />
                 </button>
               </div>
