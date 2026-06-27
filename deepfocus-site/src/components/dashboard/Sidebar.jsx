@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight, Sparkles, HeartHandshake } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, BrainCircuit, MessageSquare, LineChart, Library, Settings, LogOut, Target, ChevronLeft, ChevronRight, Sparkles, HeartHandshake, Coffee } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
@@ -90,6 +90,43 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Buy me a Coffee Sidebar Card */}
+      {isOpen ? (
+        <div className="mx-3 my-2 p-3.5 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center border border-amber-400/25">
+              <Coffee size={14} className="text-amber-400" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-white uppercase tracking-wider">Support DeepFocus</span>
+              <span className="text-[9px] text-zinc-500 font-semibold leading-none">Keep development ad-free</span>
+            </div>
+          </div>
+          <NavLink
+            to="/support"
+            className="w-full py-2 bg-amber-400 hover:bg-amber-350 text-black text-center font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            Buy me a coffee
+          </NavLink>
+        </div>
+      ) : (
+        <div className="flex justify-center py-2">
+          <NavLink
+            to="/support"
+            className={({ isActive }) =>
+              `w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                  : 'text-amber-400 bg-amber-400/5 hover:bg-amber-400/10 border border-amber-400/10 hover:border-amber-400/20 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+              }`
+            }
+            title="Buy me a Coffee"
+          >
+            <Coffee size={18} />
+          </NavLink>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-4 border-t border-white/5 space-y-1">

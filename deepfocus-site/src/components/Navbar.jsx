@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import DeepFocusLogo from "./DeepFocusLogo";
 import { cn } from "../lib/utils";
-import { Coffee } from "lucide-react";
 
 const navLinks = [
   { name: "Features", href: "/#features" },
@@ -227,13 +226,6 @@ export default function Navbar() {
 
         {/* Right Section: Auth Actions / Profile Menu */}
         <div className="flex items-center gap-2 relative pr-1.5">
-          <Link
-            to="/support"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 hover:bg-amber-400/20 hover:border-amber-400/40 hover:shadow-[0_0_15px_rgba(245,150,11,0.15)] transition-all uppercase cursor-pointer"
-          >
-            <Coffee size={12} className="shrink-0" />
-            <span className="hidden sm:inline">Buy Coffee</span>
-          </Link>
           {session ? (
             <div className="relative flex items-center">
               {/* Click out overlay */}
