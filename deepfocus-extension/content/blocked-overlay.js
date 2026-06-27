@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const logoEl = document.getElementById('df-logo');
+  if (logoEl && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+    logoEl.src = chrome.runtime.getURL('assets/deepfocus-logo.png');
+  }
+
   const btnBack = document.getElementById('btn-back');
   if (btnBack) {
     btnBack.addEventListener('click', () => {

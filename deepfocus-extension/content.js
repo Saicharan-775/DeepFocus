@@ -924,7 +924,10 @@ function injectWidget(initialCollapsed = null, initialPos = null) {
     <!-- Expanded View -->
     <div class="df-expanded-view">
       <div class="df-widget-header">
-        <div class="df-widget-title">DeepFocus <span class="df-icon-bolt">${lightningIcon}</span></div>
+        <div class="df-widget-title" style="display:flex;align-items:center;gap:6px;">
+          <img src="${chrome.runtime.getURL('assets/deepfocus-logo.png')}" alt="DeepFocus" style="width:16px;height:16px;object-fit:contain;border-radius:3px;" />
+          DeepFocus
+        </div>
         <div class="df-header-right">
           <button class="df-toggle-btn" id="df-btn-collapse" title="Collapse">${minusIcon}</button>
           <div class="df-status-dot"></div>
@@ -971,7 +974,9 @@ function injectWidget(initialCollapsed = null, initialPos = null) {
     
     <!-- Collapsed View (Timer Only) -->
     <div class="df-collapsed-view">
-      <div class="df-icon-bg-small">${clockIcon}</div>
+      <div class="df-icon-bg-small" style="padding:0;display:flex;align-items:center;justify-content:center;background:none;border:none;">
+        <img src="${chrome.runtime.getURL('assets/deepfocus-logo.png')}" alt="DeepFocus" style="width:18px;height:18px;object-fit:contain;border-radius:4px;" />
+      </div>
       <div class="df-timer-value" id="df-small-time-display">00:00</div>
       <button class="df-toggle-btn" id="df-btn-expand" title="Expand">${plusIcon}</button>
     </div>
@@ -1076,11 +1081,8 @@ function promptAISummaryAfterStop(snapshot) {
   overlay.innerHTML = `
       <div class="df-modal-content df-ai-modal-content">
         <div class="df-modal-header">
-          <div class="df-ai-icon-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5 14.25 9 20 11.25 14.25 13.5 12 19 9.75 13.5 4 11.25 9.75 9 12 3.5Z"></path>
-              <path d="M18.5 4.75 19.25 6.5 21 7.25 19.25 8 18.5 9.75 17.75 8 16 7.25 17.75 6.5 18.5 4.75Z"></path>
-            </svg>
+          <div class="df-ai-icon-wrap" style="background:none;padding:0;border:none;display:flex;align-items:center;justify-content:center;box-shadow:none;">
+            <img src="${chrome.runtime.getURL('assets/deepfocus-logo.png')}" alt="DeepFocus Logo" style="width:28px;height:28px;object-fit:contain;border-radius:6px;" />
           </div>
           <div>
             <div class="df-ai-kicker">AI Explanation</div>

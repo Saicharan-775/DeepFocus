@@ -44,6 +44,7 @@
         "content/blocked-overlay.js",
         "utils/pageInterceptor.js",
         "assets/icons/*",
+        "assets/deepfocus-logo.png",
         "sounds/success.mp3",
         "sounds/fail.mp3"
       ],
