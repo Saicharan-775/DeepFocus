@@ -1,6 +1,8 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+// Razorpay import removed – handled in serverless functions
+// Crypto import removed – handled in serverless functions
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -12,7 +14,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            const isCoreReact = id.match(/[\\/]node_modules[\\/](react|react-dom|react-router-dom|scheduler)[\\/]/);
+            const isCoreReact = id.match(/[\\/node_modules\\/](react|react-dom|react-router-dom|scheduler)[\\/]/);
             if (isCoreReact) {
               return 'vendor-react';
             }
@@ -36,9 +38,10 @@ export default defineConfig({
             }
             return 'vendor';
           }
-        }
-      }
+        },
+      },
     },
-    chunkSizeWarningLimit: 600
-  }
-})
+    chunkSizeWarningLimit: 600,
+  },
+// Razorpay API handled by Vercel serverless functions – middleware removed
+});

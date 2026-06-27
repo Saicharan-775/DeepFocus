@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import Razorpay from "razorpay";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log("Incoming request: create-order");
+
   // 1. Enforce POST method
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
@@ -14,8 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 2. Server-side Input Validation
     const donationAmount = Number(amount); // Amount in INR
-    if (isNaN(donationAmount) || donationAmount < 1) {
-      return res.status(400).json({ error: "Invalid donation amount. Minimum amount is ₹1 (100 paise)." });
+    if (isNaN(donationAmount) || donationAmount < 10 || donationAmount > 100000) {
+      return res.status(400).json({ error: "Invalid donation amount. Amount must be between ₹10 and ₹100,000." });
     }
 
     const sanitizedMessage = typeof message === "string" ? message.trim().slice(0, 200) : null;
@@ -39,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!keyId || !keySecret) {
       console.error("[Create Order Error] Razorpay credentials (ID/Secret) are missing on server.");
-      return res.status(401).json({ error: "Server configuration error: Razorpay keys missing." });
+      return res.status(501).json({ error: "Server configuration error: Razorpay keys missing." });
     }
 
     const razorpay = new Razorpay({
@@ -58,6 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         message: sanitizedMessage || "",
       },
     });
+
+    console.log("Order created:", order.id);
 
     // 5. If Supabase is configured, log pending order
     if (supabaseUrl && supabaseServiceKey) {

@@ -129,16 +129,38 @@ export default function Support() {
     });
   };
 
-  // Helper to load Razorpay library
+  // Helper to load Razorpay library securely and prevent duplicate script tags
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
         resolve(true);
         return;
       }
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        if (existingScript.dataset.loaded === "true") {
+          resolve(true);
+          return;
+        }
+        const oldOnload = existingScript.onload;
+        existingScript.onload = (e) => {
+          if (typeof oldOnload === "function") oldOnload(e);
+          resolve(true);
+        };
+        const oldOnerror = existingScript.onerror;
+        existingScript.onerror = (e) => {
+          if (typeof oldOnerror === "function") oldOnerror(e);
+          resolve(false);
+        };
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
+      script.onload = () => {
+        script.dataset.loaded = "true";
+        resolve(true);
+      };
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
@@ -180,18 +202,32 @@ export default function Support() {
     }
 
     try {
-      // 1. Create order on serverless API
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: activeAmount,
-          name: name || null,
-          email: email || null,
-          message: message || null,
-          anonymous,
-        }),
-      });
+      // 1. Create order on serverless API with a 15-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      let res;
+      try {
+        res = await fetch("/api/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            amount: activeAmount,
+            name: name || null,
+            email: email || null,
+            message: message || null,
+            anonymous,
+          }),
+        });
+      } catch (fetchErr) {
+        if (fetchErr.name === "AbortError") {
+          throw new Error("Order creation timed out. Please check your network connection and try again.");
+        }
+        throw new Error("Unable to connect to the payment server. Please try again later.");
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!res.ok) {
         let errorMsg = "Failed to initialize checkout.";
@@ -221,17 +257,33 @@ export default function Support() {
         },
         handler: async function (response) {
           setLoading(true);
+          setStatusMessage(null);
+          
+          const verifyController = new AbortController();
+          const verifyTimeoutId = setTimeout(() => verifyController.abort(), 15000);
+
           try {
-            // 3. Verify signature on serverless API
-            const verifyRes = await fetch("/api/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
+            // 3. Verify signature on serverless API with a 15-second timeout
+            let verifyRes;
+            try {
+              verifyRes = await fetch("/api/verify-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                signal: verifyController.signal,
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+            } catch (fetchErr) {
+              if (fetchErr.name === "AbortError") {
+                throw new Error("Verification timed out. Do not pay again. Check your email or profile for confirmation.");
+              }
+              throw new Error("Network error during payment verification. Please contact support if your account was debited.");
+            } finally {
+              clearTimeout(verifyTimeoutId);
+            }
 
             if (!verifyRes.ok) {
               let errorMsg = "Signature verification failed.";
@@ -241,8 +293,6 @@ export default function Support() {
               } catch (_) {}
               throw new Error(errorMsg);
             }
-
-            const verifyData = await verifyRes.json();
 
             setStatusMessage({
               type: "success",
