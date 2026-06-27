@@ -64,22 +64,22 @@ const AI_PROVIDERS = [
 ];
 
 const CURATED_AVATARS = [
-  { id: "lorelei-1", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Aria&backgroundType=gradientLinear&backgroundColor=c0aede,d1d4f9" },
-  { id: "lorelei-2", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
-  { id: "lorelei-3", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Maya&backgroundType=gradientLinear&backgroundColor=ffdfdf,f0d5da" },
-  { id: "lorelei-4", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Christian&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
-  { id: "notion-1", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Oliver&backgroundType=gradientLinear&backgroundColor=b6e3f4,d1d4f9" },
-  { id: "notion-2", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Sophia&backgroundType=gradientLinear&backgroundColor=ffd8be,fecdd3" },
-  { id: "notion-3", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundType=gradientLinear&backgroundColor=d2f4ea,bbf7d0" },
-  { id: "notion-4", url: "https://api.dicebear.com/7.x/notionists/svg?seed=Bella&backgroundType=gradientLinear&backgroundColor=ffdfdf,c0aede" },
-  { id: "persona-1", url: "https://api.dicebear.com/7.x/personas/svg?seed=Jack&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
-  { id: "persona-2", url: "https://api.dicebear.com/7.x/personas/svg?seed=Lily&backgroundType=gradientLinear&backgroundColor=c0aede,d1d4f9" },
-  { id: "persona-3", url: "https://api.dicebear.com/7.x/personas/svg?seed=Mason&backgroundType=gradientLinear&backgroundColor=ffdfdf,f0d5da" },
-  { id: "persona-4", url: "https://api.dicebear.com/7.x/personas/svg?seed=Emma&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
-  { id: "shape-1", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Focus&backgroundType=gradientLinear&backgroundColor=c084fc,818cf8" },
-  { id: "shape-2", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Deep&backgroundType=gradientLinear&backgroundColor=ec4899,8b5cf6" },
-  { id: "shape-3", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Core&backgroundType=gradientLinear&backgroundColor=b6e3f4,c0aede" },
-  { id: "shape-4", url: "https://api.dicebear.com/7.x/shapes/svg?seed=Mind&backgroundType=gradientLinear&backgroundColor=d2f4ea,bbf7d0" },
+  { id: "avataaars-1", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&backgroundColor=c0aede,d1d4f9" },
+  { id: "avataaars-2", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&backgroundColor=b6e3f4,c0aede" },
+  { id: "avataaars-3", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe&backgroundColor=ffdfdf,f0d5da" },
+  { id: "avataaars-4", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=c084fc,818cf8" },
+  { id: "adventurer-1", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Aria&backgroundColor=b6e3f4,d1d4f9" },
+  { id: "adventurer-2", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Maya&backgroundColor=ffd8be,fecdd3" },
+  { id: "adventurer-3", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jude&backgroundColor=d2f4ea,bbf7d0" },
+  { id: "adventurer-4", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Gavin&backgroundColor=ffdfdf,c0aede" },
+  { id: "fun-emoji-1", url: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Focus&backgroundColor=b6e3f4,c0aede" },
+  { id: "fun-emoji-2", url: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Deep&backgroundColor=c0aede,d1d4f9" },
+  { id: "fun-emoji-3", url: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Mind&backgroundColor=ffdfdf,f0d5da" },
+  { id: "fun-emoji-4", url: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Limit&backgroundColor=c084fc,818cf8" },
+  { id: "bottts-1", url: "https://api.dicebear.com/7.x/bottts/svg?seed=Tech&backgroundColor=c084fc,818cf8" },
+  { id: "bottts-2", url: "https://api.dicebear.com/7.x/bottts/svg?seed=Buster&backgroundColor=ec4899,8b5cf6" },
+  { id: "bottts-3", url: "https://api.dicebear.com/7.x/bottts/svg?seed=Spark&backgroundColor=b6e3f4,c0aede" },
+  { id: "bottts-4", url: "https://api.dicebear.com/7.x/bottts/svg?seed=Cy&backgroundColor=d2f4ea,bbf7d0" },
 ];
 
 function getInitialAiProvider() {
@@ -138,7 +138,7 @@ export default function Settings() {
   const [fullName, setFullName] = useState("");
 
   // Custom Avatar Builder States
-  const [customStyle, setCustomStyle] = useState("lorelei");
+  const [customStyle, setCustomStyle] = useState("avataaars");
   const [customSeed, setCustomSeed] = useState("Focus");
   const [customBgType, setCustomBgType] = useState("gradientLinear");
   const [customBgColor, setCustomBgColor] = useState("c0aede,d1d4f9");
@@ -1153,14 +1153,14 @@ export default function Settings() {
                             <div>
                               <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Style</label>
                               <div className="flex flex-wrap gap-2">
-                                {[
-                                  { id: "lorelei", label: "Lorelei" },
-                                  { id: "notionists", label: "Notionist" },
-                                  { id: "personas", label: "Persona" },
-                                  { id: "adventurer", label: "Adventurer" },
-                                  { id: "bottts-neutral", label: "Robot" },
-                                  { id: "shapes", label: "Geometric" },
-                                ].map((style) => (
+                                  {[
+                                    { id: "avataaars", label: "Vector Face" },
+                                    { id: "adventurer", label: "Adventurer RPG" },
+                                    { id: "fun-emoji", label: "Vibrant Emoji" },
+                                    { id: "bottts", label: "Detailed Robot" },
+                                    { id: "notionists", label: "Notionist" },
+                                    { id: "lorelei", label: "Line Sketch" },
+                                  ].map((style) => (
                                   <button
                                     key={style.id}
                                     type="button"
