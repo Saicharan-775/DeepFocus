@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import DeepFocusLogo from "./DeepFocusLogo";
 import { cn } from "../lib/utils";
+import { Coffee } from "lucide-react";
 
 const navLinks = [
   { name: "Features", href: "/#features" },
