@@ -6,7 +6,7 @@ import MainLayout from "./layouts/MainLayout";
 import LandingPage from "./pages/LandingPage";
 import DeepFocusLoader from "./components/DeepFocusLoader";
 
-const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
+import DashboardLayout from "./layouts/DashboardLayout";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AiPlanner = lazy(() => import("./pages/AiPlanner"));
 const Revision = lazy(() => import("./pages/Revision.jsx"));
