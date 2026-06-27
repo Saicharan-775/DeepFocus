@@ -2,17 +2,29 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, ArrowRight, User, Mail, MessageSquare, ShieldCheck, AlertCircle,
-  Users, Coins, Flame, Heart, Trophy, Globe, BookOpen
+  Users, Flame, Heart, Share2, Coffee, Zap, Edit3, Code2, Check, Lock, Trophy
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
-// ─── LOCAL PRESETS ───
+// ─── LOCAL PRESETS (Aligned to Visual Design) ───
 const PRESETS = [
-  { id: "coffee", label: "☕ Buy a Coffee", amount: 99 },
-  { id: "development", label: "🚀 Support Development", amount: 299 },
-  { id: "growing", label: "💙 Keep Growing", amount: 499 },
-  { id: "sponsor", label: "🔥 Sponsor DeepFocus", amount: 999 },
+  { id: "coffee", icon: "☕", amount: 99, label: "Coffee" },
+  { id: "pizza", icon: "🍕", amount: 299, label: "Pizza" },
+  { id: "lightning", icon: "⚡", amount: 499, label: "Power" },
+  { id: "custom", icon: "🛠️", amount: 0, label: "Custom" },
 ];
+
+// ─── WALL OF FAME CARD STYLES ───
+const CARD_THEMES = [
+  "bg-gradient-to-br from-[#1b0b2e] to-[#0a0412] text-[#e8d5ff]", // Deep Purple
+  "bg-gradient-to-br from-[#0a2416] to-[#030d08] text-[#d1f4e0]", // Forest Green
+  "bg-gradient-to-br from-[#0c1a36] to-[#040914] text-[#d6e4ff]", // Navy Blue
+  "bg-gradient-to-br from-[#330d12] to-[#140507] text-[#ffdce0]", // Wine Red
+  "bg-gradient-to-br from-[#291700] to-[#120a00] text-[#ffe8cc]", // Amber
+  "bg-gradient-to-br from-[#082226] to-[#030d0e] text-[#ccf2f5]", // Dark Teal
+];
+
+const DECORATIONS = ['⚡', '✨', '⭐', '💜', '❤️', '😊', '☕️', '💻', '🚀', '🎯', '🌙', '🔥', '🎉'];
 
 export default function Support() {
   // Page load & Data states
@@ -21,9 +33,11 @@ export default function Support() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [latestDonation, setLatestDonation] = useState(null);
   const [supporters, setSupporters] = useState([]);
+  const [top3, setTop3] = useState([]);
+  const [filterTab, setFilterTab] = useState("recent");
 
   // Form states
-  const [selectedPreset, setSelectedPreset] = useState("coffee");
+  const [selectedPreset, setSelectedPreset] = useState("pizza");
   const [customAmount, setCustomAmount] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,14 +49,11 @@ export default function Support() {
   const [statusMessage, setStatusMessage] = useState(null);
 
   const activeAmount = selectedPreset === "custom" ? Number(customAmount) : (PRESETS.find(p => p.id === selectedPreset)?.amount || 0);
-  const goalAmount = 50000;
-  const progressPercent = Math.min(Math.round((totalAmount / goalAmount) * 100), 100);
 
   // ─── INITIAL DATA FETCH ───
   useEffect(() => {
     async function loadInitialData() {
       try {
-        // Fetch all success donations for aggregates
         const { data: donationsData, error: dbError } = await supabase
           .from("donations")
           .select("amount")
@@ -55,7 +66,6 @@ export default function Support() {
           setTotalAmount(donationsData.reduce((sum, d) => sum + Number(d.amount), 0));
         }
 
-        // Fetch latest single donation
         const { data: latestData } = await supabase
           .from("donations")
           .select("*")
@@ -67,16 +77,15 @@ export default function Support() {
           setLatestDonation(latestData[0]);
         }
 
-        // Fetch latest 30 supporters for the wall
-        const { data: supportersData } = await supabase
+        const { data: top3Data } = await supabase
           .from("donations")
           .select("*")
           .eq("status", "success")
-          .order("created_at", { ascending: false })
-          .limit(30);
+          .order("amount", { ascending: false })
+          .limit(3);
 
-        if (supportersData) {
-          setSupporters(supportersData);
+        if (top3Data) {
+          setTop3(top3Data);
         }
       } catch (err) {
         console.error("Error fetching donation aggregates:", err);
@@ -97,12 +106,10 @@ export default function Support() {
           const oldRecord = payload.old;
           const newRecord = payload.new;
 
-          // Case 1: New successful donation inserted directly
           if (payload.eventType === "INSERT" && newRecord.status === "success") {
             handleLiveUpdate(newRecord);
           }
 
-          // Case 2: Existing donation updated to success
           if (
             payload.eventType === "UPDATE" &&
             oldRecord.status !== "success" &&
@@ -119,17 +126,56 @@ export default function Support() {
     };
   }, []);
 
+  // ─── SUPPORTERS LIST EFFECT ───
+  useEffect(() => {
+    async function loadSupportersList() {
+      try {
+        let query = supabase
+          .from("donations")
+          .select("*")
+          .eq("status", "success");
+
+        if (filterTab === "top") {
+          query = query.order("amount", { ascending: false }).order("created_at", { ascending: false });
+        } else {
+          query = query.order("created_at", { ascending: false });
+        }
+
+        const { data: supportersData } = await query.limit(30);
+        if (supportersData) {
+          setSupporters(supportersData);
+        }
+      } catch (err) {
+        console.error("Error fetching supporters list:", err);
+      }
+    }
+
+    loadSupportersList();
+  }, [filterTab]);
+
   const handleLiveUpdate = (newRecord) => {
     setTotalSupporters((prev) => prev + 1);
     setTotalAmount((prev) => prev + Number(newRecord.amount));
     setLatestDonation(newRecord);
+    
+    setTop3((prev) => {
+      const merged = [newRecord, ...prev.filter(d => d.id !== newRecord.id)];
+      merged.sort((a, b) => b.amount - a.amount);
+      return merged.slice(0, 3);
+    });
+
     setSupporters((prev) => {
       if (prev.some((d) => d.id === newRecord.id)) return prev;
-      return [newRecord, ...prev.slice(0, 29)];
+      const updated = [newRecord, ...prev];
+      if (filterTab === "top") {
+        updated.sort((a, b) => b.amount - a.amount);
+      } else {
+        updated.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      }
+      return updated.slice(0, 30);
     });
   };
 
-  // Helper to load Razorpay library securely and prevent duplicate script tags
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
@@ -171,38 +217,26 @@ export default function Support() {
     setLoading(true);
     setStatusMessage(null);
 
-    // Form validation
     if (activeAmount < 10 || activeAmount > 100000) {
-      setStatusMessage({
-        type: "error",
-        text: "Donation amount must be between ₹10 and ₹100,000.",
-      });
+      setStatusMessage({ type: "error", text: "Donation amount must be between ₹10 and ₹100,000." });
       setLoading(false);
       return;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setStatusMessage({
-        type: "error",
-        text: "Please enter a valid email address.",
-      });
+      setStatusMessage({ type: "error", text: "Please enter a valid email address." });
       setLoading(false);
       return;
     }
 
-    // Load Razorpay
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) {
-      setStatusMessage({
-        type: "error",
-        text: "Failed to load Razorpay. Please check your internet connection.",
-      });
+      setStatusMessage({ type: "error", text: "Failed to load Razorpay. Please check your internet connection." });
       setLoading(false);
       return;
     }
 
     try {
-      // 1. Create order on serverless API with a 15-second timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -221,9 +255,7 @@ export default function Support() {
           }),
         });
       } catch (fetchErr) {
-        if (fetchErr.name === "AbortError") {
-          throw new Error("Order creation timed out. Please check your network connection and try again.");
-        }
+        if (fetchErr.name === "AbortError") throw new Error("Order creation timed out. Please check your network connection and try again.");
         throw new Error("Unable to connect to the payment server. Please try again later.");
       } finally {
         clearTimeout(timeoutId);
@@ -240,7 +272,6 @@ export default function Support() {
 
       const orderData = await res.json();
 
-      // 2. Configure checkout options
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_dummy",
         amount: orderData.amount,
@@ -252,9 +283,7 @@ export default function Support() {
           name: name || "",
           email: email || "",
         },
-        theme: {
-          color: "#7c3aed", // violet 600
-        },
+        theme: { color: "#7c3aed" },
         handler: async function (response) {
           setLoading(true);
           setStatusMessage(null);
@@ -263,7 +292,6 @@ export default function Support() {
           const verifyTimeoutId = setTimeout(() => verifyController.abort(), 15000);
 
           try {
-            // 3. Verify signature on serverless API with a 15-second timeout
             let verifyRes;
             try {
               verifyRes = await fetch("/api/verify-payment", {
@@ -277,9 +305,7 @@ export default function Support() {
                 }),
               });
             } catch (fetchErr) {
-              if (fetchErr.name === "AbortError") {
-                throw new Error("Verification timed out. Do not pay again. Check your email or profile for confirmation.");
-              }
+              if (fetchErr.name === "AbortError") throw new Error("Verification timed out. Do not pay again. Check your email or profile for confirmation.");
               throw new Error("Network error during payment verification. Please contact support if your account was debited.");
             } finally {
               clearTimeout(verifyTimeoutId);
@@ -294,19 +320,13 @@ export default function Support() {
               throw new Error(errorMsg);
             }
 
-            setStatusMessage({
-              type: "success",
-              text: "Payment verified successfully! Thank you for backing DeepFocus. ❤️",
-            });
+            setStatusMessage({ type: "success", text: "Payment verified successfully! Thank you for backing DeepFocus. ❤️" });
             setCustomAmount("");
             setName("");
             setEmail("");
             setMessage("");
           } catch (verifyErr) {
-            setStatusMessage({
-              type: "error",
-              text: verifyErr.message || "Verification failed. Contact support if debited.",
-            });
+            setStatusMessage({ type: "error", text: verifyErr.message || "Verification failed. Contact support if debited." });
           } finally {
             setLoading(false);
           }
@@ -314,10 +334,7 @@ export default function Support() {
         modal: {
           ondismiss: function () {
             setLoading(false);
-            setStatusMessage({
-              type: "info",
-              text: "Payment cancelled.",
-            });
+            setStatusMessage({ type: "info", text: "Payment cancelled." });
           },
         },
       };
@@ -325,322 +342,400 @@ export default function Support() {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (resp) {
         setLoading(false);
-        setStatusMessage({
-          type: "error",
-          text: resp.error.description || "Payment failed.",
-        });
+        setStatusMessage({ type: "error", text: resp.error.description || "Payment failed." });
       });
       rzp.open();
     } catch (err) {
-      setStatusMessage({
-        type: "error",
-        text: err.message || "Payment pipeline error.",
-      });
+      setStatusMessage({ type: "error", text: err.message || "Payment pipeline error." });
       setLoading(false);
     }
   };
 
-  const getRelativeTime = (utcString) => {
-    const now = new Date();
-    const created = new Date(utcString);
-    const diffMs = now.getTime() - created.getTime();
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHr = Math.floor(diffMin / 60);
-    const diffDays = Math.floor(diffHr / 24);
+  const getRelativeDate = (utcString) => {
+    const d = new Date(utcString);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
 
-    if (diffSec < 60) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    return `${diffDays}d ago`;
+  const getInitials = (name) => {
+    if (!name) return "A";
+    return name.charAt(0).toUpperCase();
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-zinc-100 relative pb-16">
-      {/* Grid Pattern and Ambient lighting */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0c0c0e_1px,transparent_1px),linear-gradient(to_bottom,#0c0c0e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 relative font-sans selection:bg-violet-500/30">
+      
+      {/* ─── PREMIUM SAAS BACKGROUND FX ─── */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgMGg0MHYxSDB6IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDExKSIvPgo8L3N2Zz4=')] opacity-50 mix-blend-overlay" />
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-900/10 rounded-full blur-[140px] mix-blend-screen" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[800px] h-[800px] bg-indigo-900/5 rounded-full blur-[160px] mix-blend-screen" />
+      </div>
 
-      <div className="max-w-4xl mx-auto px-6 pt-24 relative z-10">
-        {/* HERO */}
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400 mb-6 backdrop-blur-md">
-            <span>❤️</span> Indiedev Initiative
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-6">
-            Support{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-300 to-cyan-400">
-              DeepFocus
-            </span>
-          </h1>
-          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed max-w-2xl mx-auto">
-            DeepFocus is built independently to help developers stay focused, master DSA, and prepare for interviews.
-            Your support helps keep development, AI features, and servers running.
-          </p>
-        </div>
-
-        {/* STATISTICS SECTION */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-          <div className="border border-white/[0.06] bg-[#0c0c0e]/60 backdrop-blur-md rounded-2xl p-5">
-            <div className="flex items-center gap-3 text-zinc-500 mb-3">
-              <Users size={16} className="text-violet-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Supporters</span>
-            </div>
-            <div className="text-3xl font-black text-white">{totalSupporters}</div>
-            <div className="text-xs text-zinc-500 mt-1">Developers backed DeepFocus</div>
-          </div>
-
-          <div className="border border-white/[0.06] bg-[#0c0c0e]/60 backdrop-blur-md rounded-2xl p-5">
-            <div className="flex items-center gap-3 text-zinc-500 mb-3">
-              <Coins size={16} className="text-emerald-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Amount Raised</span>
-            </div>
-            <div className="text-3xl font-black text-white">₹{totalAmount.toLocaleString("en-IN")}</div>
-            <div className="text-xs text-zinc-500 mt-1">Of ₹{goalAmount.toLocaleString("en-IN")} server goal</div>
-          </div>
-
-          <div className="border border-white/[0.06] bg-[#0c0c0e]/60 backdrop-blur-md rounded-2xl p-5">
-            <div className="flex items-center gap-3 text-zinc-500 mb-3">
-              <Flame size={16} className="text-rose-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Latest Support</span>
-            </div>
-            <div className="text-lg font-bold text-white truncate">
-              {latestDonation ? (
-                latestDonation.anonymous ? "Anonymous ❤️" : latestDonation.name || "Friend"
-              ) : (
-                "Be the first! ❤️"
-              )}
-            </div>
-            <div className="text-xs text-zinc-500 mt-1">
-              {latestDonation ? `Contributed ₹${latestDonation.amount}` : "Awaiting developer support"}
-            </div>
-          </div>
-        </div>
-
-        {/* GOAL PROGRESS */}
-        <div className="border border-white/[0.06] bg-[#0c0c0e]/40 backdrop-blur-md rounded-2xl p-6 mb-12">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-3">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <Heart size={12} className="text-red-400 fill-red-400/20" /> Server Goal Progress
-            </span>
-            <span className="text-white">{progressPercent}%</span>
-          </div>
-          <div className="w-full h-2 rounded-full bg-white/[0.04] overflow-hidden border border-white/[0.02]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-cyan-400 transition-all duration-1000"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-zinc-500 font-bold mt-2">
-            <span>₹0</span>
-            <span>Goal: ₹{goalAmount.toLocaleString("en-IN")}</span>
-          </div>
-        </div>
-
-        {/* DONATION CARD FORM */}
-        <div className="max-w-2xl mx-auto mb-16">
-          <div className="border border-white/[0.06] bg-[#0c0c0e]/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              {PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => { setSelectedPreset(preset.id); setStatusMessage(null); }}
-                  className={`p-4 rounded-xl border text-left transition-all flex justify-between items-center cursor-pointer ${
-                    selectedPreset === preset.id
-                      ? "border-violet-500 bg-violet-500/5 text-white"
-                      : "border-white/[0.04] bg-white/[0.01] text-zinc-400 hover:border-white/10 hover:text-zinc-200"
-                  }`}
-                >
-                  <span className="text-xs font-semibold">{preset.label}</span>
-                  <span className="text-sm font-black text-white">₹{preset.amount}</span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => { setSelectedPreset("custom"); setStatusMessage(null); }}
-              className={`w-full p-4 rounded-xl border text-center transition-all mb-6 cursor-pointer ${
-                selectedPreset === "custom"
-                  ? "border-violet-500 bg-violet-500/5 text-white"
-                  : "border-white/[0.04] bg-white/[0.01] text-zinc-400 hover:border-white/10 hover:text-zinc-200"
-              }`}
-            >
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">Custom Amount</span>
-            </button>
-
-            <form onSubmit={handleDonate} className="space-y-5">
-              {selectedPreset === "custom" && (
-                <div className="space-y-1.5 animate-fadeIn">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Amount (INR)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-500">₹</span>
-                    <input
-                      type="number"
-                      required
-                      min={10}
-                      max={100000}
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      placeholder="Enter amount between 10 and 100,000"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-white/[0.06] bg-black/40 text-white text-sm font-semibold focus:outline-none focus:border-violet-500 transition-colors"
-                    />
-                  </div>
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 lg:py-20 relative z-10">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-12 lg:gap-20 items-start">
+          
+          {/* ─── LEFT COLUMN: SUPPORT PANEL ─── */}
+          <div className="lg:sticky lg:top-12 flex flex-col gap-6">
+            
+            {/* Header / Logo */}
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[12px] bg-violet-600 flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.3)]">
+                  <Coffee size={20} className="text-white" />
                 </div>
-              )}
+                <h1 className="text-2xl font-bold tracking-tight text-white">DeepFocus</h1>
+              </div>
+              <p className="text-sm text-zinc-400 font-medium">Building tools to help developers master their craft.</p>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Your Name (Optional)</label>
-                  <div className="relative">
-                    <User size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={anonymous}
-                      placeholder={anonymous ? "Anonymous" : "e.g. Alex Rivera"}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.06] bg-black/40 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-40"
-                    />
-                  </div>
-                </div>
+            {/* Metrics Pills */}
+            <div className="flex gap-4 mb-2">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111113] border border-white/5 shadow-sm">
+                <Users size={14} className="text-violet-400" />
+                <span className="text-xs font-bold text-zinc-200">{loadingStats ? "..." : totalSupporters} Supporters</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111113] border border-white/5 shadow-sm">
+                <Flame size={14} className="text-purple-400" />
+                <span className="text-xs font-bold text-zinc-200">₹{loadingStats ? "..." : totalAmount.toLocaleString("en-IN")} Raised</span>
+              </div>
+            </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email Address (Optional)</label>
-                  <div className="relative">
-                    <Mail size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. alex@rivera.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.06] bg-black/40 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
-                    />
-                  </div>
-                </div>
+            {/* Main Support Card */}
+            <div className="rounded-[32px] bg-[#0E0E11] border border-white/5 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                Support the project <span className="text-rose-500">❤️</span>
+              </h2>
+
+              {/* Preset Selector */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPreset(preset.id);
+                      setStatusMessage(null);
+                    }}
+                    className={`relative py-4 rounded-[18px] border transition-all flex items-center justify-between px-5 gap-3 group active:scale-[0.98] cursor-pointer ${
+                      selectedPreset === preset.id
+                        ? "border-violet-500/50 bg-violet-600 shadow-[0_0_30px_-5px_rgba(124,58,237,0.4)] z-10 text-white"
+                        : "border-white/5 bg-black/20 hover:border-white/10 hover:bg-black/40 text-zinc-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{preset.icon}</span>
+                      <span className="text-xs font-bold uppercase tracking-wider">{preset.label}</span>
+                    </div>
+                    <span className="text-sm font-black">
+                      {preset.id === "custom" ? "..." : `₹${preset.amount}`}
+                    </span>
+                  </button>
+                ))}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex justify-between">
-                  <span>Message (Optional)</span>
-                  <span className="text-[9px] text-zinc-600">{message.length}/200</span>
-                </label>
+              <form onSubmit={handleDonate} className="space-y-4">
+                
+                <AnimatePresence>
+                  {selectedPreset === "custom" && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0, y: -10 }} 
+                      animate={{ opacity: 1, height: "auto", y: 0 }} 
+                      exit={{ opacity: 0, height: 0, y: -10 }} 
+                      className="overflow-hidden mb-4"
+                    >
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Custom Amount (₹)</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-500">₹</span>
+                        <input
+                          type="number"
+                          required min={10} max={100000}
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          placeholder="Enter amount (10 - 100,000)"
+                          className="w-full pl-8 pr-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all placeholder:text-zinc-600 shadow-inner"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={anonymous}
+                  placeholder="Name or @twitter (optional)"
+                  className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all disabled:opacity-30 placeholder:text-zinc-600 shadow-inner"
+                />
+
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email (optional)"
+                  className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all placeholder:text-zinc-600 shadow-inner"
+                />
+
                 <div className="relative">
-                  <MessageSquare size={13} className="absolute left-4 top-3.5 text-zinc-500" />
                   <textarea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value.slice(0, 200))}
-                    placeholder="Write a message of support..."
+                    onChange={(e) => setMessage(e.target.value.slice(0, 150))}
+                    placeholder="Say something nice... (optional)"
                     rows={3}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/[0.06] bg-black/40 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                    className="w-full px-5 py-4 rounded-[18px] border border-white/5 bg-black/40 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all resize-none placeholder:text-zinc-600 shadow-inner"
                   />
+                  <span className="absolute bottom-4 right-4 text-[10px] font-bold text-zinc-600">{message.length}/150</span>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer group py-2 w-max">
+                  <div className="relative flex items-center justify-center w-4 h-4">
+                    <input
+                      type="checkbox"
+                      checked={anonymous}
+                      onChange={(e) => setAnonymous(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-4 h-4 rounded border border-zinc-700 peer-checked:border-violet-500 peer-checked:bg-violet-500 transition-all flex items-center justify-center">
+                      <Check size={10} strokeWidth={4} className="text-white opacity-0 peer-checked:opacity-100" />
+                    </div>
+                  </div>
+                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                    Make this private
+                  </span>
+                </label>
+
+                <AnimatePresence>
+                  {statusMessage && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`p-4 rounded-[14px] text-sm flex gap-3 ${
+                      statusMessage.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      : statusMessage.type === "error" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                      : "bg-white/5 text-zinc-400 border border-white/10"
+                    }`}>
+                      {statusMessage.type === "error" ? <AlertCircle size={18} className="shrink-0 mt-0.5" /> : <ShieldCheck size={18} className="shrink-0 mt-0.5" />}
+                      <span className="font-medium leading-relaxed">{statusMessage.text}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white rounded-[18px] font-bold text-sm tracking-wide transition-all shadow-[0_0_20px_rgba(124,58,237,0.2)] hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] active:scale-[0.98] flex items-center justify-center"
+                >
+                  {loading ? "Processing..." : `Support ₹${activeAmount || 0}`}
+                </button>
+              </form>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 font-medium">
+              <Lock size={10} />
+              Payments are secure and encrypted. Powered by Razorpay.
+            </div>
+
+            {/* Bottom Promo Box */}
+            <div className="mt-4 rounded-[24px] bg-[#0E0E11] border border-white/5 p-6 flex items-center justify-between shadow-lg">
+              <div className="flex gap-3">
+                 <Heart size={20} className="text-violet-500 fill-violet-500" />
+                 <p className="text-sm font-medium text-zinc-300 leading-snug max-w-[200px]">
+                   Your support helps us build better tools for developers worldwide.
+                 </p>
+              </div>
+              <div className="w-16 h-16 rounded-[16px] bg-gradient-to-br from-violet-900/40 to-fuchsia-900/10 border border-violet-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.3)]">
+                <Code2 size={24} className="text-violet-400" />
+              </div>
+            </div>
+
+          </div>
+
+
+          {/* ─── RIGHT COLUMN: HALL OF FAME (MASONRY) ─── */}
+          <div className="flex flex-col">
+            
+            {/* Top 3 Supporters Podium */}
+            {top3.length > 0 && (
+              <div className="mb-12 border border-white/5 bg-[#0E0E11]/80 backdrop-blur-md rounded-[32px] p-6 relative overflow-hidden">
+                <div className="absolute -right-20 -top-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 text-center mb-8 flex items-center justify-center gap-2">
+                  <Trophy size={14} className="text-amber-400 animate-bounce" /> Hall of Fame Leaderboard
+                </h3>
+                <div className="grid grid-cols-3 gap-3 items-end max-w-md mx-auto h-[160px] pb-2">
+                  {/* 2nd Place */}
+                  {top3[1] && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full border border-zinc-400 bg-zinc-800/80 flex items-center justify-center text-xs font-bold text-zinc-300 shadow-lg relative mb-2 overflow-hidden">
+                        {top3[1].anonymous ? (
+                          <span>🥈</span>
+                        ) : (
+                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[1].name}`} className="w-full h-full rounded-full object-cover" alt="2nd" />
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">{top3[1].anonymous ? "Anonymous" : top3[1].name}</span>
+                      <span className="text-[10px] text-zinc-500 font-black">₹{top3[1].amount}</span>
+                      <div className="w-full bg-zinc-800/40 border border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold">2nd</div>
+                    </div>
+                  )}
+                  
+                  {/* 1st Place */}
+                  {top3[0] && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full border-2 border-amber-400 bg-amber-950/80 flex items-center justify-center text-sm font-bold text-amber-300 shadow-2xl relative mb-2 overflow-hidden">
+                        {top3[0].anonymous ? (
+                          <span>👑</span>
+                        ) : (
+                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[0].name}`} className="w-full h-full rounded-full object-cover" alt="1st" />
+                        )}
+                      </div>
+                      <span className="text-xs font-black text-white truncate max-w-[90px]">{top3[0].anonymous ? "Anonymous" : top3[0].name}</span>
+                      <span className="text-xs font-black text-amber-400">₹{top3[0].amount}</span>
+                      <div className="w-full bg-gradient-to-t from-amber-600/30 to-amber-500/20 border border-amber-500/30 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-300 text-sm font-black shadow-[0_0_20px_rgba(245,158,11,0.2)]">1st</div>
+                    </div>
+                  )}
+
+                  {/* 3rd Place */}
+                  {top3[2] && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full border border-amber-600/50 bg-amber-900/50 flex items-center justify-center text-xs font-bold text-amber-600 shadow-lg relative mb-2 overflow-hidden">
+                        {top3[2].anonymous ? (
+                          <span>🥉</span>
+                        ) : (
+                          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${top3[2].name}`} className="w-full h-full rounded-full object-cover" alt="3rd" />
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">{top3[2].anonymous ? "Anonymous" : top3[2].name}</span>
+                      <span className="text-[10px] text-zinc-500 font-black">₹{top3[2].amount}</span>
+                      <div className="w-full bg-amber-900/10 border border-amber-900/30 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700 text-xs font-bold">3rd</div>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <label className="flex items-center gap-3 cursor-pointer group py-1">
-                <input
-                  type="checkbox"
-                  checked={anonymous}
-                  onChange={(e) => setAnonymous(e.target.checked)}
-                  className="rounded border-white/10 bg-black text-violet-600 focus:ring-violet-500/20"
-                />
-                <span className="text-xs font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors">
-                  Donate anonymously (Hide name on the wall)
-                </span>
-              </label>
-
-              {statusMessage && (
-                <div
-                  className={`p-4 rounded-xl border text-xs flex gap-3 ${
-                    statusMessage.type === "success"
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                      : statusMessage.type === "error"
-                      ? "border-rose-500/20 bg-rose-500/10 text-rose-400"
-                      : "border-white/10 bg-white/5 text-zinc-400"
-                  }`}
-                >
-                  {statusMessage.type === "error" ? (
-                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  ) : (
-                    <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-                  )}
-                  <span className="font-semibold leading-relaxed">{statusMessage.text}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 bg-white text-black hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-650 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-              >
-                {loading ? (
-                  "Processing Secure Order..."
-                ) : (
-                  <>
-                    <Sparkles size={14} />
-                    Support DeepFocus (₹{activeAmount})
-                    <ArrowRight size={14} className="ml-1" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* CONTRIBUTOR WALL */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Trophy size={18} className="text-amber-400" />
-            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-              Supporter Wall of Fame
-            </h3>
-          </div>
-
-          {supporters.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-              <Sparkles className="h-6 w-6 text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-zinc-400">No supporters registered yet</p>
-              <p className="text-xs text-zinc-500 mt-1">Be the first to keep development running!</p>
+            {/* Main Typography Header */}
+            <div className="text-center mb-8 pt-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 mb-6">The Wall Remembers</p>
+              <h2 className="text-5xl md:text-6xl font-black tracking-tight text-white mb-4">
+                Words That Echo <span className="font-serif italic text-pink-500 font-normal">Always</span>
+              </h2>
+              <div className="text-pink-500 font-bold tracking-widest mb-4">{">>>>>>"}</div>
+              <p className="text-sm text-zinc-400 font-medium">
+                A hall of fame for amazing humans who believe in DeepFocus.
+              </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <AnimatePresence mode="popLayout">
-                {supporters.map((s) => (
+
+            {/* Filter Tabs */}
+            <div className="flex items-center justify-center gap-3 mb-12">
+              <button
+                onClick={() => setFilterTab("recent")}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  filterTab === "recent"
+                    ? "bg-zinc-850 text-white border border-white/10 shadow-lg"
+                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                }`}
+              >
+                Recent Backers
+              </button>
+              <button
+                onClick={() => setFilterTab("top")}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  filterTab === "top"
+                    ? "bg-zinc-850 text-white border border-white/10 shadow-lg"
+                    : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                }`}
+              >
+                Top Backers
+              </button>
+            </div>
+
+            {/* Masonry Grid */}
+            <div className="columns-1 md:columns-2 gap-6 space-y-6">
+              
+              {/* "Fuel the Project" CTA Card */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -4, rotate: -1 }}
+                className="break-inside-avoid relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#200b3e] to-[#0e041e] border border-violet-500/20 p-8 shadow-2xl min-h-[220px] flex flex-col items-center justify-center group cursor-pointer"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              >
+                <div className="absolute top-6 right-6 opacity-40">
+                  <Sparkles size={24} className="text-violet-300" />
+                </div>
+                <h3 className="text-xl font-serif italic text-white mb-2">“☕ Fuel the Project...”</h3>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-violet-300 mb-6 text-center max-w-[200px] leading-relaxed">
+                  Every support keeps servers running and code clean.
+                </p>
+                <div className="px-6 py-2 rounded-full border border-violet-400/30 bg-violet-500/10 text-white text-sm font-medium transition-colors group-hover:bg-violet-500/20">
+                  Buy me a coffee
+                </div>
+              </motion.div>
+
+              {/* Supporter Cards */}
+              {supporters.map((supporter, idx) => {
+                const theme = CARD_THEMES[idx % CARD_THEMES.length];
+                const dec1 = DECORATIONS[(idx * 2) % DECORATIONS.length];
+                const dec2 = DECORATIONS[(idx * 2 + 1) % DECORATIONS.length];
+
+                return (
                   <motion.div
-                    key={s.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="flex flex-col justify-between border border-white/[0.06] bg-[#0c0c0e]/40 backdrop-blur-md rounded-xl p-4 hover:border-white/10 transition-colors"
+                    key={supporter.id}
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ type: "spring", stiffness: 100, damping: 20, delay: idx * 0.05 }}
+                    whileHover={{ y: -6, rotate: idx % 2 === 0 ? 1 : -1, filter: "brightness(1.1)" }}
+                    className={`break-inside-avoid relative flex flex-col overflow-hidden rounded-[28px] border border-white/5 shadow-xl min-h-[240px] ${theme}`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-3 mb-2">
-                        <span className="text-sm font-bold text-zinc-200 truncate max-w-[120px]">
-                          {s.anonymous ? "Anonymous ❤️" : s.name || "Friend"}
-                        </span>
-                        <span className="text-xs font-black text-violet-400 shrink-0 bg-violet-400/10 px-2 py-0.5 rounded">
-                          ₹{s.amount}
-                        </span>
-                      </div>
-                      {s.message && (
-                        <p className="text-xs text-zinc-400 leading-relaxed italic border-l-2 border-white/10 pl-2.5 my-3 break-words">
-                          "{s.message}"
-                        </p>
-                      )}
+                    {/* Floating Decorations */}
+                    <div className="absolute top-6 right-6 text-xl opacity-60 pointer-events-none select-none">{dec1}</div>
+                    <div className="absolute bottom-20 left-6 text-2xl opacity-40 pointer-events-none select-none">{dec2}</div>
+                    
+                    {/* Message Area */}
+                    <div className="flex-grow flex items-center justify-center p-8 text-center relative z-10">
+                      <p className="font-semibold text-[15px] sm:text-base leading-relaxed tracking-wide">
+                        {supporter.message || "Supported the mission!"}
+                      </p>
                     </div>
-                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-2 text-right">
-                      {getRelativeTime(s.created_at)}
+
+                    {/* Card Footer */}
+                    <div className="h-[68px] bg-[#0A0A0C]/50 backdrop-blur-md px-6 flex items-center justify-between border-t border-white/5 z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/5 overflow-hidden">
+                          {supporter.anonymous ? (
+                            <User size={14} className="text-white/50" />
+                          ) : (
+                            <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${supporter.name || supporter.id}`} alt="Avatar" className="w-full h-full object-cover opacity-80" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white truncate max-w-[120px]">
+                            {supporter.anonymous ? "Anonymous" : supporter.name || "Generous Supporter"}
+                          </span>
+                          <span className="text-[10px] text-white/40 font-medium">
+                            {getRelativeDate(supporter.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs font-black text-violet-400 bg-violet-400/10 px-3 py-1.5 rounded-full border border-violet-500/20">
+                        ₹{supporter.amount}
+                      </div>
                     </div>
                   </motion.div>
-                ))}
-              </AnimatePresence>
+                );
+              })}
             </div>
-          )}
+
+            {/* Load More Trigger (Visual only for 1:1 match) */}
+            {supporters.length >= 30 && (
+              <div className="mt-12 flex justify-center">
+                <button className="px-6 py-3 rounded-full bg-[#111113] border border-white/5 text-sm font-bold text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+                  Load more messages <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
     </div>
