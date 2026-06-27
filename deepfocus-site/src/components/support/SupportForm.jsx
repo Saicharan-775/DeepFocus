@@ -1,14 +1,12 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Coffee, Zap, Heart, Sliders, Check, AlertCircle, ShieldCheck, Lock
-} from "lucide-react";
+import { Coffee, Zap, Heart, Sliders, Check } from "lucide-react";
 
 export const PRESETS = [
-  { id: "coffee", Icon: Coffee, amount: 99, label: "Coffee" },
-  { id: "pizza", Icon: Zap, amount: 299, label: "Boost" },
-  { id: "lightning", Icon: Heart, amount: 499, label: "Founder" },
-  { id: "custom", Icon: Sliders, amount: 0, label: "Custom" },
+  { id: "coffee", Icon: Coffee, amount: 99, label: "COFFEE" },
+  { id: "boost", Icon: Zap, amount: 299, label: "BOOST" },
+  { id: "founder", Icon: Heart, amount: 499, label: "FOUNDER" },
+  { id: "custom", Icon: Sliders, amount: 0, label: "CUSTOM" },
 ];
 
 export default function SupportForm({
@@ -24,172 +22,133 @@ export default function SupportForm({
   setMessage,
   anonymous,
   setAnonymous,
-  loading,
-  activeAmount,
-  statusMessage,
-  setStatusMessage,
   handleDonate,
+  activeAmount,
 }) {
+  
+  // Handler to enforce the 1 Lakh (100,000) limit
+  const handleCustomAmountChange = (e) => {
+    const val = e.target.value;
+    if (val === '') {
+      setCustomAmount('');
+      return;
+    }
+    
+    const num = parseInt(val, 10);
+    // Cap the amount at 1,00,000
+    if (num > 100000) {
+      setCustomAmount('100000');
+    } else {
+      setCustomAmount(num.toString());
+    }
+  };
+
   return (
-    <div className="w-full max-w-[400px] bg-[#09090b] border border-zinc-800/80 rounded-[24px] p-6 shadow-2xl font-sans">
-      <h2 className="text-[17px] font-semibold text-zinc-100 mb-5 flex items-center gap-2">
+    <div className="w-full max-w-[440px] bg-[#0E0E10] border border-zinc-800 rounded-[24px] p-6 shadow-2xl">
+      {/* Header */}
+      <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
         Support the project <span className="text-rose-500">❤️</span>
       </h2>
 
-      {/* Clean, single-row preset selector */}
-      <div className="flex gap-2 mb-6">
+      {/* Two-Column Grid for Presets */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
         {PRESETS.map((preset) => {
           const isSelected = selectedPreset === preset.id;
           return (
             <button
               key={preset.id}
               type="button"
-              onClick={() => {
-                setSelectedPreset(preset.id);
-                setStatusMessage(null);
-              }}
-              className={`flex-1 flex flex-col items-center justify-center py-3 rounded-[14px] transition-all duration-200 border ${
+              onClick={() => setSelectedPreset(preset.id)}
+              className={`flex items-center justify-between px-4 py-4 rounded-[16px] border transition-all duration-200 ${
                 isSelected
-                  ? "bg-[#7c3aed] border-[#7c3aed] text-white"
-                  : "bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                  ? "bg-transparent border-[#7c3aed] text-white"
+                  : "bg-[#141416] border-zinc-800 text-zinc-400 hover:border-zinc-600"
               }`}
             >
-              <preset.Icon 
-                size={16} 
-                className={`mb-1.5 ${isSelected ? "text-white" : "opacity-80"}`} 
-              />
-              <span className="text-[13px] font-semibold">
-                {preset.id === "custom" ? "Custom" : `₹${preset.amount}`}
-              </span>
+              <div className="flex items-center gap-2">
+                <preset.Icon size={16} className={isSelected ? "text-white" : "text-zinc-500"} />
+                <span className="text-[13px] font-bold tracking-wide">{preset.label}</span>
+              </div>
+              <span className="text-[13px] font-medium">{preset.amount > 0 ? `₹${preset.amount}` : "..."}</span>
             </button>
           );
         })}
       </div>
 
-      <form onSubmit={handleDonate} className="flex flex-col gap-3">
-        
-        {/* Custom Amount Field */}
+      <form onSubmit={handleDonate} className="flex flex-col gap-4">
+        {/* Custom Amount Reveal */}
         <AnimatePresence>
           {selectedPreset === "custom" && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }} 
-              animate={{ opacity: 1, height: "auto" }} 
-              exit={{ opacity: 0, height: 0 }} 
-              className="overflow-hidden"
-            >
-              <div className="relative mb-1">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-zinc-500">₹</span>
-                <input
-                  type="number"
-                  required 
-                  min={10} 
-                  max={100000}
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
-                  placeholder="Enter custom amount"
-                  className="w-full pl-8 pr-4 py-3 bg-transparent border border-zinc-800 rounded-[12px] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#7c3aed] transition-colors"
-                />
-              </div>
-            </motion.div>
+            <motion.input
+              initial={{ opacity: 0, y: -10, height: 0 }} 
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              type="number"
+              max="100000"
+              placeholder="Enter amount (Max ₹1,00,000)"
+              value={customAmount}
+              onChange={handleCustomAmountChange}
+              className="w-full px-4 py-3 bg-[#141416] border border-zinc-800 rounded-[12px] text-sm text-white focus:outline-none focus:border-[#7c3aed]"
+            />
           )}
         </AnimatePresence>
 
-        {/* Standard Inputs */}
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={anonymous}
-          placeholder="Name or @twitter (optional)"
-          className="w-full px-4 py-3 bg-transparent border border-zinc-800 rounded-[12px] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#7c3aed] disabled:opacity-30 transition-colors"
-        />
+        {/* Labeled Inputs */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Name or Twitter</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name or @twitter (optional)"
+            className="w-full px-4 py-3 bg-[#141416] border border-zinc-800 rounded-[12px] text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+          />
+        </div>
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email (optional)"
-          className="w-full px-4 py-3 bg-transparent border border-zinc-800 rounded-[12px] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#7c3aed] transition-colors"
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="alex@example.com (optional)"
+            className="w-full px-4 py-3 bg-[#141416] border border-zinc-800 rounded-[12px] text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+          />
+        </div>
 
-        <div className="relative">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Backer Message</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, 150))}
             placeholder="Say something nice... (optional)"
-            rows={3}
-            className="w-full px-4 py-3 bg-transparent border border-zinc-800 rounded-[12px] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
+            rows={4}
+            className="w-full px-4 py-3 bg-[#141416] border border-zinc-800 rounded-[12px] text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 resize-none"
           />
-          <span className="absolute bottom-3 right-4 text-[10px] text-zinc-600 font-medium">
-            {message.length}/150
-          </span>
+          <span className="text-[10px] text-zinc-600 self-end">{message.length}/150</span>
         </div>
 
-        {/* Simple Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer mt-1 w-max">
-          <div className="relative flex items-center justify-center w-[18px] h-[18px]">
-            <input
-              type="checkbox"
-              checked={anonymous}
-              onChange={(e) => setAnonymous(e.target.checked)}
-              className="peer sr-only"
-            />
-            <div className="w-full h-full rounded-[4px] border border-zinc-700 bg-transparent peer-checked:border-[#7c3aed] peer-checked:bg-[#7c3aed] transition-colors flex items-center justify-center">
-              <Check size={12} strokeWidth={3} className="text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-            </div>
+        {/* Custom Checkbox for Privacy */}
+        <div 
+          className="flex items-center gap-3 cursor-pointer select-none group"
+          onClick={() => setAnonymous(!anonymous)}
+        >
+          <div className={`w-[18px] h-[18px] rounded-[6px] border flex items-center justify-center transition-all duration-200 ${
+            anonymous 
+              ? "bg-[#7c3aed] border-[#7c3aed]" 
+              : "bg-transparent border-zinc-700 group-hover:border-zinc-500"
+          }`}>
+            {anonymous && <Check size={12} strokeWidth={3} className="text-white" />}
           </div>
-          <span className="text-xs text-zinc-400 select-none">
-            Make this private
-          </span>
-        </label>
+          <span className="text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors">Make this private</span>
+        </div>
 
-        {/* Status Messages */}
-        <AnimatePresence>
-          {statusMessage && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, height: 0 }} 
-              className={`p-3 mt-2 rounded-[12px] text-[13px] flex gap-2 items-center ${
-                statusMessage.type === "success" 
-                  ? "bg-emerald-500/10 text-emerald-400"
-                  : "bg-rose-500/10 text-rose-400"
-              }`}
-            >
-              {statusMessage.type === "error" ? (
-                <AlertCircle size={16} className="shrink-0" />
-              ) : (
-                <ShieldCheck size={16} className="shrink-0" />
-              )}
-              <span className="font-medium">{statusMessage.text}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading || activeAmount < 10 || activeAmount > 100000}
-          className="w-full py-3.5 mt-3 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:bg-[#7c3aed]/50 text-white rounded-[12px] font-medium text-[15px] transition-colors active:scale-[0.98]"
+          className="w-full py-4 mt-2 bg-[#7c3aed] text-white rounded-[12px] font-semibold text-sm hover:bg-[#6d28d9] transition-all"
         >
-          {loading 
-            ? "Processing..." 
-            : activeAmount >= 10 && activeAmount <= 100000
-              ? `Support ₹${activeAmount}` 
-              : activeAmount > 0 
-                ? "Minimum ₹10" 
-                : "Enter Amount"}
+          Support ₹{activeAmount || "0"}
         </button>
-
-        {/* Footer info */}
-        <div className="mt-3 text-center flex flex-col items-center gap-1">
-          <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 font-medium">
-            <Lock size={10} /> Payments are secure and encrypted.
-          </p>
-          <p className="text-[11px] text-zinc-600">
-            Powered by Razorpay.
-          </p>
-        </div>
       </form>
     </div>
   );
