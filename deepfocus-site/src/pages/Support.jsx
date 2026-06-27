@@ -433,6 +433,7 @@ export default function Support() {
   };
 
 
+
   return (
     <div className="min-h-screen bg-[#060608] text-zinc-100 relative font-sans selection:bg-violet-500/30">
       
@@ -538,79 +539,71 @@ export default function Support() {
                       exit={{ opacity: 0, height: 0, y: -10 }} 
                       className="overflow-hidden mb-2"
                     >
-                      <div className="relative group">
-                        <input
-                          type="number"
-                          required min={10} max={100000}
-                          value={customAmount}
-                          onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder=" "
-                          id="custom-amount-input"
-                          className="w-full pl-8 pr-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-black focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
-                        />
-                        <span className="absolute left-4 top-[25px] text-sm font-black text-zinc-500 transition-all peer-placeholder-shown:top-[15px] peer-focus:top-[25px]">₹</span>
-                        <label 
-                          htmlFor="custom-amount-input"
-                          className="absolute left-4 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
-                        >
-                          Custom Amount
+                      <div className="space-y-2">
+                        <label htmlFor="custom-amount-input" className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 select-none">
+                          <span>₹</span> Custom Amount
                         </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-500">₹</span>
+                          <input
+                            type="number"
+                            required min={10} max={100000}
+                            value={customAmount}
+                            onChange={(e) => setCustomAmount(e.target.value)}
+                            placeholder="Enter amount (10 - 100,000)"
+                            id="custom-amount-input"
+                            className="w-full pl-8 pr-4 py-3 rounded-[12px] border border-white/[0.06] bg-[#09090B]/50 text-white text-sm font-black focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-inner placeholder:text-zinc-650"
+                          />
+                        </div>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <div className="relative group">
+                <div className="space-y-2">
+                  <label htmlFor="name-input" className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 select-none">
+                    <User size={12} className="text-zinc-500" /> Name or Twitter
+                  </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={anonymous}
-                    placeholder=" "
+                    placeholder="Name or @twitter (optional)"
                     id="name-input"
-                    className="w-full px-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-30 placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
+                    className="w-full px-4 py-3 rounded-[12px] border border-white/[0.06] bg-[#09090B]/50 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-30 shadow-inner placeholder:text-zinc-650"
                   />
-                  <label 
-                    htmlFor="name-input" 
-                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
-                  >
-                    <User size={10} /> Name or Twitter
-                  </label>
                 </div>
 
-                <div className="relative group">
+                <div className="space-y-2">
+                  <label htmlFor="email-input" className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 select-none">
+                    <Mail size={12} className="text-zinc-500" /> Email Address
+                  </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder=" "
+                    placeholder="alex@example.com (optional)"
                     id="email-input"
-                    className="w-full px-5 pt-6 pb-2 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all placeholder-shown:py-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
+                    className="w-full px-4 py-3 rounded-[12px] border border-white/[0.06] bg-[#09090B]/50 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all shadow-inner placeholder:text-zinc-650"
                   />
-                  <label 
-                    htmlFor="email-input" 
-                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
-                  >
-                    <Mail size={10} /> Email Address
-                  </label>
                 </div>
 
-                <div className="relative group">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value.slice(0, 150))}
-                    placeholder=" "
-                    rows={3}
-                    id="message-input"
-                    className="w-full px-5 pt-6 pb-3 rounded-[16px] border border-white/[0.04] bg-[#09090B]/60 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] peer"
-                  />
-                  <label 
-                    htmlFor="message-input"
-                    className="absolute left-5 top-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-4 peer-focus:top-1.5 peer-focus:text-[8px] peer-focus:text-violet-400 cursor-text pointer-events-none"
-                  >
-                    <MessageSquare size={10} /> Backer Message
+                <div className="space-y-2">
+                  <label htmlFor="message-input" className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 select-none">
+                    <MessageSquare size={12} className="text-zinc-500" /> Backer Message
                   </label>
-                  <span className="absolute bottom-3 right-4 text-[9px] font-bold text-zinc-600">{message.length}/150</span>
+                  <div className="relative">
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value.slice(0, 150))}
+                      placeholder="Say something nice... (optional)"
+                      rows={3}
+                      id="message-input"
+                      className="w-full px-4 py-3 rounded-[12px] border border-white/[0.06] bg-[#09090B]/50 text-white text-sm font-medium focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none shadow-inner placeholder:text-zinc-650"
+                    />
+                    <span className="absolute bottom-3 right-4 text-[9px] font-bold text-zinc-600">{message.length}/150</span>
+                  </div>
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer group py-2 w-max select-none">
@@ -728,8 +721,8 @@ export default function Support() {
                         {renderAvatar(top3[1], "w-10 h-10 border border-zinc-500/40", 16)}
                         <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-zinc-650 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">2</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-305 truncate max-w-[80px]">
-                        {top3[1].anonymous ? "Anonymous" : top3[1].name}
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                        {top3[1].anonymous ? "Anonymous" : (top3[1].name || "Supporter")}
                       </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[1].amount}</span>
                       <div className="w-full bg-[#18181B]/60 border border-zinc-700/30 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-400 text-xs font-bold shadow-md">2nd</div>
@@ -740,7 +733,7 @@ export default function Support() {
                         <User size={14} className="text-zinc-600" />
                       </div>
                       <span className="text-[10px] font-bold text-zinc-500">Claim 2nd</span>
-                      <div className="w-full border border-dashed border-zinc-700/50 h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-600 text-xs font-bold">Empty</div>
+                      <div className="w-full border border-dashed border-white/[0.06] h-16 rounded-t-xl mt-2 flex items-center justify-center text-zinc-600 text-xs font-bold">Empty</div>
                     </div>
                   )}
                   
@@ -755,7 +748,7 @@ export default function Support() {
                         <span className="absolute -bottom-1 -right-1 text-[10px] bg-amber-500 text-black border border-amber-400 rounded-full w-5 h-5 flex items-center justify-center font-black">1</span>
                       </div>
                       <span className="text-xs font-black text-white truncate max-w-[90px]">
-                        {top3[0].anonymous ? "Anonymous" : top3[0].name}
+                        {top3[0].anonymous ? "Anonymous" : (top3[0].name || "Supporter")}
                       </span>
                       <span className="text-xs font-black text-amber-400">₹{top3[0].amount}</span>
                       <div className="w-full bg-gradient-to-t from-amber-600/20 to-amber-500/10 border border-amber-500/20 h-24 rounded-t-2xl mt-2 flex items-center justify-center text-amber-300 text-sm font-black shadow-[0_0_20px_rgba(245,158,11,0.15)]">1st</div>
@@ -777,8 +770,8 @@ export default function Support() {
                         {renderAvatar(top3[2], "w-10 h-10 border border-amber-600/30", 16)}
                         <span className="absolute -bottom-1 -right-1 text-[9px] bg-zinc-800 border border-amber-800 rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">3</span>
                       </div>
-                      <span className="text-xs font-bold text-zinc-355 truncate max-w-[80px]">
-                        {top3[2].anonymous ? "Anonymous" : top3[2].name}
+                      <span className="text-xs font-bold text-zinc-300 truncate max-w-[80px]">
+                        {top3[2].anonymous ? "Anonymous" : (top3[2].name || "Supporter")}
                       </span>
                       <span className="text-[10px] text-zinc-500 font-black">₹{top3[2].amount}</span>
                       <div className="w-full bg-[#18181B]/40 border border-amber-900/20 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700 text-xs font-bold shadow-sm">3rd</div>
@@ -789,7 +782,7 @@ export default function Support() {
                         <User size={14} className="text-amber-700/40" />
                       </div>
                       <span className="text-[10px] font-bold text-amber-700/60">Claim 3rd</span>
-                      <div className="w-full border border-dashed border-amber-900/20 h-12 rounded-t-lg mt-2 flex items-center justify-center text-amber-700/50 text-xs font-bold">Empty</div>
+                      <div className="w-full border border-dashed border-white/[0.06] h-12 rounded-t-lg mt-2 flex items-center justify-center text-zinc-650 text-xs font-bold">Empty</div>
                     </div>
                   )}
                 </div>
