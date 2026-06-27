@@ -555,10 +555,16 @@ export default function Support() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || activeAmount < 10 || activeAmount > 100000}
                   className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white rounded-[16px] font-bold text-sm tracking-wide transition-all shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_30px_rgba(124,58,237,0.45)] active:scale-[0.98] flex items-center justify-center cursor-pointer border border-violet-400/20"
                 >
-                  {loading ? "Processing..." : `Support ₹${activeAmount || 0}`}
+                  {loading 
+                    ? "Processing..." 
+                    : activeAmount >= 10 && activeAmount <= 100000
+                      ? `Support ₹${activeAmount}` 
+                      : activeAmount > 0 
+                        ? "Minimum ₹10 required" 
+                        : "Enter Amount"}
                 </button>
               </form>
             </div>

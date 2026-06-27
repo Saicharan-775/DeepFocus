@@ -31,6 +31,7 @@ export default function Footer() {
               <a href="#features" className="text-sm text-zinc-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-sm text-zinc-400 hover:text-white transition-colors">Workflow</a>
               <Link to="/dashboard" className="text-sm text-zinc-400 hover:text-white transition-colors">Dashboard</Link>
+              <Link to="/support" className="text-sm text-zinc-400 hover:text-white transition-colors">Buy Coffee</Link>
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-xs font-semibold text-gray-300 tracking-wider uppercase mb-1">Legal</p>

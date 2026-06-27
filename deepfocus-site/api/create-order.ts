@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { amount, name, email, message, anonymous } = req.body || {};
 
     // 2. Server-side Input Validation
-    const donationAmount = Number(amount); // Amount in INR
+    const donationAmount = Math.floor(Number(amount)); // Amount in INR, rounded down to integer
     if (isNaN(donationAmount) || donationAmount < 10 || donationAmount > 100000) {
       return res.status(400).json({ error: "Invalid donation amount. Amount must be between ₹10 and ₹100,000." });
     }
