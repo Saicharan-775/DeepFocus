@@ -8,6 +8,7 @@
     "@vercel/node": "^5.8.21",
     "dotenv": "^17.4.2",
     "node-fetch": "^2.7.0",
+    "razorpay": "^2.9.6",
     "typescript": "^5.4.5"
   }
 }

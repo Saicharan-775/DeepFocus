@@ -30,6 +30,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 const DataDeletionPolicy = lazy(() => import("./pages/DataDeletionPolicy.jsx"));
 const Contact = lazy(() => import("./pages/Contact.jsx"));
+const Support = lazy(() => import("./pages/Support.jsx"));
 import ProtectedRoute from "./components/ProtectedRoute";
 import { startExtensionSync } from "./services/extensionSync";
 import {
@@ -91,6 +92,7 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="/support" element={<Support />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
