@@ -12,8 +12,6 @@
     "*://leetcode.com/*",
     "*://*.leetcode.com/*",
     "*://*.supabase.co/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*",
      "https://deepfocus.qzz.io/*"
   ],
   "background": {
@@ -25,8 +23,6 @@
         "https://leetcode.com/*",
         "https://www.leetcode.com/*",
         "https://*.leetcode.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*",
         "https://deepfocus.qzz.io/*"
       ],
       "css": ["styles/widget.css"],
@@ -49,8 +45,6 @@
       "matches": [
         "*://leetcode.com/*",
         "*://*.leetcode.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*",
        "https://deepfocus.qzz.io/*"
       ]
     }

@@ -125,7 +125,7 @@ function focusTabIfAvailable(tabId) {
 }
 
 function isDashboardUrl(url = '') {
-  return /^(https:\/\/deepfocus\.app|https:\/\/www\.deepfocus\.app|http:\/\/localhost(?::\d+)?|http:\/\/127\.0\.0\.1(?::\d+)?)(\/|$)/.test(url);
+  return /^(https:\/\/deepfocus\.app|https:\/\/www\.deepfocus\.app|https:\/\/deepfocus\.qzz\.io|http:\/\/localhost(?::\d+)?|http:\/\/127\.0\.0\.1(?::\d+)?)(\/|$)/.test(url);
 }
 
 const TARGET_URLS = [
@@ -134,7 +134,8 @@ const TARGET_URLS = [
   "http://localhost/*",
   "http://127.0.0.1/*",
   "https://deepfocus.app/*",
-  "https://www.deepfocus.app/*"
+  "https://www.deepfocus.app/*",
+  "https://deepfocus.qzz.io/*"
 ];
 
 function broadcastRevisionUpdate(problem, syncState = 'optimistic') {

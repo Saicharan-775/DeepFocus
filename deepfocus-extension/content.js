@@ -18,7 +18,8 @@ const isDashboard = !window.location.hostname.includes('leetcode.com');
 const EXTENSION_ORIGIN = chrome.runtime.getURL('').replace(/\/$/, '');
 const TRUSTED_DASHBOARD_ORIGINS = new Set([
   'https://deepfocus.app',
-  'https://www.deepfocus.app'
+  'https://www.deepfocus.app',
+  'https://deepfocus.qzz.io'
 ]);
 
 function isSameWindowMessage(event) {
