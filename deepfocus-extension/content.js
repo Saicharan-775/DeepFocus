@@ -791,6 +791,42 @@ function safeStorageSet(obj, callback) {
   } catch (e) { /* context invalidated — ignore */ }
 }
 
+const widgetSoundOnPath = "M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z";
+const widgetSoundOffPath = "M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6L11.47 3.53a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z";
+
+function updateWidgetSoundUI(enabled) {
+  const container = document.getElementById('df-widget-container');
+  if (!container) return;
+  const soundIcon = container.querySelector('#df-widget-sound-icon');
+  const soundBtn = container.querySelector('#df-widget-sound-btn');
+  if (!soundIcon || !soundBtn) return;
+  
+  const pathEl = soundIcon.querySelector('path');
+  if (pathEl) {
+    if (enabled) {
+      pathEl.setAttribute('d', widgetSoundOnPath);
+      soundBtn.title = 'Sound is ON';
+      soundBtn.style.color = '#818cf8';
+    } else {
+      pathEl.setAttribute('d', widgetSoundOffPath);
+      soundBtn.title = 'Sound is OFF';
+      soundBtn.style.color = '#94a3b8';
+    }
+  }
+}
+
+try {
+  if (chrome?.runtime?.id) {
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.soundEnabled) {
+        updateWidgetSoundUI(changes.soundEnabled.newValue !== false);
+      }
+    });
+  }
+} catch (e) {
+  // Ignore context invalidation
+}
+
 // Listen for messages from the page / iframe
 window.addEventListener('message', (e) => {
   if (!e.data) return;
@@ -928,7 +964,13 @@ function injectWidget(initialCollapsed = null, initialPos = null) {
           <img src="${chrome.runtime.getURL('assets/deepfocus-logo.png')}" alt="DeepFocus" style="width:16px;height:16px;object-fit:contain;border-radius:3px;" />
           DeepFocus
         </div>
-        <div class="df-header-right">
+        <div class="df-header-right" style="display:flex;align-items:center;gap:6px;">
+          <!-- Sound Toggle Button -->
+          <button class="df-toggle-btn" id="df-widget-sound-btn" title="Toggle sound" style="margin-right:2px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:0;color:inherit;outline:none;">
+            <svg id="df-widget-sound-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;pointer-events:none;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="" />
+            </svg>
+          </button>
           <button class="df-toggle-btn" id="df-btn-collapse" title="Collapse">${minusIcon}</button>
           <div class="df-status-dot"></div>
         </div>
@@ -1021,6 +1063,26 @@ function injectWidget(initialCollapsed = null, initialPos = null) {
       finishFocusFromWidget({ analyzeAfterStop: true });
     });
   }
+
+  const soundBtn = widgetContainer.querySelector('#df-widget-sound-btn');
+  if (soundBtn) {
+    soundBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      safeStorageGet(['soundEnabled'], (result) => {
+        const currentlyEnabled = result.soundEnabled !== false;
+        const nextState = !currentlyEnabled;
+        safeStorageSet({ soundEnabled: nextState }, () => {
+          updateWidgetSoundUI(nextState);
+        });
+      });
+    });
+  }
+
+  // Load initial sound state for widget
+  safeStorageGet(['soundEnabled'], (result) => {
+    const enabled = result.soundEnabled !== false;
+    updateWidgetSoundUI(enabled);
+  });
 }
 
 function finishFocusFromWidget({ analyzeAfterStop = true } = {}) {
@@ -1486,9 +1548,6 @@ function handleClipboardEvent(e) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    if (window.DeepFocusSound) {
-      window.DeepFocusSound.playSound('fail');
-    }
     showCheekyPasteToast();
     return false;
   }

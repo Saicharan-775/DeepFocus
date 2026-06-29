@@ -44,7 +44,12 @@ export default function FinalCTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#" className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F8FAFC] px-10 py-5 text-base font-semibold text-[#040816] shadow-[0_18px_44px_rgba(0,0,0,0.32)] transition-all hover:bg-zinc-200 active:scale-[0.98] sm:w-auto">
+            <a 
+              href="https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F8FAFC] px-10 py-5 text-base font-semibold text-[#040816] shadow-[0_18px_44px_rgba(0,0,0,0.32)] transition-all hover:bg-zinc-200 active:scale-[0.98] sm:w-auto"
+            >
               Install for Chrome
               <ArrowIcon />
             </a>

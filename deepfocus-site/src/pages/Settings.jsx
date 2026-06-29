@@ -31,6 +31,7 @@ import {
   Send,
   Activity,
   Download,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "../hooks/useToast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1488,11 +1489,23 @@ export default function Settings() {
                           <div className="mt-1 text-sm text-zinc-500 max-w-sm">
                             Syncs your LeetCode sessions, focus metrics, and code submissions directly to your dashboard.
                           </div>
-                          <div className="mt-3 flex items-center gap-2 text-xs font-medium">
-                            <div className={`h-1.5 w-1.5 rounded-full ${extensionLinked ? "bg-emerald-500" : "bg-zinc-600"}`} />
-                            <span className={extensionLinked ? "text-emerald-500" : "text-zinc-500"}>
-                              {extensionLinked ? "Active Connection" : "Not Connected"}
-                            </span>
+                          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium">
+                            <div className="flex items-center gap-2">
+                              <div className={`h-1.5 w-1.5 rounded-full ${extensionLinked ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                              <span className={extensionLinked ? "text-emerald-500" : "text-zinc-500"}>
+                                {extensionLinked ? "Active Connection" : "Not Connected"}
+                              </span>
+                            </div>
+                            {!extensionLinked && (
+                              <a 
+                                href="https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1 cursor-pointer"
+                              >
+                                Install from Chrome Web Store <ExternalLink size={12} />
+                              </a>
+                            )}
                           </div>
                         </div>
                       </div>

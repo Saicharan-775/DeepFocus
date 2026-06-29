@@ -47,9 +47,14 @@ function Guide() {
               <div className="text-6xl mb-8 text-emerald-400">⚡</div>
               <h3 className="text-3xl font-bold mb-6 text-white">Real Focus</h3>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">No fake interviews. Build skills that actually land jobs.</p>
-              <button className="w-full bg-gradient-to-r from-emerald-400 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-8 py-4 rounded-2xl font-bold text-lg transition-all shadow-xl hover:shadow-emerald-400/25 transform hover:-translate-y-1">
+              <a 
+                href="https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-center bg-gradient-to-r from-emerald-400 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-8 py-4 rounded-2xl font-bold text-lg transition-all shadow-xl hover:shadow-emerald-400/25 transform hover:-translate-y-1"
+              >
                 Get Extension Now
-              </button>
+              </a>
             </div>
           </div>
         </div>

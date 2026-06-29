@@ -2,7 +2,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/Saicharan-775/DeepFocus?style=social)](https://github.com/Saicharan-775/DeepFocus)
 [![Tech Stack](https://img.shields.io/badge/Tech-React%20%2B%20Supabase-blue)](https://supabase.com)
-[![Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chrome.google.com/webstore)
+[![Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb)
 
 **DeepFocus** is a high-performance Browser Extension + Dashboard suite designed to turn LeetCode into a distraction-free training ground. It enforces discipline by tracking focus scores, penalizing tab switches, and blocking access to solutions during active sessions.
 

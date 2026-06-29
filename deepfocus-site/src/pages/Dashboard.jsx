@@ -794,6 +794,8 @@ export default function Dashboard() {
         category: 'EXTENSION SETUP',
         title: 'Browser Extension',
         description: 'Ensure the Chrome extension is active to track your LeetCode attempts in real time.',
+        actionText: 'Install from Chrome Store',
+        externalLink: 'https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb',
         type: 'info'
       });
     } else {

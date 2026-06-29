@@ -12,9 +12,7 @@
     radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.11), transparent 34%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.52),
-    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
   color: #f8fafc;
   font-family: 'Inter', sans-serif;
   z-index: 2147483647;
@@ -73,9 +71,7 @@
 #df-widget-container:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.58),
-    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
 
 .df-widget-header {

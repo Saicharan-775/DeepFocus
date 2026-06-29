@@ -54,29 +54,35 @@
     loadSettings() {
       try {
         chrome.storage.local.get(["soundEnabled"], (result) => {
-          if (chrome.runtime.lastError) return;
-          if (result.soundEnabled !== undefined) {
+          if (chrome.runtime.lastError) {
+            console.error("[DeepFocusSound] loadSettings error:", chrome.runtime.lastError.message);
+            return;
+          }
+          if (result && result.soundEnabled !== undefined) {
             this.soundEnabled = result.soundEnabled;
+            console.log("[DeepFocusSound] Loaded soundEnabled state:", this.soundEnabled);
           }
         });
       } catch (e) {
-        // Extension context may be invalidated after reload.
+        console.warn("[DeepFocusSound] loadSettings failed (context likely invalidated):", e.message);
       }
     }
 
     watchSettings() {
       try {
         chrome.storage.onChanged.addListener((changes) => {
-          if (changes.soundEnabled) {
-            this.soundEnabled = changes.soundEnabled.newValue;
+          if (changes && changes.soundEnabled) {
+            this.soundEnabled = changes.soundEnabled.newValue !== false;
+            console.log("[DeepFocusSound] Storage onChanged, soundEnabled is now:", this.soundEnabled);
           }
         });
       } catch (e) {
-        // Extension context may be invalidated after reload.
+        console.warn("[DeepFocusSound] watchSettings listener register failed:", e.message);
       }
     }
 
     playSound(type, options = {}) {
+      console.log("[DeepFocusSound] playSound requested for type:", type, "soundEnabled current state:", this.soundEnabled);
       if (!this.soundEnabled) return;
 
       const now = Date.now();
@@ -103,10 +109,13 @@
         audio.currentTime = 0;
         const result = audio.play();
         if (result && typeof result.catch === 'function') {
-          result.catch(() => {});
+          result.catch((err) => {
+            console.warn("[DeepFocusSound] Audio playback failed async (e.g. browser autoplay policy):", err.message);
+          });
         }
         return true;
       } catch (e) {
+        console.warn("[DeepFocusSound] Audio playback failed sync:", e.message);
         return false;
       }
     }

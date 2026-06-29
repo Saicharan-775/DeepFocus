@@ -187,7 +187,9 @@ export default function Hero() {
               className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto z-10 relative"
             >
               <a 
-                href="#" 
+                href="https://chromewebstore.google.com/detail/kkfgnklgidcfjkjnlmikooeokfoachpf?utm_source=item-share-cb"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group relative w-full sm:w-auto px-9 py-4 bg-white text-black rounded-xl font-extrabold text-[12px] tracking-normal uppercase overflow-hidden transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:bg-zinc-100"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
