@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 
 export default function VideoDemo() {
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   return (
     <section id="demo" className="landing-section z-20">
@@ -46,18 +46,17 @@ export default function VideoDemo() {
           <div className="relative aspect-video overflow-hidden rounded-[24px] border border-white/[0.08] bg-black/60 shadow-2xl md:rounded-[30px]">
 
             <AnimatePresence mode="wait">
-              {!showComingSoon ? (
+              {!isPlaying ? (
                 <motion.div
                   key="thumbnail"
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group"
-                  onClick={() => setShowComingSoon(true)}
+                  onClick={() => setIsPlaying(true)}
                 >
                   {/* Themed Vibrant Background */}
                   <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.075),rgba(18,18,20,0.82)_42%,rgba(0,0,0,0.98))] transition-opacity duration-500 group-hover:opacity-90" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(255,255,255,0.075),transparent_32%),radial-gradient(circle_at_72%_76%,rgba(255,255,255,0.035),transparent_36%)]" />
 
-                  {/* Engineering Grid Subtle Overlay */}
                   {/* Play Button */}
                   <div className="animate-float relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/[0.10] bg-black/60 shadow-[0_18px_44px_rgba(0,0,0,0.42)] transition-all duration-500 group-hover:scale-[1.06] group-hover:border-white/30 md:h-24 md:w-24">
                     <Icon icon="solar:play-bold" className="relative z-10 translate-x-1 text-3xl text-zinc-100 md:text-4xl" />
@@ -69,43 +68,23 @@ export default function VideoDemo() {
                 </motion.div>
               ) : (
                 <motion.div
-                  key="coming-soon"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black px-6 text-center"
+                  key="video-player"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 w-full h-full"
                 >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(255,255,255,0.13),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.07),rgba(18,18,20,0.88)_46%,rgba(0,0,0,0.98))]" />
-                  <motion.div
-                    aria-hidden="true"
-                    className="absolute h-48 w-48 rounded-full border border-white/[0.08]"
-                    animate={{ scale: [0.72, 1.25, 0.72], opacity: [0.45, 0.08, 0.45] }}
-                    transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    aria-hidden="true"
-                    className="absolute h-72 w-72 rounded-full border border-white/[0.055]"
-                    animate={{ scale: [1.1, 0.84, 1.1], opacity: [0.08, 0.36, 0.08] }}
-                    transition={{ duration: 5.4, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <div className="relative z-10 mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.10] bg-white/[0.04] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-100" />
-                    Demo update
-                  </div>
-                  <h3 className="relative z-10 landing-display max-w-xl text-3xl leading-tight text-white md:text-5xl">
-                    Clear demo videos are coming in a few days.
-                  </h3>
-                  <p className="relative z-10 mt-4 max-w-xl text-sm leading-7 text-zinc-400 md:text-base">
-                    We are recording a sharp walkthrough that shows the real DeepFocus flow from problem start to revision. It will be worth the wait.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowComingSoon(false)}
-                    className="relative z-10 mt-8 rounded-full border border-white/[0.12] bg-white/[0.06] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-200 transition hover:border-white/25 hover:bg-white/[0.10]"
-                  >
-                    Back to preview
-                  </button>
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/ud3jWjBlRGw?autoplay=1&si=P4aHSrUZocpKyNcs" 
+                    title="DeepFocus Demonstration Video" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerPolicy="strict-origin-when-cross-origin" 
+                    allowFullScreen
+                    className="w-full h-full border-none"
+                  ></iframe>
                 </motion.div>
               )}
             </AnimatePresence>
