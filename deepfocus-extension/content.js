@@ -23,7 +23,7 @@ const TRUSTED_DASHBOARD_ORIGINS = new Set([
 ]);
 
 function isSameWindowMessage(event) {
-  return event.source === window && event.origin === window.location.origin;
+  return event.origin === window.location.origin;
 }
 
 function isTrustedDashboardMessage(event) {

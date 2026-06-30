@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeepFocus – DSA Focus & Revision",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A focus environment for LeetCode to prevent cheating and maintain discipline via timer and score.",
   "permissions": [
     "storage",
@@ -12,7 +12,10 @@
     "*://leetcode.com/*",
     "*://*.leetcode.com/*",
     "*://*.supabase.co/*",
-     "https://deepfocus.qzz.io/*"
+    "https://deepfocus.qzz.io/*",
+    "https://api.groq.com/*",
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*"
   ],
   "background": {
     "service_worker": "background.js"
